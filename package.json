@@ -1,0 +1,31 @@
+{
+  "name": "homepage",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "server",
+    "packages/types",
+    "client"
+  ],
+  "scripts": {
+    "build:types": "npm --workspace packages/types run build",
+    "build:server": "npm --workspace server run build",
+    "build": "npm run build:types && npm run build:server",
+    "build:watch": "tsc -b --watch",
+    "build:clean": "tsc -b --clean",
+    "start:dev:server": "npm --workspace server run start:dev",
+    "start:prod:server": "npm --workspace server run start:prod"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "prettier": "^3.4.2",
+    "ts-node": "^10.9.2",
+    "ts-jest": "^29.2.5",
+    "jest": "^30.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.10.7",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2"
+  }
+}
