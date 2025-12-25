@@ -10,11 +10,12 @@
   "scripts": {
     "build:types": "npm --workspace packages/types run build",
     "build:server": "npm --workspace server run build",
-    "build": "npm run build:types && npm run build:server",
+    "build:client": "npm --workspace client run build",
+    "build": "npm run build:types && npm run build:server && npm run build:client",
     "build:watch": "tsc -b --watch",
     "build:clean": "tsc -b --clean",
     "start:dev:server": "npm --workspace server run start:dev",
-    "start:prod:server": "npm --workspace server run start:prod"
+    "start:prod:server": "npm --workspace client run build && npm --workspace server run start:prod"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

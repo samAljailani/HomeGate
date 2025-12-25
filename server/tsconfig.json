@@ -5,6 +5,9 @@
     "composite": true,
     "rootDir": ".",
     "outDir": "./dist",
+    "paths": {
+      "@packages/*": ["../packages/*/src"]
+    },
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module

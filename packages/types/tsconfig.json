@@ -8,7 +8,9 @@
     "module": "nodenext",
     "target": "esnext",
     "skipLibCheck": true,
-    "strict": true
+    "strict": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["./src/**/*"]
 }

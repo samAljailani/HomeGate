@@ -7,7 +7,10 @@
     "skipLibCheck": true,
     "strict": true,
     "noImplicitAny": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "paths": {
+      "@packages/*": ["./packages/*/src"]
+    }
   },
   "references": [
   { "path": "./packages/types" },
