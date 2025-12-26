@@ -9,7 +9,8 @@
     "noImplicitAny": true,
     "strictNullChecks": true,
     "paths": {
-      "@packages/*": ["./packages/*/src"]
+      "@packages/types": ["./packages/types/src"],
+      "@packages/types/*": ["./packages/types/src/*"]
     }
   },
   "references": [

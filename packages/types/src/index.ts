@@ -1,3 +1,3 @@
-export * from "./contracts/contractNames.js";
-export * from "./contracts/EnvResponse.js";
-export * from "./models/EnvData.js";
+export * from "./contracts/contractNames";
+export * from "./contracts/EnvResponse";
+export * from "./models/EnvData";

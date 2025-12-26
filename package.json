@@ -11,7 +11,7 @@
     "build:types": "npm --workspace packages/types run build",
     "build:server": "npm --workspace server run build",
     "build:client": "npm --workspace client run build",
-    "build": "npm run build:types && npm run build:server && npm run build:client",
+    "build": "npm run build:types && npm run build:client && npm run build:server",
     "build:watch": "tsc -b --watch",
     "build:clean": "tsc -b --clean",
     "start:dev:server": "npm --workspace server run start:dev",
