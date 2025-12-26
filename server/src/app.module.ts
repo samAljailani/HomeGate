@@ -6,6 +6,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
 const configRepository : ConfigRepository = new ConfigRepository();
+
 @Module({
     imports: [
         ServeStaticModule.forRoot({
