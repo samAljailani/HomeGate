@@ -1,6 +1,6 @@
 import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
-import { EnvResponse, EnvData} from '@packages/types';
+import { EnvResponse, EnvData } from '@homepage/types';
 import { Injectable } from '@nestjs/common';
 
 const getEnv = (): EnvData => {

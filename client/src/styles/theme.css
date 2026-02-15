@@ -1,0 +1,510 @@
+@import "./tailwind-colors.css";
+
+/* ============================================
+   Light Mode (Default)
+   ============================================ */
+:root {
+    /* -- Background Colors -- */
+    background-color: oklch(var(--tw-gray-100));
+    --bg-main: oklch(var(--tw-gray-500));
+    --bg-nav: oklch(var(--tw-gray-300) / 0.50);
+    --bg-nav-active: oklch(var(--tw-gray-500) / 0.25);
+    --bg-nav-hover: oklch(var(--tw-white) / 0.05);
+    --bg-dropdown: oklch(var(--tw-white));
+    --bg-dropdown-hover: oklch(var(--tw-gray-100));
+    --bg-card: oklch(var(--tw-white));
+    --bg-surface: oklch(var(--tw-gray-50));
+
+    /* -- Text Colors -- */
+    --text-primary: oklch(var(--tw-stone-900));
+    --text-secondary: oklch(var(--tw-stone-700));
+    --text-muted: oklch(var(--tw-stone-500));
+    --text-disabled: oklch(var(--tw-stone-400));
+    --text-nav: oklch(var(--tw-stone-900));
+    --text-nav-active: oklch(var(--tw--stone-900));
+    --text-nav-hover: #535bf2;
+    --text-btn: oklch(var(--tw-gray-800));
+
+    /* -- Heading Colors -- */
+    --text-h1: oklch(var(--tw-gray-950));
+    --text-h2: oklch(var(--tw-gray-900));
+    --text-h3: oklch(var(--tw-gray-800));
+    --text-h4: oklch(var(--tw-gray-700));
+    --text-h5: oklch(var(--tw-gray-600));
+    --text-h6: oklch(var(--tw-gray-500));
+
+    /* -- Accent Colors -- */
+    --accent-primary: oklch(var(--tw-indigo-500));
+    --accent-primary-hover: oklch(var(--tw-indigo-600));
+    --accent-primary-light: oklch(var(--tw-indigo-300));
+    --link-color: oklch(var(--tw-indigo-500));
+    --link-hover: oklch(var(--tw-indigo-400));
+
+    /* -- Border Colors -- */
+    --border-default: oklch(var(--tw-black) / 0.1);
+    --border-light: oklch(var(--tw-black) / 0.05);
+    --border-focus: oklch(var(--tw-indigo-500));
+    --divider: oklch(var(--tw-gray-200));
+
+    /* -- Shadow Colors -- */
+    --shadow: oklch(var(--tw-black) / 0.1);
+    --shadow-lg: oklch(var(--tw-black) / 0.15);
+
+    /* -- Button Colors -- */
+    --btn-primary: oklch(var(--tw-indigo-600));
+    --btn-primary-hover: #646cff;/*oklch(var(--tw-indigo-700));*/
+    --btn-primary-text: oklch(var(--tw-white));
+
+    --btn-secondary: oklch(var(--tw-gray-200));
+    --btn-secondary-hover: oklch(var(--tw-gray-300));
+    --btn-secondary-text: oklch(var(--tw-gray-900));
+
+    --btn-destructive: oklch(var(--tw-red-600));
+    --btn-destructive-hover: oklch(var(--tw-red-700));
+    --btn-destructive-text: oklch(var(--tw-white));
+
+    --btn-outline-bg: transparent;
+    --btn-outline-hover: oklch(var(--tw-gray-100));
+    --btn-outline-border: oklch(var(--tw-gray-300));
+    --btn-outline-text: oklch(var(--tw-gray-900));
+
+    --btn-ghost-bg: transparent;
+    --btn-ghost-hover: oklch(var(--tw-gray-100));
+    --btn-ghost-text: oklch(var(--tw-gray-900));
+
+    --btn-link-text: oklch(var(--tw-indigo-600));
+    --btn-link-hover: oklch(var(--tw-indigo-700));
+
+    /* -- Status Colors -- */
+    --color-success: oklch(var(--tw-green-500));
+    --color-warning: oklch(var(--tw-amber-500));
+    --color-error: oklch(var(--tw-red-500));
+    --color-info: oklch(var(--tw-blue-500));
+}
+
+/* ============================================
+   Dark Mode (class-based toggle)
+   ============================================ */
+.dark {
+    /* -- Background Colors -- */
+    background-color: #242424;
+    --bg-main: oklch(var(--tw-gray-800));
+    --bg-nav: oklch(var(--tw-gray-800) / 0.5);
+    --bg-nav-active: oklch(var(--tw-gray-950) / 0.5);
+    --bg-nav-hover: oklch(var(--tw-white) / 0.05);
+    --bg-dropdown: oklch(var(--tw-gray-800));
+    --bg-dropdown-hover: oklch(var(--tw-white) / 0.05);
+    --bg-card: oklch(var(--tw-gray-900));
+    --bg-surface: oklch(var(--tw-gray-950));
+
+    /* -- Text Colors -- */
+    --text-primary: oklch(var(--tw-gray-50));
+    --text-secondary: oklch(var(--tw-gray-200));
+    --text-muted: oklch(var(--tw-gray-400));
+    --text-disabled: oklch(var(--tw-gray-500));
+    --text-nav: oklch(var(--tw-gray-300));
+    --text-nav-active: oklch(var(--tw-white));
+    --text-nav-hover: #535bf2;
+
+    /* -- Heading Colors -- */
+    --text-h1: oklch(var(--tw-gray-50));
+    --text-h2: oklch(var(--tw-gray-100));
+    --text-h3: oklch(var(--tw-gray-200));
+    --text-h4: oklch(var(--tw-gray-300));
+    --text-h5: oklch(var(--tw-gray-400));
+    --text-h6: oklch(var(--tw-gray-500));
+
+    /* -- Border Colors -- */
+    --border-default: oklch(var(--tw-white) / 0.1);
+    --border-light: oklch(var(--tw-white) / 0.05);
+    --divider: oklch(var(--tw-gray-700));
+
+    /* -- Shadow Colors -- */
+    --shadow: transparent;
+    --shadow-lg: transparent;
+
+    /* -- Button Colors -- */
+    --btn-primary: oklch(var(--tw-indigo-500));
+    --btn-primary-hover: #646cff;/*oklch(var(--tw-indigo-400));*/
+    --btn-primary-text: oklch(var(--tw-white));
+
+    --btn-secondary: oklch(var(--tw-gray-700));
+    --btn-secondary-hover: oklch(var(--tw-gray-600));
+    --btn-secondary-text: oklch(var(--tw-gray-100));
+
+    --btn-destructive: oklch(var(--tw-red-600) / 0.8);
+    --btn-destructive-hover: oklch(var(--tw-red-500));
+    --btn-destructive-text: oklch(var(--tw-white));
+
+    --btn-outline-bg: transparent;
+    --btn-outline-hover: oklch(var(--tw-gray-800));
+    --btn-outline-border: oklch(var(--tw-gray-600));
+    --btn-outline-text: oklch(var(--tw-gray-100));
+
+    --btn-ghost-bg: transparent;
+    --btn-ghost-hover: oklch(var(--tw-gray-800));
+    --btn-ghost-text: oklch(var(--tw-gray-100));
+
+    --btn-link-text: oklch(var(--tw-indigo-400));
+    --btn-link-hover: oklch(var(--tw-indigo-300));
+}
+
+/* ============================================
+   Dark Mode (automatic OS detection)
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+    :root:not(.light) {
+        /* -- Background Colors -- */
+        --bg-main: oklch(var(--tw-gray-800));
+        --bg-nav: oklch(var(--tw-gray-800) / 0.5);
+        --bg-nav-active: oklch(var(--tw-gray-950) / 0.5);
+        --bg-nav-hover: oklch(var(--tw-white) / 0.05);
+        --bg-dropdown: oklch(var(--tw-gray-800));
+        --bg-dropdown-hover: oklch(var(--tw-white) / 0.05);
+        --bg-card: oklch(var(--tw-gray-900));
+        --bg-surface: oklch(var(--tw-gray-950));
+
+        /* -- Text Colors -- */
+        --text-primary: oklch(var(--tw-gray-50));
+        --text-secondary: oklch(var(--tw-gray-200));
+        --text-muted: oklch(var(--tw-gray-400));
+        --text-disabled: oklch(var(--tw-gray-500));
+        --text-nav: oklch(var(--tw-gray-300));
+        --text-nav-active: oklch(var(--tw-white));
+        --text-nav-hover: oklch(var(--tw-white));
+
+        /* -- Heading Colors -- */
+        --text-h1: oklch(var(--tw-gray-50));
+        --text-h2: oklch(var(--tw-gray-100));
+        --text-h3: oklch(var(--tw-gray-200));
+        --text-h4: oklch(var(--tw-gray-300));
+        --text-h5: oklch(var(--tw-gray-400));
+        --text-h6: oklch(var(--tw-gray-500));
+
+        /* -- Border Colors -- */
+        --border-default: oklch(var(--tw-white) / 0.1);
+        --border-light: oklch(var(--tw-white) / 0.05);
+        --divider: oklch(var(--tw-gray-700));
+
+        /* -- Shadow Colors -- */
+        --shadow: transparent;
+        --shadow-lg: transparent;
+    }
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+/* -- Background Classes -- */
+.bg-main {
+    background-color: var(--bg-main);
+}
+
+.bg-nav {
+    background-color: var(--bg-nav);
+}
+
+.bg-nav-active {
+    background-color: var(--bg-nav-active);
+}
+
+.bg-nav-hover {
+    background-color: var(--bg-nav-hover);
+}
+
+.bg-dropdown {
+    background-color: var(--bg-dropdown);
+}
+
+.bg-dropdown-hover {
+    background-color: var(--bg-dropdown-hover);
+}
+
+.bg-card {
+    background-color: var(--bg-card);
+}
+
+.bg-surface {
+    background-color: var(--bg-surface);
+}
+
+.bg-accent {
+    background-color: var(--accent-primary);
+}
+
+.bg-accent-hover {
+    background-color: var(--accent-primary-hover);
+}
+
+.bg-accent-light {
+    background-color: var(--accent-primary-light);
+}
+
+.bg-divider {
+    background-color: var(--divider);
+}
+
+.bg-success {
+    background-color: var(--color-success);
+}
+
+.bg-warning {
+    background-color: var(--color-warning);
+}
+
+.bg-error {
+    background-color: var(--color-error);
+}
+
+.bg-info {
+    background-color: var(--color-info);
+}
+
+/* -- Text Classes -- */
+.text-primary {
+    color: var(--text-primary);
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.text-disabled {
+    color: var(--text-disabled);
+}
+
+.text-nav {
+    color: var(--text-nav);
+}
+
+.text-nav-active {
+    color: var(--text-nav-active);
+}
+
+.text-nav-hover {
+    color: var(--text-nav-hover);
+}
+
+.text-btn {
+    color: var(--text-btn);
+}
+
+.text-h1 {
+    color: var(--text-h1);
+}
+
+.text-h2 {
+    color: var(--text-h2);
+}
+
+.text-h3 {
+    color: var(--text-h3);
+}
+
+.text-h4 {
+    color: var(--text-h4);
+}
+
+.text-h5 {
+    color: var(--text-h5);
+}
+
+.text-h6 {
+    color: var(--text-h6);
+}
+
+.text-accent {
+    color: var(--accent-primary);
+}
+
+.text-accent-hover {
+    color: var(--accent-primary-hover);
+}
+
+.text-link {
+    color: var(--link-color);
+}
+
+.text-link-hover {
+    color: var(--link-hover);
+}
+
+.text-success {
+    color: var(--color-success);
+}
+
+.text-warning {
+    color: var(--color-warning);
+}
+
+.text-error {
+    color: var(--color-error);
+}
+
+.text-info {
+    color: var(--color-info);
+}
+
+/* -- Button Classes -- */
+
+/* Primary */
+.btn-primary {
+    background-color: var(--btn-primary);
+    color: var(--btn-primary-text);
+}
+
+.hover\:btn-primary:hover {
+    background-color: var(--btn-primary-hover);
+}
+
+/* Secondary */
+.btn-secondary {
+    background-color: var(--btn-secondary);
+    color: var(--btn-secondary-text);
+}
+
+.hover\:btn-secondary:hover {
+    background-color: var(--btn-secondary-hover);
+}
+
+/* Destructive */
+.btn-destructive {
+    background-color: var(--btn-destructive);
+    color: var(--btn-destructive-text);
+}
+
+.hover\:btn-destructive:hover {
+    background-color: var(--btn-destructive-hover);
+}
+
+/* Outline */
+.btn-outline {
+    background-color: var(--btn-outline-bg);
+    border-color: var(--btn-outline-border);
+    color: var(--btn-outline-text);
+}
+
+.hover\:btn-outline:hover {
+    background-color: var(--btn-outline-hover);
+}
+
+/* Ghost */
+.btn-ghost {
+    background-color: var(--btn-ghost-bg);
+    color: var(--btn-ghost-text);
+}
+
+.hover\:btn-ghost:hover {
+    background-color: var(--btn-ghost-hover);
+}
+
+/* Link */
+.btn-link {
+    color: var(--btn-link-text);
+}
+
+.hover\:btn-link:hover {
+    color: var(--btn-link-hover);
+}
+
+/* -- Border Classes -- */
+.border-default {
+    border-color: var(--border-default);
+}
+
+.border-light {
+    border-color: var(--border-light);
+}
+
+.border-focus {
+    border-color: var(--border-focus);
+}
+
+.border-divider {
+    border-color: var(--divider);
+}
+
+.border-accent {
+    border-color: var(--accent-primary);
+}
+
+.border-success {
+    border-color: var(--color-success);
+}
+
+.border-warning {
+    border-color: var(--color-warning);
+}
+
+.border-error {
+    border-color: var(--color-error);
+}
+
+.border-info {
+    border-color: var(--color-info);
+}
+
+/* -- Outline Classes -- */
+.outline-default {
+    outline-color: var(--border-default);
+}
+
+.outline-light {
+    outline-color: var(--border-light);
+}
+
+.outline-focus {
+    outline-color: var(--border-focus);
+}
+
+.outline-accent {
+    outline-color: var(--accent-primary);
+}
+
+/* -- Shadow Classes -- */
+.shadow-theme {
+    box-shadow: 0 1px 3px var(--shadow);
+}
+
+.shadow-theme-lg {
+    box-shadow: 0 4px 6px var(--shadow-lg);
+}
+
+/* -- Hover Variants -- */
+.hover\:bg-nav:hover {
+    background-color: var(--bg-nav-hover);
+}
+
+.hover\:bg-dropdown:hover {
+    background-color: var(--bg-dropdown-hover);
+}
+
+.hover\:bg-accent:hover {
+    background-color: var(--accent-primary-hover);
+}
+
+.hover\:text-nav:hover {
+    color: var(--text-nav-hover);
+}
+
+.hover\:text-accent:hover {
+    color: var(--accent-primary);
+}
+
+.hover\:text-link:hover {
+    color: var(--link-hover);
+}
+
+/* -- Focus Variants -- */
+.focus\:outline-accent:focus {
+    outline-color: var(--accent-primary);
+}
+
+.focus\:border-focus:focus {
+    border-color: var(--border-focus);
+}
