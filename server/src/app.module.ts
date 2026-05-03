@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common'
-import { TestController } from '@/controllers/test.controller'
-import { TestService } from '@/services/test.service'
+import { controllers } from '@/controllers'
 import { ConfigRepository } from '@/repositories/config.repository';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { resolve } from 'path';
+import { services } from './services';
 
 const configRepository : ConfigRepository = new ConfigRepository();
 
@@ -13,7 +13,7 @@ const configRepository : ConfigRepository = new ConfigRepository();
             rootPath: resolve(process.cwd(), configRepository.getEnv().staticClientFilesPath),
             })
     ],
-    controllers: [TestController],
-    providers: [TestService],
+    controllers: [...controllers],
+    providers: [...services ],
 })
 export class AppModule {}

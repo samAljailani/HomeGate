@@ -1,4 +1,4 @@
-import CardTopImage from "@/pages/Home/components/cardTopImage";
+import CardTopImage from "@/views/Home/components/cardTopImage";
 
 export function Home() {
     return (

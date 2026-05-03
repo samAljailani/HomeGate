@@ -7,7 +7,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule)
-    const port = process.env['PORT'] ? Number(process.env['PORT']) : 3000
+    const port = process.env['PORT'] ? Number(process.env['PORT']) : 3002
 
     configureSwagger(<NestExpressApplication>app)
 

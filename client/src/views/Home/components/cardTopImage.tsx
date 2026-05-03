@@ -1,3 +1,5 @@
+'use client'
+
 import { Button } from '@/components/ui/button'
 import { IconLock} from '@/components/ui/icons/IconLock'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'

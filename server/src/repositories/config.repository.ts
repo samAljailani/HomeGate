@@ -1,23 +1,15 @@
-import { plainToInstance } from 'class-transformer';
-import { validateSync } from 'class-validator';
-import { EnvResponse, EnvData } from '@homepage/types';
+import { EnvData } from '@homepage/types';
 import { Injectable } from '@nestjs/common';
 
 const getEnv = (): EnvData => {
-  const dto = plainToInstance(EnvResponse, process.env);
-  console.log
-  const errors = validateSync(dto);
+  const CLIENT_RELATIVE_STATIC_PATH = process.env['CLIENT_RELATIVE_STATIC_PATH'];
 
-  if (errors.length > 0) {
-    const messages = [`Invalid environment variables: `];
-    for (const error of errors) {
-      messages.push(`  - ${error.property}=${error.value} (${Object.values(error.constraints || {}).join(', ')})`);
-    }
-    throw new Error(messages.join('\n'));
+  if (!CLIENT_RELATIVE_STATIC_PATH) {
+    throw new Error('Invalid environment variables: CLIENT_RELATIVE_STATIC_PATH is required');
   }
 
   return {
-    staticClientFilesPath: dto.CLIENT_RELATIVE_STATIC_PATH!,
+    staticClientFilesPath: CLIENT_RELATIVE_STATIC_PATH,
   };
 };
 

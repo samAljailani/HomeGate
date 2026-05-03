@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState, type JSX } from "react";
 import { classNames } from "@/utils/styles";
 import type { NavItem } from "@packages/types/client/ui";
