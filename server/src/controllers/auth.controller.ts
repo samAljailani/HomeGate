@@ -1,17 +1,24 @@
-import { Controller, Get, Inject, Query } from '@nestjs/common'
+import { Controller, Get, Request, Inject, Query, UseGuards} from '@nestjs/common'
 import { ApiQuery } from '@nestjs/swagger'
 import { AuthService } from '@/services/auth.service'
 import { AuthResponseDto, OpenIDRequestDto } from '@/dtos/authDto'
+import { GoogleOAuthGuard } from '@/middleware/google-oauth.guard'
+import type { Request as ExpressRequest } from 'express'
 
-@Controller('auth')
+@Controller('api/auth')
 export class AuthController {
     constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
-    @Get('openid/callback')
-    @ApiQuery({ name: 'code', description: 'Authorization code returned by the OpenID provider' })
-    @ApiQuery({ name: 'state', description: 'State parameter for CSRF protection' })
-    GetOpenIdCallback(@Query() query: OpenIDRequestDto): AuthResponseDto {
-        console.log('Received OpenID callback with query:', query);
-        return this.authService.OpenIdCallback(query);
+    @Get('google')
+    @UseGuards(GoogleOAuthGuard)
+    googleAuth() {
+        console.log("in googleAuth endpoint")
+    }
+
+    @Get('google/callback')
+    @UseGuards(GoogleOAuthGuard)
+    googleAuthRedirect(@Request() req: ExpressRequest) {
+        return {success: true} 
+        //return this.authService.googleLogin(req);
     }
 }

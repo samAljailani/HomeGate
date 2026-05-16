@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common'
 import { controllers } from '@/controllers'
+import { strategies } from '@/strategies'
 import { ConfigRepository } from '@/repositories/config.repository';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { resolve } from 'path';
-import { services } from './services';
-
+import { services } from '@/services';
+import { middleware } from '@/middleware'
+import { repositories } from '@/repositories';
 const configRepository : ConfigRepository = new ConfigRepository();
 
 @Module({
@@ -14,6 +16,6 @@ const configRepository : ConfigRepository = new ConfigRepository();
             })
     ],
     controllers: [...controllers],
-    providers: [...services ],
+    providers: [...services, ...strategies, ...middleware, ...repositories ],
 })
 export class AppModule {}

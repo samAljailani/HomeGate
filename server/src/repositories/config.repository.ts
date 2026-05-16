@@ -3,13 +3,26 @@ import { Injectable } from '@nestjs/common';
 
 const getEnv = (): EnvData => {
   const CLIENT_RELATIVE_STATIC_PATH = process.env['CLIENT_RELATIVE_STATIC_PATH'];
+  const PORT = process.env['PORT'];
+  const GOOGLE_CLIENT_ID = process.env['GOOGLE_CLIENT_ID'];
+  const GOOGLE_CLIENT_SECRET = process.env['GOOGLE_CLIENT_SECRET'];
 
-  if (!CLIENT_RELATIVE_STATIC_PATH) {
-    throw new Error('Invalid environment variables: CLIENT_RELATIVE_STATIC_PATH is required');
+  const missing = [
+    !CLIENT_RELATIVE_STATIC_PATH && 'CLIENT_RELATIVE_STATIC_PATH',
+    !PORT && 'PORT',
+    !GOOGLE_CLIENT_ID && 'GOOGLE_CLIENT_ID',
+    !GOOGLE_CLIENT_SECRET && 'GOOGLE_CLIENT_SECRET',
+  ].filter(Boolean);
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
   return {
-    staticClientFilesPath: CLIENT_RELATIVE_STATIC_PATH,
+    staticClientFilesPath: CLIENT_RELATIVE_STATIC_PATH!,
+    PORT: PORT!,
+    GOOGLE_CLIENT_ID: GOOGLE_CLIENT_ID!,
+    GOOGLE_CLIENT_SECRET: GOOGLE_CLIENT_SECRET!,
   };
 };
 
@@ -24,6 +37,7 @@ export class ConfigRepository {
         if (!cached) {
             cached = getEnv();
         }
+        
         return cached; 
     }
 }
