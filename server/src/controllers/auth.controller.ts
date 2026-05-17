@@ -4,21 +4,22 @@ import { AuthService } from '@/services/auth.service'
 import { AuthResponseDto, OpenIDRequestDto } from '@/dtos/authDto'
 import { GoogleOAuthGuard } from '@/middleware/google-oauth.guard'
 import type { Request as ExpressRequest } from 'express'
+import routes from '@/dtos/routes'
 
-@Controller('api/auth')
+@Controller(routes.auth.basePath)
 export class AuthController {
     constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
-    @Get('google')
+    @Get(routes.auth.subPath.google)
     @UseGuards(GoogleOAuthGuard)
     googleAuth() {
-        console.log("in googleAuth endpoint")
+        /*method body never executed due to passport redirect*/
     }
 
-    @Get('google/callback')
+    @Get(routes.auth.subPath.googleRedirect)
     @UseGuards(GoogleOAuthGuard)
     googleAuthRedirect(@Request() req: ExpressRequest) {
         return {success: true} 
-        //return this.authService.googleLogin(req);
+        return this.authService.googleLogin(req);
     }
 }
