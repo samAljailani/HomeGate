@@ -1,8 +1,9 @@
 import { Controller, Get, Inject } from '@nestjs/common'
 import { TestService } from '@/services/test.service'
 import { EnvResponse } from '@homepage/types'
+import routes from '@/dtos/routes'
 
-@Controller('test')
+@Controller(routes.test.basePath)
 export class TestController {
     constructor(@Inject(TestService) private readonly testService: TestService) {}
 

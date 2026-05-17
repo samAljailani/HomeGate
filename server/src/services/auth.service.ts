@@ -1,4 +1,4 @@
-import { AuthResponseDto, OpenIDRequestDto } from '@/dtos/authDto'
+import { AuthResponseDto, OpenIDRequestDto, OpenIDUserResponseDto } from '@/dtos/authDto'
 import { Injectable } from '@nestjs/common'
 import type { Request } from 'express'
 
@@ -10,8 +10,8 @@ export class AuthService {
         return { accessToken: 'dummyAccessToken', refreshToken: 'dummyRefreshToken' }
     }
 
-    googleLogin(req: Request) {
-        return req.user;
+    googleLogin(req: OpenIDUserResponseDto): OpenIDUserResponseDto {
+        return req;
     }
 
     

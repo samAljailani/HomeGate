@@ -1,7 +1,7 @@
 import { Controller, Get, Request, Inject, Query, UseGuards} from '@nestjs/common'
 import { ApiQuery } from '@nestjs/swagger'
 import { AuthService } from '@/services/auth.service'
-import { AuthResponseDto, OpenIDRequestDto } from '@/dtos/authDto'
+import { AuthResponseDto, OpenIDUserResponseDto } from '@/dtos/authDto'
 import { GoogleOAuthGuard } from '@/middleware/google-oauth.guard'
 import type { Request as ExpressRequest } from 'express'
 import routes from '@/dtos/routes'
@@ -19,7 +19,7 @@ export class AuthController {
     @Get(routes.auth.subPath.googleRedirect)
     @UseGuards(GoogleOAuthGuard)
     googleAuthRedirect(@Request() req: ExpressRequest) {
-        return {success: true} 
-        return this.authService.googleLogin(req);
+        return this.authService.googleLogin(req.user as OpenIDUserResponseDto);
+        //TODO: set cookie on success
     }
 }

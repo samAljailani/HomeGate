@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator'
+import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 
 export class AuthResponseDto {
@@ -14,13 +14,54 @@ export class AuthResponseDto {
 }
 
 export class OpenIDRequestDto {
-    @ApiProperty({ description: 'Authorization code returned by the OpenID provider' })
     @IsString()
     @IsNotEmpty()
-    code: string;
+    clientID: string;
 
-    @ApiProperty({ description: 'State parameter for CSRF protection' })
     @IsString()
     @IsNotEmpty()
-    state: string;
+    clientSecret: string;
+
+    @IsString()
+    @IsNotEmpty()
+    callbackURL: string;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsNotEmpty()
+    scope: string[];
+}
+
+export class OpenIDUserResponseDto {
+    @IsString()
+    @IsNotEmpty()
+    providerAccountId: string;
+
+    @IsString()
+    @IsNotEmpty()
+    email: string;
+
+    @IsOptional()
+    @IsString()
+    firstName?: string;
+
+    @IsOptional()
+    @IsString()
+    lastName?: string;
+
+    @IsOptional()
+    @IsString()
+    picture?: string;
+
+    @IsString()
+    @IsNotEmpty()
+    accessToken: string;
+
+    @IsString()
+    @IsNotEmpty()
+    refreshToken: string;
+
+    @IsString()
+    @IsNotEmpty()
+    provider: string;
 }
