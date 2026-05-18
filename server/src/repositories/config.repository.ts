@@ -7,6 +7,7 @@ const getEnv = (): EnvData => {
   const SERVER_BASE_URL = process.env['SERVER_BASE_URL'];
   const GOOGLE_CLIENT_ID = process.env['GOOGLE_CLIENT_ID'];
   const GOOGLE_CLIENT_SECRET = process.env['GOOGLE_CLIENT_SECRET'];
+  const DATABASE_URL = process.env['DATABASE_URL']
 
   const missing = [
     !CLIENT_RELATIVE_STATIC_PATH && 'CLIENT_RELATIVE_STATIC_PATH',
@@ -14,6 +15,7 @@ const getEnv = (): EnvData => {
     !SERVER_BASE_URL && 'SERVER_BASE_URL',
     !GOOGLE_CLIENT_ID && 'GOOGLE_CLIENT_ID',
     !GOOGLE_CLIENT_SECRET && 'GOOGLE_CLIENT_SECRET',
+    !DATABASE_URL && 'DATABASE_URL'
   ].filter(Boolean);
 
   if (missing.length > 0) {
@@ -26,6 +28,7 @@ const getEnv = (): EnvData => {
     SERVER_BASE_URL: SERVER_BASE_URL!,
     GOOGLE_CLIENT_ID: GOOGLE_CLIENT_ID!,
     GOOGLE_CLIENT_SECRET: GOOGLE_CLIENT_SECRET!,
+    DATABASE_URL: DATABASE_URL!
   };
 };
 

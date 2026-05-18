@@ -7,6 +7,8 @@ import { resolve } from 'path';
 import { services } from '@/services';
 import { middleware } from '@/middleware'
 import { repositories } from '@/repositories';
+import { providers } from '@/providers';
+
 const configRepository : ConfigRepository = new ConfigRepository();
 
 @Module({
@@ -16,6 +18,6 @@ const configRepository : ConfigRepository = new ConfigRepository();
             })
     ],
     controllers: [...controllers],
-    providers: [...services, ...strategies, ...middleware, ...repositories ],
+    providers: [...services, ...strategies, ...middleware, ...repositories, ...providers ],
 })
 export class AppModule {}

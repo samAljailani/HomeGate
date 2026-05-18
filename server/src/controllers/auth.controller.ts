@@ -1,10 +1,10 @@
 import { Controller, Get, Request, Inject, Query, UseGuards} from '@nestjs/common'
 import { ApiQuery } from '@nestjs/swagger'
 import { AuthService } from '@/services/auth.service'
-import { AuthResponseDto, OpenIDUserResponseDto } from '@/dtos/authDto'
+import { AuthResponseDto, OpenIDUserResponseDto } from '../../types/dtos/authDto'
 import { GoogleOAuthGuard } from '@/middleware/google-oauth.guard'
 import type { Request as ExpressRequest } from 'express'
-import routes from '@/dtos/routes'
+import routes from '../../types/dtos/routes'
 
 @Controller(routes.auth.basePath)
 export class AuthController {

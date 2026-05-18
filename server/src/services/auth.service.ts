@@ -1,4 +1,4 @@
-import { AuthResponseDto, OpenIDRequestDto, OpenIDUserResponseDto } from '@/dtos/authDto'
+import { AuthResponseDto, OpenIDRequestDto, OpenIDUserResponseDto } from '../../types/dtos/authDto'
 import { Injectable } from '@nestjs/common'
 
 @Injectable()
