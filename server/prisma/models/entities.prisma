@@ -1,11 +1,23 @@
+enum OAuthProviderName {
+  google
+}
+
+enum AuthSchemeName {
+  ldap
+  oauth
+  sso
+}
+
 model User {
   id               String              @id @default(uuid())
   email            String              @unique @db.VarChar(254)
+  password         String?             @db.VarChar(64)
   first_name       String              @db.VarChar(100)
   last_name        String              @db.VarChar(100)
   is_admin         Boolean             @default(false)
   is_deleted       Boolean             @default(false)
   created_at       DateTime            @default(now()) @db.Timestamptz(6)
+  username         String              @db.VarChar(64)
   user_sessions    Session[]
   user_accounts    UserAccount[]
   oauth_identities UserOAuthIdentity[]
@@ -15,7 +27,7 @@ model User {
 
 model OAuthProvider {
   id               Int                 @id @default(autoincrement())
-  name             String              @unique @db.VarChar(64)
+  name             OAuthProviderName   @unique
   oauth_identities UserOAuthIdentity[]
 
   @@map("oauth_providers")
@@ -36,7 +48,7 @@ model UserOAuthIdentity {
 
 model AuthScheme {
   id       Int       @id @default(autoincrement())
-  name     String    @unique @db.VarChar(64)
+  name     AuthSchemeName @unique
   services Service[]
 
   @@map("auth_schemes")
@@ -57,6 +69,7 @@ model UserAccount {
   service_id Int
   created_at DateTime @default(now()) @db.Timestamptz(6)
   is_active  Boolean  @default(true)
+  username   String   @db.VarChar(64)
   service    Service  @relation(fields: [service_id], references: [id], onDelete: NoAction)
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 

@@ -1,6 +1,6 @@
 import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { OpenIDUserResponseDto } from '../../types/dtos/authDto';
+import { OpenIDUserResponseDto } from '../types/dtos/authDto';
 
 @Injectable()
 export class GoogleOAuthGuard extends AuthGuard('google') {

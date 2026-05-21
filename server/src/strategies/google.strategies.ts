@@ -3,8 +3,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback, Profile } from 'passport-google-oauth20';
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigRepository } from '@/repositories/config.repository';
-import routes from '../../types/dtos/routes'
-import { OpenIDRequestDto, OpenIDUserResponseDto } from '../../types/dtos/authDto';
+import routes from '../types/dtos/routes'
+import { OpenIDRequestDto, OpenIDUserResponseDto } from '../types/dtos/authDto';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
