@@ -7,7 +7,7 @@ import { resolve } from 'path';
 import { services } from '@/services';
 import { middleware } from '@/middleware'
 import { repositories } from '@/repositories';
-import { providers } from '@/providers';
+import { providers } from '@/infrastructure';
 
 const configRepository : ConfigRepository = new ConfigRepository();
 

@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { PrismaProvider } from '@/providers/prisma.provider';
+import { PrismaProvider } from '@/infrastructure/prisma.provider';
 import { AuthScheme } from '@prisma/generated';
 import { AuthSchemeFilterOptions, AuthSchemeLoadRequestDto } from '@/types/dtos/authSchemeDto';
 import { IAuthSchemeRepository } from './IAuthSchemeRepository';

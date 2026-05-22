@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { PrismaProvider } from '@/providers/prisma.provider';
+import { PrismaProvider } from '@/infrastructure/prisma.provider';
 import { OAuthProvider } from '@prisma/generated';
 import { OAuthProviderFilterOptions, OAuthProviderLoadRequestDto } from '@/types/dtos/oauthProviderDto';
 import { IOAuthProviderRepository } from './IOAuthProviderRepository';

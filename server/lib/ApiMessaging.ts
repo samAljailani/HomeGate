@@ -1,5 +1,5 @@
 export type MessageFlag = 'silent' | 'toast' | 'log';
-export type MessageSeverity = 'Debug' | 'Info' | 'Warn' | 'Error' | 'Crirical'
+export type MessageSeverity = 'Debug' | 'Info' | 'Warn' | 'Error' | 'Critical'
 
 export type ApiMessage = {
     text: string;
@@ -20,7 +20,7 @@ export type HandleApiOptions = {
 };
 
 export function concatApiMessages<T = unknown>(targetResponse: ApiResponse<T>, sourceResponse: ApiResponse<T>){
-    targetResponse.messages.concat(sourceResponse.messages);
+    targetResponse.messages.push(...sourceResponse.messages);
 }
 
 export function AddMessage<T = unknown>(response: ApiResponse<T>, messageFlags: MessageFlag[], messageSeverity: MessageSeverity, message: string){

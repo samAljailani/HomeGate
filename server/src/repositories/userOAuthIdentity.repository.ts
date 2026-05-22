@@ -1,5 +1,5 @@
 import { Injectable, Inject } from "@nestjs/common";
-import { PrismaProvider } from '@/providers/prisma.provider'
+import { PrismaProvider } from '@/infrastructure/prisma.provider'
 import { UserOAuthIdentity } from "@prisma/generated";
 import { OAuthIdentityCreateRequestDto, OAuthIdentityDeleteRequestDto, OAuthIdentityFilterOptions, OAuthIdentityLoadRequestDto } from "@/types/dtos/userOAuthIdentityDto";
 import { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository';

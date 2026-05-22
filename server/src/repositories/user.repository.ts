@@ -1,5 +1,5 @@
 import { Injectable, Inject } from "@nestjs/common";
-import { PrismaProvider } from '@/providers/prisma.provider'
+import { PrismaProvider } from '@/infrastructure/prisma.provider'
 import { UserModel } from "@prisma/generated/models";
 import { UserCreateRequestDto, UserDeleteRequestDto, UserFilterOptions, UserLoadRequestDto, UserUpdateRequestDto } from "@/types/dtos/userDto";
 import { IUserRepository } from './IUserRepository';

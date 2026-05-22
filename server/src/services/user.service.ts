@@ -1,11 +1,11 @@
 import { IUserRepository } from "@/repositories/IUserRepository";
 import { Injectable, Inject } from "@nestjs/common";
-import { UserCreateRequestDto, UserFilterOptions, UserLoadRequestDto, UserResponseDto } from '@/types/dtos/userDto';
+import { UserCreateRequestDto, UserFilterOptions, UserLoadRequestDto, UserResponseDto, UserResponseForAdmin } from '@/types/dtos/userDto';
 import { UserModel } from '@prisma/generated/models'
 import { randomInt } from "crypto";
 import { ApiResponse } from "../../lib/ApiMessaging";
 import { IUserOAuthIdentityRepository, IOAuthProviderRepository } from "@/repositories";
-import { OAuthIdentityResponseDto } from "@/types/dtos/userOAuthIdentityDto";
+import { OAuthIdentityCreateRequestDto, OAuthIdentityResponseDto } from "@/types/dtos/userOAuthIdentityDto";
 
 @Injectable()
 export class UserService{
@@ -51,13 +51,22 @@ export class UserService{
 
     } 
 
-    async getUserByEmail(email: string): Promise<UserResponseDto | null> {
+    //TODO: move this to a different Admin User service.
+    async getUserByEmail(email: string): Promise<UserResponseForAdmin | null> {
         const user = await this.userRepository.getUserByEmail(email);
-        
-        if(!!user){
-            return this.userModelToLoadRequest(user)
+        if (!!user) {
+            // Map to UserResponseForAdmin
+            return {
+                id: user.id,
+                email: user.email,
+                username: user.username,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                is_admin: user.is_admin,
+                is_deleted: user.is_deleted,
+                created_at: user.created_at,
+            };
         }
-
         return null;
     }
 
@@ -84,14 +93,33 @@ export class UserService{
 
     // #region UserOAuthIdentity Methods
     
-    async getUserOAuthIdentity(providerName: string, profileId: string): Promise<OAuthIdentityResponseDto | null> {
-        const provider = await this.oauthProviderRepository.getByName(providerName);
-        if (!provider) return null;
-        return this.userOAuthIdentityRepository.get({ provider_id: provider.id, profile_id: profileId });
+    async getUserOAuthIdentity(provider_id: number, profileId: string): Promise<OAuthIdentityResponseDto | null> {
+
+        return await this.userOAuthIdentityRepository.get({ provider_id: provider_id, profile_id: profileId });
     }
+
+    async CreateUserOAuthIdentity(request: OAuthIdentityCreateRequestDto): Promise<OAuthIdentityResponseDto | null> {
+        return await this.userOAuthIdentityRepository.post(request);
+    }
+
     // #endregion UserOAuthIdentity Methods
 
-    // #region Mappers
+    userModelToLoadRequestForAdmin(userModel: UserModel): UserResponseForAdmin {
+        const dto: UserResponseForAdmin = {
+            id: userModel.id,
+            email: userModel.email,
+            username: userModel.username,
+            first_name: userModel.first_name,
+            last_name: userModel.last_name,
+            is_admin: userModel.is_admin,
+            is_deleted: userModel.is_deleted,
+            created_at: userModel.created_at
+        }
+
+        return dto
+    }
+
+        // #region Mappers
     userModelToLoadRequest(userModel: UserModel): UserResponseDto {
         const dto: UserResponseDto = {
             id: userModel.id,

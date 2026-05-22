@@ -1,40 +1,69 @@
 import { AuthResponseDto, OpenIDRequestDto, OpenIDUserResponseDto } from '@/types/dtos/authDto'
 import { Injectable, Inject } from '@nestjs/common'
 import { UserService } from './user.service'
+import { IOAuthProviderRepository } from '@/repositories';
 import { ApiResponse, AddMessage } from '../../lib/ApiMessaging';
+import { UserResponseDto } from '@/types/dtos/userDto';
 
 @Injectable()
 export class AuthService {
-    constructor(@Inject(UserService) private userService: UserService ){}
+    constructor(
+        @Inject(UserService) private userService: UserService,
+        @Inject(IOAuthProviderRepository) private oauthProviderRepository: IOAuthProviderRepository,
+    ){}
     
     OpenIdCallback(query: OpenIDRequestDto): AuthResponseDto {
         return { accessToken: 'dummyAccessToken', refreshToken: 'dummyRefreshToken' }
     }
 
-    async googleLogin(request: OpenIDUserResponseDto): Promise<ApiResponse<AuthResponseDto>> {
-        let response: ApiResponse<AuthResponseDto> = {success: true, messages: []};
+    async googleLogin(request: OpenIDUserResponseDto): Promise<ApiResponse<UserResponseDto | null>> {
+        let response: ApiResponse<UserResponseDto | null> = {success: true, messages: []};
 
-        const user = await this.userService.getUserByEmail(request.email);
+        try{
+            const user = await this.userService.getUserByEmail(request.email);
 
-        if(user == null){
-            AddMessage(response, ['log', 'toast'], 'Warn', `Failed Login attempt for non registered user. Provider: ${request.provider}, Email: ${request.email}.`);
-            response.success = false;    
-            return response;     
+            if(user == null){
+                AddMessage(response, ['log', 'toast'], 'Warn', `Failed Login attempt for non registered user. Provider: ${request.provider}, Email: ${request.email}.`);
+                response.success = false;    
+                return response;     
+            }
+
+            if(user.is_deleted){
+                AddMessage(response, ['log'], 'Warn', `Attempted login for user with email: ${request.email}, provider: ${request.provider}`);
+                response.success = false;
+                return response;
+            }
+            
+
+            const provider = await this.oauthProviderRepository.getByName(request.provider);
+
+            if(provider == null){
+                AddMessage(response, ['log'], 'Critical', `Attempted login for user with email: ${request.email}, provider: ${request.provider}, yet the provider is not a recognized provider.`);
+                response.success = false;
+                return response;
+            }
+
+            const identity = await this.userService.getUserOAuthIdentity(provider.id, request.providerAccountId);
+
+            if(identity == null && provider) {
+                // The user is registered, but has logged in with a new identity provider.
+                // Create the identity for this user and provider.
+                await this.userService.CreateUserOAuthIdentity({
+                    user_id: user.id,
+                    provider_id: provider.id,
+                    profile_id: request.providerAccountId,
+                });
+            }
+
+            //TODO: create session and token
+            //TODO: store token
+            //TODO: set response.data
+            response.data = user as UserResponseDto;
+        } catch {
+            AddMessage(response, ['log'], 'Error', `An unhandle error occured while attempting to login user with email: ${request.email}, provider: ${request.provider}`);
+            AddMessage(response, ['toast'], 'Error', `Login Failed`);
+            response.success = false;
         }
-
-        //TODO: if user is deleted or inactive add message and return.
-
-        const identity = await this.userService.getUserOAuthIdentity(request.provider, request.providerAccountId);
-
-        if(identity == null){
-            //the user is a registed user, but has logged in with a new identity provider.
-            //TODO: create identity
-            //TODO: wrap call in a try catch or wrap the entire method implementation in a single try catch
-        }
-
-        //TODO: create session and token
-        //TODO: store token
-        //TODO: set response.data
 
         return response;
     }

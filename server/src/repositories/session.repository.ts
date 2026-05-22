@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { PrismaProvider } from '@/providers/prisma.provider';
+import { PrismaProvider } from '@/infrastructure/prisma.provider';
 import { Session } from '@prisma/generated';
 import { SessionCreateRequestDto, SessionDeleteRequestDto, SessionFilterOptions, SessionLoadRequestDto } from '@/types/dtos/sessionDto';
 import { ISessionRepository } from './ISessionRepository';
