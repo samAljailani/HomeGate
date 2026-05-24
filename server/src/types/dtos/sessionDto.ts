@@ -5,41 +5,40 @@ export class SessionLoadRequestDto {
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    hashed_token: string;
+    sid: string;
 }
 
 export class SessionCreateRequestDto {
-    @ApiProperty({ type: String })
+    @ApiProperty({ type: String, required: false })
     @IsUUID()
-    @IsNotEmpty()
-    user_id: string;
+    @IsOptional()
+    user_id?: string;
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    hashed_token: string;
+    sid: string;
+
+    @ApiProperty({ type: Object })
+    @IsNotEmpty()
+    data: any;
 
     @ApiProperty({ type: Date })
     @IsDate()
     @IsNotEmpty()
     expires_at: Date;
-
-    @ApiProperty({ type: String, required: false })
-    @IsString()
-    @IsOptional()
-    oauth_sid?: string;
 }
 
 export class SessionDeleteRequestDto {
     @ApiProperty({ type: String })
-    @IsUUID()
+    @IsString()
     @IsNotEmpty()
-    id: string;
+    sid: string;
 }
 
 export class SessionFilterOptions {
     user_id?: string;
-    hashed_token?: string;
+    sid?: string;
 }
 
 export class SessionResponseDto {
@@ -48,15 +47,18 @@ export class SessionResponseDto {
     @IsNotEmpty()
     id: string;
 
-    @ApiProperty({ type: String })
+    @ApiProperty({ type: String, required: false })
     @IsUUID()
-    @IsNotEmpty()
-    user_id: string;
+    @IsOptional()
+    user_id?: string;
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    token: string;
+    sid: string;
+
+    @ApiProperty({ type: Object })
+    data: any;
 
     @ApiProperty({ type: Date })
     expires_at: Date;

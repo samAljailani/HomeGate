@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaProvider } from '@/infrastructure/prisma.provider';
-import { AuthScheme } from '@prisma/generated';
+import { AuthScheme, AuthSchemeName } from '@prisma/generated';
 import { AuthSchemeFilterOptions, AuthSchemeLoadRequestDto } from '@/types/dtos/authSchemeDto';
 import { IAuthSchemeRepository } from './IAuthSchemeRepository';
 
@@ -18,8 +18,11 @@ export class AuthSchemeRepository implements IAuthSchemeRepository {
     }
 
     async getByName(name: string): Promise<AuthScheme | null> {
+        if (!Object.values(AuthSchemeName).includes(name as AuthSchemeName)) {
+            return null;
+        }
         return this.db.authScheme.findUnique({
-            where: { name },
+            where: { name: name as AuthSchemeName },
         });
     }
 

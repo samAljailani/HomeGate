@@ -18,6 +18,6 @@ const configRepository : ConfigRepository = new ConfigRepository();
             })
     ],
     controllers: [...controllers],
-    providers: [...services, ...strategies, ...middleware, ...repositories, ...providers ],
+    providers: [...repositories, ...providers, ...services, ...strategies, ...middleware],
 })
 export class AppModule {}

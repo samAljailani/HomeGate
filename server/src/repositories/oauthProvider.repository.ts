@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaProvider } from '@/infrastructure/prisma.provider';
-import { OAuthProvider } from '@prisma/generated';
+import { OAuthProvider, OAuthProviderName } from '@prisma/generated';
 import { OAuthProviderFilterOptions, OAuthProviderLoadRequestDto } from '@/types/dtos/oauthProviderDto';
 import { IOAuthProviderRepository } from './IOAuthProviderRepository';
 
@@ -18,8 +18,11 @@ export class OAuthProviderRepository implements IOAuthProviderRepository {
     }
 
     async getByName(name: string): Promise<OAuthProvider | null> {
+        if (!Object.values(OAuthProviderName).includes(name as OAuthProviderName)) {
+            return null;
+        }
         return this.db.oAuthProvider.findUnique({
-            where: { name },
+            where: { name: name as OAuthProviderName },
         });
     }
 

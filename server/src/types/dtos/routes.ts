@@ -28,7 +28,7 @@ function defineRoutes<T extends Record<string, string>>(basePath: string, subRou
     };
 }
 
-const routes = {
+export const routes = {
     auth: defineRoutes('/api/auth', {
         google: 'google',
         googleRedirect: 'google/redirect',
@@ -36,4 +36,8 @@ const routes = {
     test: defineRoutes('/api/test', {})
 } satisfies RoutesConfig;
 
-export default routes;
+export const clientRoutes = {
+    home: '/',
+    signIn: '/signIn',
+    signout: '/signOut',
+} as const;

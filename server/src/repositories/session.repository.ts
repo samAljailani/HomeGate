@@ -13,7 +13,7 @@ export class SessionRepository implements ISessionRepository {
 
     async get(request: SessionLoadRequestDto): Promise<Session | null> {
         return this.db.session.findUnique({
-            where: { token: request.hashed_token },
+            where: { sid: request.sid },
         });
     }
 
@@ -24,9 +24,8 @@ export class SessionRepository implements ISessionRepository {
     }
 
     async post(request: SessionCreateRequestDto): Promise<Session | null> {
-        const { hashed_token, ...rest } = request;
         return this.db.session.create({
-            data: { ...rest, token: hashed_token },
+            data: request,
         });
     }
 
@@ -36,9 +35,23 @@ export class SessionRepository implements ISessionRepository {
         });
     }
 
+    async put(sid: string, data: any, expires_at: Date): Promise<Session | null> {
+        return this.db.session.update({
+            where: { sid },
+            data: { data, expires_at },
+        });
+    }
+
+    async touch(sid: string, expires_at: Date): Promise<Session | null> {
+        return this.db.session.update({
+            where: { sid: sid },
+            data: { expires_at: expires_at },
+        });
+    }
+
     async delete(request: SessionDeleteRequestDto): Promise<void> {
-        await this.db.session.delete({
-            where: { id: request.id },
+        await this.db.session.deleteMany({
+            where: { sid: request.sid },
         });
     }
 }

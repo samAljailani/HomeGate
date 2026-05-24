@@ -1,5 +1,5 @@
 import { AuthResponseDto, OpenIDRequestDto, OpenIDUserResponseDto } from '@/types/dtos/authDto'
-import { Injectable, Inject } from '@nestjs/common'
+import { Injectable, Inject, forwardRef } from '@nestjs/common'
 import { UserService } from './user.service'
 import { IOAuthProviderRepository } from '@/repositories';
 import { ApiResponse, AddMessage } from '../../lib/ApiMessaging';
@@ -8,7 +8,7 @@ import { UserResponseDto } from '@/types/dtos/userDto';
 @Injectable()
 export class AuthService {
     constructor(
-        @Inject(UserService) private userService: UserService,
+        @Inject(forwardRef(() => UserService)) private userService: UserService,
         @Inject(IOAuthProviderRepository) private oauthProviderRepository: IOAuthProviderRepository,
     ){}
     
@@ -55,10 +55,8 @@ export class AuthService {
                 });
             }
 
-            //TODO: create session and token
-            //TODO: store token
-            //TODO: set response.data
-            response.data = user as UserResponseDto;
+            response.success = true;
+            response.data = user;
         } catch {
             AddMessage(response, ['log'], 'Error', `An unhandle error occured while attempting to login user with email: ${request.email}, provider: ${request.provider}`);
             AddMessage(response, ['toast'], 'Error', `Login Failed`);

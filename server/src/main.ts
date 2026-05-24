@@ -7,31 +7,46 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import session from 'express-session';
 import { PrismaSessionStore } from './infrastructure/prismaSession.store';
 import { ConfigRepository } from './repositories/config.repository';
+import { AppEnv } from '@homepage/types';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
     const sessionStore = app.get(PrismaSessionStore);
     const configRepository = app.get(ConfigRepository);
 
     const env = configRepository.getEnv();
 
-    //global middleware
-    app.use(
-        session({
+    const sessionOptions: session.SessionOptions = {
             secret: env.SESSION_SECRET,
             resave: false,
             saveUninitialized: false,
             name: env.SESSION_COOKIE_NAME,
-            store: sessionStore
-        }),
-    );
+            store: sessionStore,
+            cookie: {
+                httpOnly: true,
+                maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+            }
+    };
 
-    const port = process.env['PORT'] ? Number(process.env['PORT']) : 3002
+    if (env.APP_ENV === AppEnv.Production) {
+        app.set('trust proxy', 1);
 
-    configureSwagger(<NestExpressApplication>app)
+        sessionOptions.cookie = {
+            ...sessionOptions.cookie,
+            secure: true,
+            sameSite: 'lax',
+        };
+    }
 
-    await app.listen(port)
+    //global middleware
+    app.use(session(sessionOptions));
+
+    const port = env.PORT;
+
+    configureSwagger(app);
+
+    await app.listen(port);
   
     console.log(`Server listening on http://localhost:${port}`)
 }

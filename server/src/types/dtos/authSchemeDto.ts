@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsInt, IsNotEmpty, IsString } from 'class-validator'
+import { AuthSchemeName } from '@prisma/generated';
+import { IsEnum, IsInt, IsNotEmpty } from 'class-validator'
 
 export class AuthSchemeLoadRequestDto {
     @ApiProperty({ type: Number })
@@ -10,7 +11,7 @@ export class AuthSchemeLoadRequestDto {
 
 export class AuthSchemeFilterOptions {
     id?: number;
-    name?: string;
+    name?: AuthSchemeName;
 }
 
 export class AuthSchemeResponseDto {
@@ -19,8 +20,8 @@ export class AuthSchemeResponseDto {
     @IsNotEmpty()
     id: number;
 
-    @ApiProperty({ type: String })
-    @IsString()
+    @ApiProperty({ enum: AuthSchemeName })
+    @IsEnum(AuthSchemeName)
     @IsNotEmpty()
-    name: string;
+    name: AuthSchemeName;
 }

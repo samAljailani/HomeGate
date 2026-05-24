@@ -1,7 +1,8 @@
-import { EnvData } from '@homepage/types';
+import { AppEnv, EnvData } from '@homepage/types';
 import { Injectable } from '@nestjs/common';
 
 const getEnv = (): EnvData => {
+  const APP_ENV = process.env['APP_ENV'];
   const CLIENT_RELATIVE_STATIC_PATH = process.env['CLIENT_RELATIVE_STATIC_PATH'];
   const PORT = process.env['PORT'];
   const SERVER_BASE_URL = process.env['SERVER_BASE_URL'];
@@ -12,6 +13,7 @@ const getEnv = (): EnvData => {
   const SESSION_COOKIE_NAME = process.env['SESSION_COOKIE_NAME'];
 
   const missing = [
+    !APP_ENV && 'APP_ENV',
     !CLIENT_RELATIVE_STATIC_PATH && 'CLIENT_RELATIVE_STATIC_PATH',
     !PORT && 'PORT',
     !SERVER_BASE_URL && 'SERVER_BASE_URL',
@@ -26,7 +28,12 @@ const getEnv = (): EnvData => {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
+  if (!Object.values(AppEnv).includes(APP_ENV as AppEnv)) {
+    throw new Error(`Invalid APP_ENV: ${APP_ENV}. Must be one of: ${Object.values(AppEnv).join(', ')}`);
+  }
+
   return {
+    APP_ENV: APP_ENV as AppEnv,
     staticClientFilesPath: CLIENT_RELATIVE_STATIC_PATH!,
     PORT: PORT!,
     SERVER_BASE_URL: SERVER_BASE_URL!,

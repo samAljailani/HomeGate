@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsInt, IsNotEmpty, IsString } from 'class-validator'
+import { OAuthProviderName } from '@prisma/generated';
+import { IsEnum, IsInt, IsNotEmpty } from 'class-validator'
 
 export class OAuthProviderLoadRequestDto {
     @ApiProperty({ type: Number })
@@ -10,7 +11,7 @@ export class OAuthProviderLoadRequestDto {
 
 export class OAuthProviderFilterOptions {
     id?: number;
-    name?: string;
+    name?: OAuthProviderName;
 }
 
 export class OAuthProviderResponseDto {
@@ -19,8 +20,8 @@ export class OAuthProviderResponseDto {
     @IsNotEmpty()
     id: number;
 
-    @ApiProperty({ type: String })
-    @IsString()
+    @ApiProperty({ enum: OAuthProviderName })
+    @IsEnum(OAuthProviderName)
     @IsNotEmpty()
-    name: string;
+    name: OAuthProviderName;
 }
