@@ -1,6 +1,7 @@
-import { APP_GUARD } from '@nestjs/core';
-import { GoogleOAuthGuard } from "@/middleware/google-oauth.guard";
-import { AuthGuard } from '@/middleware/auth.guard';
+import { APP_GUARD } from '@nestjs/core'
+
+import { AuthGuard } from '@/middleware/auth.guard'
+import { GoogleOAuthGuard } from '@/middleware/google-oauth.guard'
 
 export const middleware = [
     GoogleOAuthGuard,

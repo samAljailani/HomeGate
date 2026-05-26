@@ -9,23 +9,23 @@
  */
 
 type RouteGroup<T extends Record<string, string>> = {
-    basePath: string;
-    subPath: T;
-} & { [K in keyof T]: string };
+    basePath: string
+    subPath: T
+} & { [K in keyof T]: string }
 
 // RoutesConfig avoids RouteGroup<Record<string,string>> — subPath (object) conflicts with the index signature
-type RoutesConfig = Record<string, { basePath: string; subPath: Record<string, string> }>;
+type RoutesConfig = Record<string, { basePath: string; subPath: Record<string, string> }>
 
 function defineRoutes<T extends Record<string, string>>(basePath: string, subRoutes: T): RouteGroup<T> {
     const full = Object.fromEntries(
         Object.entries(subRoutes).map(([k, v]) => [k, `${basePath}/${v}`.replace(/\/+/g, '/')])
-    ) as { [K in keyof T]: string };
+    ) as { [K in keyof T]: string }
 
     return {
         basePath,
         ...full,
         subPath: subRoutes,
-    };
+    }
 }
 
 export const routes = {
@@ -33,11 +33,11 @@ export const routes = {
         google: 'google',
         googleRedirect: 'google/redirect',
     }),
-    test: defineRoutes('/api/test', {})
-} satisfies RoutesConfig;
+    test: defineRoutes('/api/test', {}),
+} satisfies RoutesConfig
 
 export const clientRoutes = {
     home: '/',
     signIn: '/signIn',
     signout: '/signOut',
-} as const;
+} as const

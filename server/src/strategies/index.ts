@@ -1,5 +1,3 @@
-import { GoogleStrategy } from "./google.strategies";
+import { GoogleStrategy } from './google.strategies'
 
-export const strategies = [
-    GoogleStrategy,
-]
+export const strategies = [GoogleStrategy]

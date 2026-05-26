@@ -1,18 +1,19 @@
 import { ConfigRepository } from '@/repositories/config.repository'
-import { UserRepository } from './user.repository'
-import { UserOAuthIdentityRepository } from './userOAuthIdentity.repository'
-import { OAuthProviderRepository } from './oauthProvider.repository'
-import { AuthSchemeRepository } from './authScheme.repository'
-import { ServiceRepository } from './service.repository'
-import { UserAccountRepository } from './userAccount.repository'
-import { SessionRepository } from './session.repository'
-import { IUserRepository } from './IUserRepository'
-import { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository'
-import { IOAuthProviderRepository } from './IOAuthProviderRepository'
+
 import { IAuthSchemeRepository } from './IAuthSchemeRepository'
+import { IOAuthProviderRepository } from './IOAuthProviderRepository'
 import { IServiceRepository } from './IServiceRepository'
-import { IUserAccountRepository } from './IUserAccountRepository'
 import { ISessionRepository } from './ISessionRepository'
+import { IUserAccountRepository } from './IUserAccountRepository'
+import { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository'
+import { IUserRepository } from './IUserRepository'
+import { AuthSchemeRepository } from './authScheme.repository'
+import { OAuthProviderRepository } from './oauthProvider.repository'
+import { ServiceRepository } from './service.repository'
+import { SessionRepository } from './session.repository'
+import { UserRepository } from './user.repository'
+import { UserAccountRepository } from './userAccount.repository'
+import { UserOAuthIdentityRepository } from './userOAuthIdentity.repository'
 
 export { IUserRepository } from './IUserRepository'
 export { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository'
@@ -24,11 +25,14 @@ export { ISessionRepository } from './ISessionRepository'
 
 export const repositories = [
     ConfigRepository,
-    { provide: IUserRepository,             useClass: UserRepository },
-    { provide: IUserOAuthIdentityRepository, useClass: UserOAuthIdentityRepository },
-    { provide: IOAuthProviderRepository,    useClass: OAuthProviderRepository },
-    { provide: IAuthSchemeRepository,       useClass: AuthSchemeRepository },
-    { provide: IServiceRepository,          useClass: ServiceRepository },
-    { provide: IUserAccountRepository,      useClass: UserAccountRepository },
-    { provide: ISessionRepository,          useClass: SessionRepository },
+    { provide: IUserRepository, useClass: UserRepository },
+    {
+        provide: IUserOAuthIdentityRepository,
+        useClass: UserOAuthIdentityRepository,
+    },
+    { provide: IOAuthProviderRepository, useClass: OAuthProviderRepository },
+    { provide: IAuthSchemeRepository, useClass: AuthSchemeRepository },
+    { provide: IServiceRepository, useClass: ServiceRepository },
+    { provide: IUserAccountRepository, useClass: UserAccountRepository },
+    { provide: ISessionRepository, useClass: SessionRepository },
 ]

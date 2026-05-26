@@ -5,63 +5,63 @@ export class AuthResponseDto {
     @ApiProperty({ description: 'JWT access token' })
     @IsString()
     @IsNotEmpty()
-    accessToken: string;
+    accessToken: string
 
     @ApiProperty({ description: 'JWT refresh token' })
     @IsString()
     @IsNotEmpty()
-    refreshToken: string;
+    refreshToken: string
 }
 
 export class OpenIDRequestDto {
     @IsString()
     @IsNotEmpty()
-    clientID: string;
+    clientID: string
 
     @IsString()
     @IsNotEmpty()
-    clientSecret: string;
+    clientSecret: string
 
     @IsString()
     @IsNotEmpty()
-    callbackURL: string;
+    callbackURL: string
 
     @IsArray()
     @IsString({ each: true })
     @IsNotEmpty()
-    scope: string[];
+    scope: string[]
 }
 
 export class OpenIDUserResponseDto {
     @IsString()
     @IsNotEmpty()
-    providerAccountId: string;
+    providerAccountId: string
 
     @IsString()
     @IsNotEmpty()
-    email: string;
+    email: string
 
     @IsOptional()
     @IsString()
-    firstName?: string;
+    firstName?: string
 
     @IsOptional()
     @IsString()
-    lastName?: string;
+    lastName?: string
 
     @IsOptional()
     @IsString()
-    picture?: string;
+    picture?: string
 
     @IsString()
     @IsNotEmpty()
-    accessToken: string;
+    accessToken: string
 
     @IsString()
     @IsNotEmpty()
-    refreshToken: string;
+    refreshToken: string
 
     @IsString()
     @IsNotEmpty()
-    provider: string;
+    provider: string
 }

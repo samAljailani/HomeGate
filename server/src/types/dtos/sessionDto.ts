@@ -5,64 +5,64 @@ export class SessionLoadRequestDto {
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    sid: string;
+    sid: string
 }
 
 export class SessionCreateRequestDto {
     @ApiProperty({ type: String, required: false })
     @IsUUID()
     @IsOptional()
-    userId?: string;
+    userId?: string
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    sid: string;
+    sid: string
 
     @ApiProperty({ type: Object })
     @IsNotEmpty()
-    data: any;
+    data: any
 
     @ApiProperty({ type: Date })
     @IsDate()
     @IsNotEmpty()
-    expiresAt: Date;
+    expiresAt: Date
 }
 
 export class SessionDeleteRequestDto {
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    sid: string;
+    sid: string
 }
 
 export class SessionFilterOptions {
-    userId?: string;
-    sid?: string;
+    userId?: string
+    sid?: string
 }
 
 export class SessionResponseDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    id: string;
+    id: string
 
     @ApiProperty({ type: String, required: false })
     @IsUUID()
     @IsOptional()
-    userId?: string;
+    userId?: string
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    sid: string;
+    sid: string
 
     @ApiProperty({ type: Object })
-    data: any;
+    data: any
 
     @ApiProperty({ type: Date })
-    expiresAt: Date;
+    expiresAt: Date
 
     @ApiProperty({ type: Date })
-    createdAt: Date;
+    createdAt: Date
 }

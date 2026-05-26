@@ -5,89 +5,89 @@ export class UserAccountLoadRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    userId: string;
+    userId: string
 
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    serviceId: number;
+    serviceId: number
 }
 
 export class UserAccountCreateRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    userId: string;
+    userId: string
 
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    serviceId: number;
+    serviceId: number
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    username: string;
+    username: string
 }
 
 export class UserAccountUpdateRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    userId: string;
+    userId: string
 
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    serviceId: number;
+    serviceId: number
 
     @ApiProperty({ type: String, required: false })
     @IsString()
-    username?: string;
+    username?: string
 
     @ApiProperty({ type: Boolean, required: false })
     @IsBoolean()
-    isActive?: boolean;
+    isActive?: boolean
 }
 
 export class UserAccountDeleteRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    userId: string;
+    userId: string
 
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    serviceId: number;
+    serviceId: number
 }
 
 export class UserAccountFilterOptions {
-    userId?: string;
-    serviceId?: number;
-    isActive?: boolean;
+    userId?: string
+    serviceId?: number
+    isActive?: boolean
 }
 
 export class UserAccountResponseDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    userId: string;
+    userId: string
 
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    serviceId: number;
+    serviceId: number
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    username: string;
+    username: string
 
     @ApiProperty({ type: Boolean })
     @IsBoolean()
-    isActive: boolean;
+    isActive: boolean
 
     @ApiProperty({ type: Date })
-    createdAt: Date;
+    createdAt: Date
 }

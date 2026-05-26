@@ -5,62 +5,62 @@ export class ServiceLoadRequestDto {
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    id: number;
+    id: number
 }
 
 export class ServiceCreateRequestDto {
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    name: string;
+    name: string
 
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    authSchemeId: number;
+    authSchemeId: number
 }
 
 export class ServiceUpdateRequestDto {
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    id: number;
+    id: number
 
     @ApiProperty({ type: String, required: false })
     @IsString()
-    name?: string;
+    name?: string
 
     @ApiProperty({ type: Number, required: false })
     @IsInt()
-    authSchemeId?: number;
+    authSchemeId?: number
 }
 
 export class ServiceDeleteRequestDto {
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    id: number;
+    id: number
 }
 
 export class ServiceFilterOptions {
-    id?: number;
-    name?: string;
-    authSchemeId?: number;
+    id?: number
+    name?: string
+    authSchemeId?: number
 }
 
 export class ServiceResponseDto {
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    id: number;
+    id: number
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    name: string;
+    name: string
 
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    authSchemeId: number;
+    authSchemeId: number
 }

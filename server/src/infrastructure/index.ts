@@ -1,9 +1,6 @@
-import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { PrismaSessionStore } from './prismaSession.store'
 import { CryptographyProvider } from '@/infrastructure/cryptography.provider'
+import { PrismaProvider } from '@/infrastructure/prisma.provider'
 
-export const providers = [
-    CryptographyProvider,
-    PrismaProvider,
-    PrismaSessionStore,
-]
+import { PrismaSessionStore } from './prismaSession.store'
+
+export const providers = [CryptographyProvider, PrismaProvider, PrismaSessionStore]

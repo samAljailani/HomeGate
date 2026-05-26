@@ -1,16 +1,20 @@
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { UserOAuthIdentity } from "@prisma/generated";
-import { OAuthIdentityCreateRequestDto, OAuthIdentityDeleteRequestDto, OAuthIdentityFilterOptions, OAuthIdentityLoadRequestDto } from "@/types/dtos/userOAuthIdentityDto";
-import { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository';
+import { UserOAuthIdentity } from '@prisma/generated'
+import {
+    OAuthIdentityCreateRequestDto,
+    OAuthIdentityDeleteRequestDto,
+    OAuthIdentityFilterOptions,
+    OAuthIdentityLoadRequestDto,
+} from '@/types/dtos/userOAuthIdentityDto'
+import { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository'
 
 @Injectable()
 export class UserOAuthIdentityRepository implements IUserOAuthIdentityRepository {
-    private db: PrismaProvider;
-    constructor(@Inject(PrismaProvider) db: PrismaProvider){
-        this.db = db;
+    private db: PrismaProvider
+    constructor(@Inject(PrismaProvider) db: PrismaProvider) {
+        this.db = db
     }
-
 
     async get(request: OAuthIdentityLoadRequestDto): Promise<UserOAuthIdentity | null> {
         const user = await this.db.userOAuthIdentity.findUnique({
@@ -18,26 +22,26 @@ export class UserOAuthIdentityRepository implements IUserOAuthIdentityRepository
                 providerId_profileId: {
                     providerId: request.providerId,
                     profileId: request.profileId,
-                }
-            }
-        });
+                },
+            },
+        })
 
-        return user;
+        return user
     }
-    
+
     async getMany(filter: OAuthIdentityFilterOptions, take?: number): Promise<UserOAuthIdentity[]> {
         return this.db.userOAuthIdentity.findMany({
             where: { ...filter },
             ...(take !== undefined && { take }),
-        });
+        })
     }
 
     async post(request: OAuthIdentityCreateRequestDto): Promise<UserOAuthIdentity | null> {
         const user = await this.db.userOAuthIdentity.create({
-            data: request
-        });
+            data: request,
+        })
 
-        return user;
+        return user
     }
 
     async delete(request: OAuthIdentityDeleteRequestDto): Promise<void> {
@@ -48,14 +52,14 @@ export class UserOAuthIdentityRepository implements IUserOAuthIdentityRepository
                     profileId: request.profileId,
                 },
             },
-        });
+        })
     }
 
     async existsByProviderAndProfileId(providerId: number, profileId: string): Promise<boolean> {
         const count = await this.db.userOAuthIdentity.count({
             where: { providerId, profileId },
-        });
-        return count > 0;
+        })
+        return count > 0
     }
 
     async getByUsername(username: string): Promise<UserOAuthIdentity[]> {
@@ -63,7 +67,6 @@ export class UserOAuthIdentityRepository implements IUserOAuthIdentityRepository
             where: {
                 user: { username },
             },
-        });
+        })
     }
-
 }

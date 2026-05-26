@@ -1,53 +1,53 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsBoolean, IsDate, IsEmail, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsDate, IsEmail, IsNotEmpty, IsString, IsUUID } from 'class-validator'
 
-export class UserFindOptions{
+export class UserFindOptions {
     withDeleted?: Boolean
     withActive?: Boolean
 }
 
 export class UserFilterOptions {
-    id?: string;
-    email?: string;
-    username?: string;
-    firstName?: string;
-    lastName?: string;
-    isAdmin?: boolean;
-    isDeleted?: boolean;
+    id?: string
+    email?: string
+    username?: string
+    firstName?: string
+    lastName?: string
+    isAdmin?: boolean
+    isDeleted?: boolean
 }
 
-export class UserLoadRequestDto{
+export class UserLoadRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    userId: string;
+    userId: string
 }
 
-export class UserCreateRequestDto{
+export class UserCreateRequestDto {
     @ApiProperty({ type: String })
-    @IsString() 
+    @IsString()
     @IsNotEmpty()
-    password: string;
+    password: string
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    username: string;
-    
-    @ApiProperty({ type: String }) 
+    username: string
+
+    @ApiProperty({ type: String })
     @IsEmail()
     @IsNotEmpty()
-    email: string;
+    email: string
 
     @ApiProperty({ type: String })
     @IsString()
-    @IsNotEmpty() 
-    firstName: string;
+    @IsNotEmpty()
+    firstName: string
 
-    @ApiProperty({ type: String }) 
+    @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    lastName: string;
+    lastName: string
     //@ApiProperty({ type: Boolean }) is_admin: boolean;
 }
 
@@ -55,69 +55,69 @@ export class UserResponseDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    id: string;
+    id: string
 
     @ApiProperty({ type: String })
     @IsEmail()
     @IsNotEmpty()
-    email: string;
+    email: string
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    username: string;
+    username: string
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    firstName: string;
+    firstName: string
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    lastName: string;
+    lastName: string
 
     @ApiProperty({ type: Boolean })
     @IsBoolean()
-    isAdmin: boolean;
+    isAdmin: boolean
 }
 
 export class UserUpdateRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    userId: string;
+    userId: string
 
     @ApiProperty({ type: String, required: false })
     @IsString()
-    firstName?: string;
+    firstName?: string
 
     @ApiProperty({ type: String, required: false })
     @IsString()
-    lastName?: string;
+    lastName?: string
 
     @ApiProperty({ type: String, required: false })
     @IsString()
-    username?: string;
+    username?: string
 
     @ApiProperty({ type: String, required: false })
     @IsString()
-    password?: string;
+    password?: string
 }
 
 export class UserDeleteRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    userId: string;
+    userId: string
 }
 
 export class UserResponseForAdmin extends UserResponseDto {
     @ApiProperty({ type: Boolean })
     @IsBoolean()
-    isDeleted: boolean;
+    isDeleted: boolean
 
     @ApiProperty({ type: Date })
     @IsDate()
-    createdAt: Date;
+    createdAt: Date
 }
