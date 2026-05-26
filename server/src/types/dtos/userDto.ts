@@ -48,7 +48,6 @@ export class UserCreateRequestDto {
     @IsString()
     @IsNotEmpty()
     lastName: string
-    //@ApiProperty({ type: Boolean }) is_admin: boolean;
 }
 
 export class UserResponseDto {
