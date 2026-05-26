@@ -15,9 +15,9 @@ export class UserOAuthIdentityRepository implements IUserOAuthIdentityRepository
     async get(request: OAuthIdentityLoadRequestDto): Promise<UserOAuthIdentity | null> {
         const user = await this.db.userOAuthIdentity.findUnique({
             where: {
-                provider_id_profile_id: {
-                    provider_id: request.provider_id,
-                    profile_id: request.profile_id,
+                providerId_profileId: {
+                    providerId: request.providerId,
+                    profileId: request.profileId,
                 }
             }
         });
@@ -34,7 +34,7 @@ export class UserOAuthIdentityRepository implements IUserOAuthIdentityRepository
 
     async post(request: OAuthIdentityCreateRequestDto): Promise<UserOAuthIdentity | null> {
         const user = await this.db.userOAuthIdentity.create({
-            data: { ...request }
+            data: request
         });
 
         return user;
@@ -43,17 +43,17 @@ export class UserOAuthIdentityRepository implements IUserOAuthIdentityRepository
     async delete(request: OAuthIdentityDeleteRequestDto): Promise<void> {
         await this.db.userOAuthIdentity.delete({
             where: {
-                provider_id_profile_id: {
-                    provider_id: request.provider_id,
-                    profile_id: request.profile_id,
+                providerId_profileId: {
+                    providerId: request.providerId,
+                    profileId: request.profileId,
                 },
             },
         });
     }
 
-    async existsByProviderAndProfileId(provider_id: number, profile_id: string): Promise<boolean> {
+    async existsByProviderAndProfileId(providerId: number, profileId: string): Promise<boolean> {
         const count = await this.db.userOAuthIdentity.count({
-            where: { provider_id, profile_id },
+            where: { providerId, profileId },
         });
         return count > 0;
     }

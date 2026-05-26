@@ -31,7 +31,7 @@ export class ServiceRepository implements IServiceRepository {
 
     async post(request: ServiceCreateRequestDto): Promise<Service | null> {
         return this.db.service.create({
-            data: { ...request },
+            data: request,
         });
     }
 

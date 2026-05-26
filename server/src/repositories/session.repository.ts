@@ -29,23 +29,23 @@ export class SessionRepository implements ISessionRepository {
         });
     }
 
-    async getByUserId(user_id: string): Promise<Session[]> {
+    async getByUserId(userId: string): Promise<Session[]> {
         return this.db.session.findMany({
-            where: { user_id },
+            where: { userId },
         });
     }
 
-    async put(sid: string, data: any, expires_at: Date): Promise<Session | null> {
+    async put(sid: string, data: any, expiresAt: Date): Promise<Session | null> {
         return this.db.session.update({
             where: { sid },
-            data: { data, expires_at },
+            data: { data, expiresAt },
         });
     }
 
-    async touch(sid: string, expires_at: Date): Promise<Session | null> {
+    async touch(sid: string, expiresAt: Date): Promise<Session | null> {
         return this.db.session.update({
             where: { sid: sid },
-            data: { expires_at: expires_at },
+            data: { expiresAt: expiresAt },
         });
     }
 

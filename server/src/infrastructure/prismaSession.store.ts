@@ -14,8 +14,8 @@ export class PrismaSessionStore extends session.Store {
 
   async get(sid: string, callback: (err: unknown, session?: session.SessionData | null) => void): Promise<void> {
     try {
-      const hashed_sid = this.cryptographyProvider.HashSha256(sid).toString('hex');
-      const sessionRecord = await this.sessionRepository.get({ sid: hashed_sid });
+      const hashedSid = this.cryptographyProvider.HashSha256(sid).toString('hex');
+      const sessionRecord = await this.sessionRepository.get({ sid: hashedSid });
       
       if (!sessionRecord) {
         return callback(null, null);
@@ -36,21 +36,21 @@ export class PrismaSessionStore extends session.Store {
 
   async set(sid: string, sessionData: session.SessionData, callback?: (err?: unknown) => void): Promise<void> {
     try {
-      const hashed_sid = this.cryptographyProvider.HashSha256(sid).toString('hex');
-      const expires_at = sessionData.cookie?.expires 
+      const hashedSid = this.cryptographyProvider.HashSha256(sid).toString('hex');
+      const expiresAt = sessionData.cookie?.expires 
         ? new Date(sessionData.cookie.expires) 
         : new Date(Date.now() + (sessionData.cookie.maxAge || 0));
       
-      const existing = await this.sessionRepository.get({ sid: hashed_sid });
+      const existing = await this.sessionRepository.get({ sid: hashedSid });
       
       if (existing) {
-        await this.sessionRepository.put(hashed_sid, sessionData, expires_at);
+        await this.sessionRepository.put(hashedSid, sessionData, expiresAt);
       } else {
         await this.sessionRepository.post({
-          sid: hashed_sid,
+          sid: hashedSid,
           data: sessionData,
-          expires_at,
-          user_id: (sessionData as any).userId || undefined,
+          expiresAt,
+          userId: (sessionData as any).userId || undefined,
         });
       }
       
@@ -62,8 +62,8 @@ export class PrismaSessionStore extends session.Store {
 
   async destroy(sid: string, callback?: (err?: unknown) => void): Promise<void> {
     try {
-      const hashed_sid = this.cryptographyProvider.HashSha256(sid).toString('hex');
-      await this.sessionRepository.delete({ sid: hashed_sid });
+      const hashedSid = this.cryptographyProvider.HashSha256(sid).toString('hex');
+      await this.sessionRepository.delete({ sid: hashedSid });
       callback?.();
     } catch (error) {
       callback?.(error);

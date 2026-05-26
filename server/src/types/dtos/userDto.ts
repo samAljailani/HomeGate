@@ -10,17 +10,17 @@ export class UserFilterOptions {
     id?: string;
     email?: string;
     username?: string;
-    first_name?: string;
-    last_name?: string;
-    is_admin?: boolean;
-    is_deleted?: boolean;
+    firstName?: string;
+    lastName?: string;
+    isAdmin?: boolean;
+    isDeleted?: boolean;
 }
 
 export class UserLoadRequestDto{
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    user_id: string;
+    userId: string;
 }
 
 export class UserCreateRequestDto{
@@ -42,12 +42,12 @@ export class UserCreateRequestDto{
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty() 
-    first_name: string;
+    firstName: string;
 
     @ApiProperty({ type: String }) 
     @IsString()
     @IsNotEmpty()
-    last_name: string;
+    lastName: string;
     //@ApiProperty({ type: Boolean }) is_admin: boolean;
 }
 
@@ -70,31 +70,31 @@ export class UserResponseDto {
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    first_name: string;
+    firstName: string;
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    last_name: string;
+    lastName: string;
 
     @ApiProperty({ type: Boolean })
     @IsBoolean()
-    is_admin: boolean;
+    isAdmin: boolean;
 }
 
 export class UserUpdateRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    user_id: string;
+    userId: string;
 
     @ApiProperty({ type: String, required: false })
     @IsString()
-    first_name?: string;
+    firstName?: string;
 
     @ApiProperty({ type: String, required: false })
     @IsString()
-    last_name?: string;
+    lastName?: string;
 
     @ApiProperty({ type: String, required: false })
     @IsString()
@@ -109,15 +109,15 @@ export class UserDeleteRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    user_id: string;
+    userId: string;
 }
 
 export class UserResponseForAdmin extends UserResponseDto {
     @ApiProperty({ type: Boolean })
     @IsBoolean()
-    is_deleted: boolean;
+    isDeleted: boolean;
 
     @ApiProperty({ type: Date })
     @IsDate()
-    created_at: Date;
+    createdAt: Date;
 }

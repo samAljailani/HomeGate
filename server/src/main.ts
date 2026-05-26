@@ -7,7 +7,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import session from 'express-session';
 import { PrismaSessionStore } from './infrastructure/prismaSession.store';
 import { ConfigRepository } from './repositories/config.repository';
-import { AppEnv } from '@homepage/types';
+import { AppEnv } from '@/types/models/EnvData';
 
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);

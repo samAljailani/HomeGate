@@ -14,7 +14,6 @@
     }
   },
   "references": [
-  { "path": "./packages/types" },
   { "path": "./server" },
   { "path": "./client"}
   ],

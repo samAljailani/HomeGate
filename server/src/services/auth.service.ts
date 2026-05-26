@@ -1,4 +1,4 @@
-import { AuthResponseDto, OpenIDRequestDto, OpenIDUserResponseDto } from '@/types/dtos/authDto'
+import { OpenIDUserResponseDto } from '@/types/dtos/authDto'
 import { Injectable, Inject, forwardRef } from '@nestjs/common'
 import { UserService } from './user.service'
 import { IOAuthProviderRepository } from '@/repositories';
@@ -11,10 +11,6 @@ export class AuthService {
         @Inject(forwardRef(() => UserService)) private userService: UserService,
         @Inject(IOAuthProviderRepository) private oauthProviderRepository: IOAuthProviderRepository,
     ){}
-    
-    OpenIdCallback(query: OpenIDRequestDto): AuthResponseDto {
-        return { accessToken: 'dummyAccessToken', refreshToken: 'dummyRefreshToken' }
-    }
 
     async googleLogin(request: OpenIDUserResponseDto): Promise<ApiResponse<UserResponseDto | null>> {
         let response: ApiResponse<UserResponseDto | null> = {success: true, messages: []};
@@ -28,7 +24,7 @@ export class AuthService {
                 return response;     
             }
 
-            if(user.is_deleted){
+            if(user.isDeleted){
                 AddMessage(response, ['log'], 'Warn', `Attempted login for user with email: ${request.email}, provider: ${request.provider}`);
                 response.success = false;
                 return response;
@@ -49,9 +45,9 @@ export class AuthService {
                 // The user is registered, but has logged in with a new identity provider.
                 // Create the identity for this user and provider.
                 await this.userService.CreateUserOAuthIdentity({
-                    user_id: user.id,
-                    provider_id: provider.id,
-                    profile_id: request.providerAccountId,
+                    userId: user.id,
+                    providerId: provider.id,
+                    profileId: request.providerAccountId,
                 });
             }
 

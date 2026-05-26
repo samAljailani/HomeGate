@@ -1,4 +1,4 @@
-import { AppEnv, EnvData } from '@homepage/types';
+import { AppEnv, EnvData } from '@/types/models/EnvData';
 import { Injectable } from '@nestjs/common';
 
 const getEnv = (): EnvData => {

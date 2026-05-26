@@ -14,7 +14,7 @@ export class UserRepository implements IUserRepository {
 
     async get(request: UserLoadRequestDto) : Promise<UserModel | null>{
         const user = await this.db.user.findUnique({
-            where : {id: request.user_id}
+            where : {id: request.userId}
         });
 
         return user;
@@ -37,7 +37,7 @@ export class UserRepository implements IUserRepository {
 
     async post(request: UserCreateRequestDto) : Promise<UserModel | null> {
         const user = await this.db.user.create({
-            data: { ...request }
+            data: request
         });
 
         return user;
@@ -49,16 +49,16 @@ export class UserRepository implements IUserRepository {
     }
 
     async put(request: UserUpdateRequestDto): Promise<UserModel | null> {
-        const { user_id, ...data } = request;
+        const { userId, ...data } = request;
         return this.db.user.update({
-            where: { id: user_id },
+            where: { id: userId },
             data,
         });
     }
 
     async delete(request: UserDeleteRequestDto): Promise<void> {
         await this.db.user.delete({
-            where: { id: request.user_id },
+            where: { id: request.userId },
         });
     }
 

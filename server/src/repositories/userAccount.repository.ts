@@ -14,9 +14,9 @@ export class UserAccountRepository implements IUserAccountRepository {
     async get(request: UserAccountLoadRequestDto): Promise<UserAccount | null> {
         return this.db.userAccount.findUnique({
             where: {
-                user_id_service_id: {
-                    user_id: request.user_id,
-                    service_id: request.service_id,
+                userId_serviceId: {
+                    userId: request.userId,
+                    serviceId: request.serviceId,
                 },
             },
         });
@@ -30,15 +30,15 @@ export class UserAccountRepository implements IUserAccountRepository {
 
     async post(request: UserAccountCreateRequestDto): Promise<UserAccount | null> {
         return this.db.userAccount.create({
-            data: { ...request },
+            data: request,
         });
     }
 
     async put(request: UserAccountUpdateRequestDto): Promise<UserAccount | null> {
-        const { user_id, service_id, ...data } = request;
+        const { userId, serviceId, ...data } = request;
         return this.db.userAccount.update({
             where: {
-                user_id_service_id: { user_id, service_id },
+                userId_serviceId: { userId, serviceId },
             },
             data,
         });
@@ -47,9 +47,9 @@ export class UserAccountRepository implements IUserAccountRepository {
     async delete(request: UserAccountDeleteRequestDto): Promise<void> {
         await this.db.userAccount.delete({
             where: {
-                user_id_service_id: {
-                    user_id: request.user_id,
-                    service_id: request.service_id,
+                userId_serviceId: {
+                    userId: request.userId,
+                    serviceId: request.serviceId,
                 },
             },
         });

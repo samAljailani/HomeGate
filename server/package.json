@@ -1,7 +1,7 @@
 {
-  "name": "hello-nest",
+  "name": "@homegate/server",
   "version": "0.0.1",
-  "description": "",
+  "description": "HomeGate Server Application",
   "author": "",
   "private": true,
   "license": "UNLICENSED",

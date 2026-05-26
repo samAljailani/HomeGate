@@ -9,8 +9,6 @@
       "@/*": ["./src/*"],
       "@prisma/generated": ["./prisma/generated/client.ts"],
       "@prisma/generated/*": ["./prisma/generated/*"],
-      "@homepage/types": ["../packages/types/src"],
-      "@homepage/types/*": ["../packages/types/src/*"]
     },
 
     // Environment Settings

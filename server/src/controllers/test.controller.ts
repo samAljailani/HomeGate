@@ -1,7 +1,6 @@
 import { Body, Controller, Get, Inject, Post, Query, Request } from '@nestjs/common'
 import { ApiBody, ApiQuery } from '@nestjs/swagger'
 import { TestService } from '@/services/test.service'
-import { EnvResponse } from '@homepage/types'
 import { routes } from '../types/dtos/routes'
 import { IUserRepository } from '@/repositories'
 import { UserModel } from '@prisma/generated/models';
@@ -16,14 +15,6 @@ export class TestController {
         @Inject(IUserRepository) private userRepository: IUserRepository
     ) {}
 
-    @Public()
-    @Get()
-    getTestData(): EnvResponse {
-        this.testService.getMessage();
-        const envResponse = new EnvResponse('/static');
-        return envResponse;
-    }
-
     @Get('/protected')
     getProtectedData(@Request() req: ExpressRequest) {
         const userId = req.session?.userId;
@@ -32,9 +23,9 @@ export class TestController {
 
     @Public()
     @Get('/user')
-    @ApiQuery({ name: 'user_id', type: String })
-    async getUser(@Query('user_id') user_id: string): Promise<UserModel | null> {
-        return this.userRepository.get({ user_id });
+    @ApiQuery({ name: 'userId', type: String })
+    async getUser(@Query('userId') userId: string): Promise<UserModel | null> {
+        return this.userRepository.get({ userId });
     }
 
     @Public()

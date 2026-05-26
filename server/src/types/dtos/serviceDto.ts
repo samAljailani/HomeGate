@@ -17,7 +17,7 @@ export class ServiceCreateRequestDto {
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    auth_scheme_id: number;
+    authSchemeId: number;
 }
 
 export class ServiceUpdateRequestDto {
@@ -32,7 +32,7 @@ export class ServiceUpdateRequestDto {
 
     @ApiProperty({ type: Number, required: false })
     @IsInt()
-    auth_scheme_id?: number;
+    authSchemeId?: number;
 }
 
 export class ServiceDeleteRequestDto {
@@ -45,7 +45,7 @@ export class ServiceDeleteRequestDto {
 export class ServiceFilterOptions {
     id?: number;
     name?: string;
-    auth_scheme_id?: number;
+    authSchemeId?: number;
 }
 
 export class ServiceResponseDto {
@@ -62,5 +62,5 @@ export class ServiceResponseDto {
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    auth_scheme_id: number;
+    authSchemeId: number;
 }

@@ -5,47 +5,47 @@ export class OAuthIdentityCreateRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    user_id: string;
+    userId: string;
 
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    provider_id: number;
+    providerId: number;
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    profile_id: string;
+    profileId: string;
 }
 
 export class OAuthIdentityLoadRequestDto {
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    provider_id: number;
+    providerId: number;
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    profile_id: string;
+    profileId: string;
 }
 
 export class OAuthIdentityFilterOptions {
-    user_id?: string;
-    provider_id?: number;
-    profile_id?: string;
+    userId?: string;
+    providerId?: number;
+    profileId?: string;
 }
 
 export class OAuthIdentityDeleteRequestDto {
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    provider_id: number;
+    providerId: number;
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    profile_id: string;
+    profileId: string;
 }
 
 export class OAuthIdentityResponseDto {
@@ -57,18 +57,18 @@ export class OAuthIdentityResponseDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
-    user_id: string;
+    userId: string;
 
     @ApiProperty({ type: Number })
     @IsInt()
     @IsNotEmpty()
-    provider_id: number;
+    providerId: number;
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    profile_id: string;
+    profileId: string;
 
     @ApiProperty({ type: Date })
-    created_at: Date;
+    createdAt: Date;
 }

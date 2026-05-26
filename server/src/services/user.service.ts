@@ -3,24 +3,20 @@ import { Injectable, Inject } from "@nestjs/common";
 import { UserCreateRequestDto, UserFilterOptions, UserLoadRequestDto, UserResponseDto, UserResponseForAdmin } from '@/types/dtos/userDto';
 import { UserModel } from '@prisma/generated/models'
 import { randomInt } from "crypto";
-import { ApiResponse } from "../../lib/ApiMessaging";
-import { IUserOAuthIdentityRepository, IOAuthProviderRepository } from "@/repositories";
+import { IUserOAuthIdentityRepository } from "@/repositories";
 import { OAuthIdentityCreateRequestDto, OAuthIdentityResponseDto } from "@/types/dtos/userOAuthIdentityDto";
 
 @Injectable()
 export class UserService{
     private userRepository: IUserRepository;
     private userOAuthIdentityRepository: IUserOAuthIdentityRepository;
-    private oauthProviderRepository: IOAuthProviderRepository;
 
     constructor(
         @Inject(IUserRepository) userRepository: IUserRepository,
         @Inject(IUserOAuthIdentityRepository) userOAuthIdentityRepository: IUserOAuthIdentityRepository,
-        @Inject(IOAuthProviderRepository) oauthProviderRepository: IOAuthProviderRepository,
     ){
         this.userRepository = userRepository;
         this.userOAuthIdentityRepository = userOAuthIdentityRepository;
-        this.oauthProviderRepository = oauthProviderRepository;
     }
 
     // #region User
@@ -55,16 +51,16 @@ export class UserService{
     async getUserByEmail(email: string): Promise<UserResponseForAdmin | null> {
         const user = await this.userRepository.getUserByEmail(email);
         if (!!user) {
-            // Map to UserResponseForAdmin
+
             return {
                 id: user.id,
                 email: user.email,
                 username: user.username,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                is_admin: user.is_admin,
-                is_deleted: user.is_deleted,
-                created_at: user.created_at,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                isAdmin: user.isAdmin,
+                isDeleted: user.isDeleted,
+                createdAt: user.createdAt,
             };
         }
         return null;
@@ -93,13 +89,30 @@ export class UserService{
 
     // #region UserOAuthIdentity Methods
     
-    async getUserOAuthIdentity(provider_id: number, profileId: string): Promise<OAuthIdentityResponseDto | null> {
-
-        return await this.userOAuthIdentityRepository.get({ provider_id: provider_id, profile_id: profileId });
+    async getUserOAuthIdentity(providerId: number, profileId: string): Promise<OAuthIdentityResponseDto | null> {
+        const identity = await this.userOAuthIdentityRepository.get({ providerId: providerId, profileId: profileId });
+        if (!identity) return null;
+        
+        return {
+            id: identity.id,
+            userId: identity.userId,
+            providerId: identity.providerId,
+            profileId: identity.profileId,
+            createdAt: identity.createdAt,
+        };
     }
 
     async CreateUserOAuthIdentity(request: OAuthIdentityCreateRequestDto): Promise<OAuthIdentityResponseDto | null> {
-        return await this.userOAuthIdentityRepository.post(request);
+        const identity = await this.userOAuthIdentityRepository.post(request);
+        if (!identity) return null;
+        
+        return {
+            id: identity.id,
+            userId: identity.userId,
+            providerId: identity.providerId,
+            profileId: identity.profileId,
+            createdAt: identity.createdAt,
+        };
     }
 
     // #endregion UserOAuthIdentity Methods
@@ -109,11 +122,11 @@ export class UserService{
             id: userModel.id,
             email: userModel.email,
             username: userModel.username,
-            first_name: userModel.first_name,
-            last_name: userModel.last_name,
-            is_admin: userModel.is_admin,
-            is_deleted: userModel.is_deleted,
-            created_at: userModel.created_at
+            firstName: userModel.firstName,
+            lastName: userModel.lastName,
+            isAdmin: userModel.isAdmin,
+            isDeleted: userModel.isDeleted,
+            createdAt: userModel.createdAt
         }
 
         return dto
@@ -125,9 +138,9 @@ export class UserService{
             id: userModel.id,
             email: userModel.email,
             username: userModel.username,
-            first_name: userModel.first_name,
-            last_name: userModel.last_name,
-            is_admin: userModel.is_admin,
+            firstName: userModel.firstName,
+            lastName: userModel.lastName,
+            isAdmin: userModel.isAdmin,
         }
 
         return dto

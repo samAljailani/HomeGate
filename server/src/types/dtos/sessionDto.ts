@@ -12,7 +12,7 @@ export class SessionCreateRequestDto {
     @ApiProperty({ type: String, required: false })
     @IsUUID()
     @IsOptional()
-    user_id?: string;
+    userId?: string;
 
     @ApiProperty({ type: String })
     @IsString()
@@ -26,7 +26,7 @@ export class SessionCreateRequestDto {
     @ApiProperty({ type: Date })
     @IsDate()
     @IsNotEmpty()
-    expires_at: Date;
+    expiresAt: Date;
 }
 
 export class SessionDeleteRequestDto {
@@ -37,7 +37,7 @@ export class SessionDeleteRequestDto {
 }
 
 export class SessionFilterOptions {
-    user_id?: string;
+    userId?: string;
     sid?: string;
 }
 
@@ -50,7 +50,7 @@ export class SessionResponseDto {
     @ApiProperty({ type: String, required: false })
     @IsUUID()
     @IsOptional()
-    user_id?: string;
+    userId?: string;
 
     @ApiProperty({ type: String })
     @IsString()
@@ -61,8 +61,8 @@ export class SessionResponseDto {
     data: any;
 
     @ApiProperty({ type: Date })
-    expires_at: Date;
+    expiresAt: Date;
 
     @ApiProperty({ type: Date })
-    created_at: Date;
+    createdAt: Date;
 }
