@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core'
 import { AppModule } from '@/app.module'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { ValidationPipe } from '@nestjs/common';
 import session from 'express-session';
 import { PrismaSessionStore } from './infrastructure/prismaSession.store';
 import { ConfigRepository } from './repositories/config.repository';
@@ -39,15 +40,26 @@ async function bootstrap() {
         };
     }
 
-    //global middleware
+    // Global middleware
     app.use(session(sessionOptions));
+
+    // Global validation pipe
+    app.useGlobalPipes(new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: {
+            enableImplicitConversion: true,
+        },
+    }));
 
     const port = env.PORT;
 
     configureSwagger(app);
 
     await app.listen(port);
-  
+    
+    //TODO: replace this console.log call with a logger once that infrastrcture is complete.
     console.log(`Server listening on http://localhost:${port}`)
 }
 
