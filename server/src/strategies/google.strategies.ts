@@ -5,21 +5,26 @@ import { Inject, Injectable } from '@nestjs/common'
 import { ConfigRepository } from '@/repositories/config.repository'
 import { routes } from '../types/dtos/routes'
 import { OpenIDRequestDto, OpenIDUserResponseDto } from '../types/dtos/authDto'
+import { OAuthProviderName } from '@prisma/generated'
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     constructor(@Inject(ConfigRepository) configRepository: ConfigRepository) {
-        const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, SERVER_BASE_URL } = configRepository.getEnv()
+        const { clientId, clientSecret, scope } = configRepository
+            .getEnv()
+            .oAuth.providers.find((x) => x.name == OAuthProviderName.google)!
+        const host = configRepository.getEnv().host
 
         const dto: OpenIDRequestDto = {
-            clientID: GOOGLE_CLIENT_ID,
-            clientSecret: GOOGLE_CLIENT_SECRET,
-            callbackURL: `${SERVER_BASE_URL}${routes.auth.googleRedirect}`,
-            scope: ['openid', 'email', 'profile'],
+            clientID: clientId,
+            clientSecret: clientSecret,
+            callbackURL: `${host}${routes.auth.googleRedirect}`,
+            scope: scope,
         }
 
         super(dto)
     }
+
     async validate(accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback): Promise<void> {
         const { id, name, emails, photos, provider } = profile
 

@@ -8,14 +8,17 @@ import { services } from '@/services'
 import { middleware } from '@/middleware'
 import { repositories } from '@/repositories'
 import { providers } from '@/infrastructure'
+import { ClsModule } from 'nestjs-cls'
 
 const configRepository: ConfigRepository = new ConfigRepository()
+const env = configRepository.getEnv()
 
 @Module({
     imports: [
         ServeStaticModule.forRoot({
-            rootPath: resolve(process.cwd(), configRepository.getEnv().staticClientFilesPath),
+            rootPath: resolve(process.cwd(), env.client.buildPath),
         }),
+        ClsModule.forRoot(env.cls.config),
     ],
     controllers: [...controllers],
     providers: [...repositories, ...providers, ...services, ...strategies, ...middleware],

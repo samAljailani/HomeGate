@@ -11,17 +11,20 @@ import { UserModel } from '@prisma/generated/models'
 import { randomInt } from 'crypto'
 import { IUserOAuthIdentityRepository } from '@/repositories'
 import { OAuthIdentityCreateRequestDto, OAuthIdentityResponseDto } from '@/types/dtos/userOAuthIdentityDto'
+import { BaseService } from './base.service'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
 
 @Injectable()
-export class UserService {
+export class UserService extends BaseService {
     private userRepository: IUserRepository
     private userOAuthIdentityRepository: IUserOAuthIdentityRepository
 
     constructor(
         @Inject(IUserRepository) userRepository: IUserRepository,
-        @Inject(IUserOAuthIdentityRepository)
-        userOAuthIdentityRepository: IUserOAuthIdentityRepository
+        @Inject(LoggingProvider) logger: LoggingProvider,
+        @Inject(IUserOAuthIdentityRepository) userOAuthIdentityRepository: IUserOAuthIdentityRepository
     ) {
+        super(logger)
         this.userRepository = userRepository
         this.userOAuthIdentityRepository = userOAuthIdentityRepository
     }

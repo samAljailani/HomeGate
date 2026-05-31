@@ -14,6 +14,8 @@ import { SessionRepository } from './session.repository'
 import { UserRepository } from './user.repository'
 import { UserAccountRepository } from './userAccount.repository'
 import { UserOAuthIdentityRepository } from './userOAuthIdentity.repository'
+import { ILoggingRepository } from './ILoggingRepository'
+import { LoggingRepository } from './logging.repository'
 
 export { IUserRepository } from './IUserRepository'
 export { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository'
@@ -25,6 +27,7 @@ export { ISessionRepository } from './ISessionRepository'
 
 export const repositories = [
     ConfigRepository,
+    { provide: ILoggingRepository, useClass: LoggingRepository },
     { provide: IUserRepository, useClass: UserRepository },
     {
         provide: IUserOAuthIdentityRepository,

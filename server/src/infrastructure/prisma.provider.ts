@@ -6,8 +6,8 @@ import { PrismaClient } from '@prisma/generated'
 @Injectable()
 export class PrismaProvider extends PrismaClient implements OnModuleInit, OnModuleDestroy {
     constructor(@Inject(ConfigRepository) configRepository: ConfigRepository) {
-        const { DATABASE_URL } = configRepository.getEnv()
-        const adapter = new PrismaPg({ connectionString: DATABASE_URL })
+        const databaseUrl = configRepository.getEnv().database.url
+        const adapter = new PrismaPg({ connectionString: databaseUrl })
         super({ adapter })
     }
 

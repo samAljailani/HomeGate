@@ -2,16 +2,20 @@ import { OpenIDUserResponseDto } from '@/types/dtos/authDto'
 import { Injectable, Inject, forwardRef } from '@nestjs/common'
 import { UserService } from './user.service'
 import { IOAuthProviderRepository } from '@/repositories'
-import { ApiResponse, AddMessage } from '../../lib/ApiMessaging'
+import { ApiResponse } from '../../lib/ApiMessaging'
 import { UserResponseDto } from '@/types/dtos/userDto'
+import { BaseService } from './base.service'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
 
 @Injectable()
-export class AuthService {
+export class AuthService extends BaseService {
     constructor(
         @Inject(forwardRef(() => UserService)) private userService: UserService,
-        @Inject(IOAuthProviderRepository)
-        private oauthProviderRepository: IOAuthProviderRepository
-    ) {}
+        @Inject(LoggingProvider) logger: LoggingProvider,
+        @Inject(IOAuthProviderRepository) private oauthProviderRepository: IOAuthProviderRepository
+    ) {
+        super(logger)
+    }
 
     async googleLogin(request: OpenIDUserResponseDto): Promise<ApiResponse<UserResponseDto | null>> {
         let response: ApiResponse<UserResponseDto | null> = {
@@ -23,10 +27,7 @@ export class AuthService {
             const user = await this.userService.getUserByEmail(request.email)
 
             if (user == null) {
-                AddMessage(
-                    response,
-                    ['log', 'toast'],
-                    'Warn',
+                this.logger.log(
                     `Failed Login attempt for non registered user. Provider: ${request.provider}, Email: ${request.email}.`
                 )
                 response.success = false
@@ -34,12 +35,7 @@ export class AuthService {
             }
 
             if (user.isDeleted) {
-                AddMessage(
-                    response,
-                    ['log'],
-                    'Warn',
-                    `Attempted login for user with email: ${request.email}, provider: ${request.provider}`
-                )
+                this.logger.log(`Attempted login for user with email: ${request.email}, provider: ${request.provider}`)
                 response.success = false
                 return response
             }
@@ -47,10 +43,7 @@ export class AuthService {
             const provider = await this.oauthProviderRepository.getByName(request.provider)
 
             if (provider == null) {
-                AddMessage(
-                    response,
-                    ['log'],
-                    'Critical',
+                this.logger.fatal(
                     `Attempted login for user with email: ${request.email}, provider: ${request.provider}, yet the provider is not a recognized provider.`
                 )
                 response.success = false
@@ -71,14 +64,14 @@ export class AuthService {
 
             response.success = true
             response.data = user
-        } catch {
-            AddMessage(
-                response,
-                ['log'],
-                'Error',
-                `An unhandle error occured while attempting to login user with email: ${request.email}, provider: ${request.provider}`
+            this.logger.log(`user ${user.username} successfully logged in`)
+        } catch (error: unknown) {
+            const stackTrace = error instanceof Error ? error.stack : undefined
+            this.logger.error(
+                `An unhandle error occured while attempting to login user with email: ${request.email}, provider: ${request.provider}`,
+                { stackTrace: stackTrace }
             )
-            AddMessage(response, ['toast'], 'Error', `Login Failed`)
+
             response.success = false
         }
 

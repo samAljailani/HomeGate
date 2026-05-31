@@ -4,7 +4,6 @@ import { OpenIDUserResponseDto } from '@/types/dtos/authDto'
 import { GoogleOAuthGuard } from '@/middleware/google-oauth.guard'
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
 import { routes, clientRoutes } from '../types/dtos/routes'
-import { AddMessage } from '../../lib/ApiMessaging'
 import { Public } from '@/decorators'
 
 @Controller(routes.auth.basePath)
@@ -17,6 +16,7 @@ export class AuthController {
     googleAuth() {
         /*method body never executed due to passport redirect*/
     }
+
     @Public()
     @Get(routes.auth.subPath.googleRedirect)
     @UseGuards(GoogleOAuthGuard)
@@ -45,7 +45,6 @@ export class AuthController {
 
             return res.redirect(clientRoutes.home)
         } catch (error) {
-            AddMessage(response, ['log'], 'Error', `Failed to create session for userId: ${response.data.id}`)
             response.success = false
             response.data = null
             return res.redirect(`${clientRoutes.signIn}?error=session_failed`)

@@ -1,5 +1,5 @@
 model User {
-  id              String              @id @default(uuid())
+  id              String              @id @default(uuid()) @db.Uuid
   email           String              @unique @db.VarChar(254)
   password        String?             @db.VarChar(64)
   firstName       String              @map("first_name") @db.VarChar(100)
@@ -7,10 +7,11 @@ model User {
   isAdmin         Boolean             @default(false) @map("is_admin")
   isDeleted       Boolean             @default(false) @map("is_deleted")
   createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  username        String              @db.VarChar(64)
+  username        String              @unique @db.VarChar(64)
   userSessions    Session[]           @relation("UserSessions")
   userAccounts    UserAccount[]       @relation("UserAccounts")
   oauthIdentities UserOAuthIdentity[] @relation("UserOAuthIdentities")
+  logs            Log[]               @relation("UserLogs")
 
   @@map("users")
 }
@@ -24,8 +25,8 @@ model OAuthProvider {
 }
 
 model UserOAuthIdentity {
-  id         String        @id @default(uuid())
-  userId     String        @map("user_id")
+  id         String        @id @default(uuid()) @db.Uuid
+  userId     String        @map("user_id") @db.Uuid
   profileId  String        @map("profile_id") @db.VarChar(255)
   createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   providerId Int           @map("provider_id")
@@ -55,11 +56,11 @@ model Service {
 }
 
 model UserAccount {
-  userId    String   @map("user_id")
+  userId    String   @map("user_id") @db.Uuid
   serviceId Int      @map("service_id")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   isActive  Boolean  @default(true) @map("is_active")
-  username  String   @db.VarChar(64)
+  username  String   @unique @db.VarChar(64)
   service   Service  @relation("ServiceAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
   user      User     @relation("UserAccounts", fields: [userId], references: [id], onDelete: Cascade)
 
@@ -68,15 +69,38 @@ model UserAccount {
 }
 
 model Session {
-  id        String   @id @default(uuid())
-  userId    String?  @map("user_id")
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
   sid       String   @unique
   data      Json
   expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   user      User?    @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  logs      Log[]    @relation("SessionLogs")
 
   @@map("sessions")
+}
+
+model Log {
+  id            Int       @id @default(autoincrement())
+  userId        String?   @map("user_id") @db.Uuid
+  sessionId     String?   @map("session_id") @db.Uuid
+  correlationId String?   @map("correlation_id")
+  logLevel      LogLevel  @map("log_level")
+  context       String?   @db.Text
+  message       String    @db.Text
+  stackTrace    String?   @map("stack_trace")
+  createdAt     DateTime  @map("created_at") @db.Timestamptz(6) @default(now())
+  user          User?     @relation("UserLogs", fields: [userId], references: [id], onDelete: NoAction)
+  session       Session?  @relation("SessionLogs", fields: [sessionId], references: [id], onDelete: NoAction)
+
+  @@index([createdAt])
+  @@index([logLevel])
+  @@index([userId])
+  @@index([sessionId])
+  @@index([correlationId])
+
+  @@map("logs")
 }
 
 enum OAuthProviderName {
@@ -87,4 +111,13 @@ enum AuthSchemeName {
   ldap
   oauth
   sso
+}
+
+enum LogLevel {
+  verbose
+  debug
+  log
+  warn
+  error
+  fatal
 }

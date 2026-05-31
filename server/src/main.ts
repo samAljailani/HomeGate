@@ -24,10 +24,10 @@ async function bootstrap() {
     const env = configRepository.getEnv()
 
     const sessionOptions: session.SessionOptions = {
-        secret: env.SESSION_SECRET,
+        secret: env.session.secret,
         resave: false,
         saveUninitialized: false,
-        name: env.SESSION_COOKIE_NAME,
+        name: env.session.cookieName,
         store: sessionStore,
         cookie: {
             httpOnly: true,
@@ -35,7 +35,7 @@ async function bootstrap() {
         },
     }
 
-    if (env.APP_ENV === AppEnv.Production) {
+    if (env.environment === AppEnv.Production) {
         app.set('trust proxy', 1)
 
         sessionOptions.cookie = {
@@ -60,7 +60,7 @@ async function bootstrap() {
         })
     )
 
-    const port = env.PORT
+    const port = env.port
 
     configureSwagger(app)
 
