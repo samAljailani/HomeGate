@@ -9,3 +9,9 @@ export type UserAccountModel = {
 export type CreateUserAccountModel = Omit<UserAccountModel, 'createdAt'>
 
 export type UpdateUserAccountModel = Omit<UserAccountModel, 'createdAt'>
+
+export class UserAccountFilterOptions {
+    userId?: string
+    serviceId?: number
+    isActive?: boolean
+}

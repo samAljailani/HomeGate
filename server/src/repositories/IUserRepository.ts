@@ -1,5 +1,4 @@
-import { UserDeleteRequestDto, UserFilterOptions } from '@/types/dtos/userDto'
-import { CreateUserModel, UpdateUserModel, UserModel } from '@/types/models/user'
+import { CreateUserModel, UpdateUserModel, UserModel, UserFilterOptions } from '@/types/models/user'
 
 export const IUserRepository = Symbol('IUserRepository')
 
@@ -10,5 +9,5 @@ export interface IUserRepository {
     create(request: CreateUserModel): Promise<UserModel | null>
     update(request: UpdateUserModel): Promise<UserModel | null>
     usernameExists(username: string): Promise<boolean>
-    delete(request: UserDeleteRequestDto): Promise<void>
+    delete(id: string): Promise<void>
 }

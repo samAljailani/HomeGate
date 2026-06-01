@@ -2,9 +2,8 @@ import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
 import { AuthSchemeName } from '@prisma/generated'
 import type { AuthSchemeModel as PrismaAuthScheme } from '@prisma/generated/models'
-import { AuthSchemeFilterOptions } from '@/types/dtos/authSchemeDto'
 import { IAuthSchemeRepository } from './IAuthSchemeRepository'
-import { AuthSchemeModel } from '@/types/models/authScheme'
+import { AuthSchemeModel, AuthSchemeFilterOptions } from '@/types/models/authScheme'
 
 @Injectable()
 export class AuthSchemeRepository implements IAuthSchemeRepository {

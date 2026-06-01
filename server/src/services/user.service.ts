@@ -2,12 +2,11 @@ import { IUserRepository } from '@/repositories/IUserRepository'
 import { Injectable, Inject } from '@nestjs/common'
 import {
     UserCreateRequestDto,
-    UserFilterOptions,
     UserLoadRequestDto,
     UserResponseDto,
     UserResponseForAdmin,
 } from '@/types/dtos/userDto'
-import { UserModel } from '@/types/models/user'
+import { UserModel, UserFilterOptions } from '@/types/models/user'
 import { randomInt } from 'crypto'
 import { IUserOAuthIdentityRepository } from '@/repositories'
 import { OAuthIdentityCreateRequestDto, OAuthIdentityResponseDto } from '@/types/dtos/userOAuthIdentityDto'

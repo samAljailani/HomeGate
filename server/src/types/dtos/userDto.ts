@@ -6,16 +6,6 @@ export class UserFindOptions {
     withActive?: boolean
 }
 
-export class UserFilterOptions {
-    id?: string
-    email?: string
-    username?: string
-    firstName?: string
-    lastName?: string
-    isAdmin?: boolean
-    isDeleted?: boolean
-}
-
 export class UserLoadRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()

@@ -7,3 +7,8 @@ export type AuthSchemeModel = {
 }
 
 export type CreateAuthSchemeModel = Omit<AuthSchemeModel, 'id'>
+
+export class AuthSchemeFilterOptions {
+    id?: number
+    name?: AuthSchemeName
+}

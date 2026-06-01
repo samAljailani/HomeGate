@@ -7,7 +7,10 @@ import 'express-session'
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-    constructor(@Inject(Reflector) private reflector: Reflector, @Inject(IUserRepository) private userRepository: IUserRepository) {}
+    constructor(
+        @Inject(Reflector) private reflector: Reflector,
+        @Inject(IUserRepository) private userRepository: IUserRepository
+    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [

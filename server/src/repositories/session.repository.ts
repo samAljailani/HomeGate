@@ -1,9 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { SessionFilterOptions } from '@/types/dtos/sessionDto'
 import { ISessionRepository } from './ISessionRepository'
 import type { SessionModel as PrismaSession } from '@prisma/generated/models'
-import { CreateSessionModel, SessionModel, UpdateSessionModel } from '@/types/models/session'
+import { CreateSessionModel, SessionModel, UpdateSessionModel, SessionFilterOptions } from '@/types/models/session'
 
 @Injectable()
 export class SessionRepository implements ISessionRepository {
@@ -81,5 +80,4 @@ export class SessionRepository implements ISessionRepository {
 
         return this.mapSession(session)
     }
-
 }

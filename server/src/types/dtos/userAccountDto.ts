@@ -62,12 +62,6 @@ export class UserAccountDeleteRequestDto {
     serviceId: number
 }
 
-export class UserAccountFilterOptions {
-    userId?: string
-    serviceId?: number
-    isActive?: boolean
-}
-
 export class UserAccountResponseDto {
     @ApiProperty({ type: String })
     @IsUUID()

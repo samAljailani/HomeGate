@@ -1,5 +1,8 @@
-import { CreateUserOAuthIdentityModel, UserOAuthIdentityModel } from '@/types/models/userOAuthIdentity'
-import { OAuthIdentityFilterOptions } from '@/types/dtos/userOAuthIdentityDto'
+import {
+    CreateUserOAuthIdentityModel,
+    UserOAuthIdentityModel,
+    OAuthIdentityFilterOptions,
+} from '@/types/models/userOAuthIdentity'
 
 export const IUserOAuthIdentityRepository = Symbol('IUserOAuthIdentityRepository')
 

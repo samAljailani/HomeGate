@@ -9,12 +9,6 @@ export class OAuthProviderLoadRequestDto {
     id: number
 }
 
-export class OAuthProviderFilterOptions {
-    id?: number
-    name?: OAuthProviderName
-    enabled?: boolean
-}
-
 export class OAuthProviderResponseDto {
     @ApiProperty({ type: Number })
     @IsInt()

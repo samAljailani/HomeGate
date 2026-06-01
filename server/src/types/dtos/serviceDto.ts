@@ -42,12 +42,6 @@ export class ServiceDeleteRequestDto {
     id: number
 }
 
-export class ServiceFilterOptions {
-    id?: number
-    name?: string
-    authSchemeId?: number
-}
-
 export class ServiceResponseDto {
     @ApiProperty({ type: Number })
     @IsInt()

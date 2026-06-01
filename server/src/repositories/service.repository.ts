@@ -1,9 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { ServiceFilterOptions } from '@/types/dtos/serviceDto'
 import { IServiceRepository } from './IServiceRepository'
 import type { ServiceModel as PrismaService } from '@prisma/generated/models'
-import { CreateServiceModel, ServiceModel, UpdateServiceModel } from '@/types/models/service'
+import { CreateServiceModel, ServiceModel, UpdateServiceModel, ServiceFilterOptions } from '@/types/models/service'
 
 @Injectable()
 export class ServiceRepository implements IServiceRepository {

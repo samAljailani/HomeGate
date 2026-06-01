@@ -2,9 +2,8 @@ import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
 import { OAuthProviderName } from '@prisma/generated'
 import type { OAuthProviderModel as PrismaOAuthProvider } from '@prisma/generated/models'
-import { OAuthProviderFilterOptions } from '@/types/dtos/oauthProviderDto'
 import { IOAuthProviderRepository } from './IOAuthProviderRepository'
-import { OAuthProviderModel } from '@/types/models/oauthProvider'
+import { OAuthProviderModel, OAuthProviderFilterOptions } from '@/types/models/oauthProvider'
 
 @Injectable()
 export class OAuthProviderRepository implements IOAuthProviderRepository {

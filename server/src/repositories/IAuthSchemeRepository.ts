@@ -1,5 +1,4 @@
-import { AuthSchemeModel } from '@/types/models/authScheme'
-import { AuthSchemeFilterOptions } from '@/types/dtos/authSchemeDto'
+import { AuthSchemeModel, AuthSchemeFilterOptions } from '@/types/models/authScheme'
 
 export const IAuthSchemeRepository = Symbol('IAuthSchemeRepository')
 

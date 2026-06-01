@@ -10,3 +10,8 @@ export type SessionModel = {
 export type CreateSessionModel = Omit<SessionModel, 'id' | 'createdAt'>
 
 export type UpdateSessionModel = Omit<SessionModel, 'id' | 'createdAt' | 'userId'>
+
+export class SessionFilterOptions {
+    userId?: string
+    sid?: string
+}

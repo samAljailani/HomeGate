@@ -77,7 +77,7 @@ function configureSwagger(app: NestExpressApplication) {
         .setTitle('HomeGate API')
         .setDescription('API documentation for HomeGate')
         .setVersion('1.0')
-                .addApiKey(
+        .addApiKey(
             {
                 type: 'apiKey',
                 name: 'X-CSRF-Token',

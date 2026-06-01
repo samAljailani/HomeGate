@@ -1,5 +1,4 @@
-import { CreateSessionModel, SessionModel, UpdateSessionModel } from '@/types/models/session'
-import { SessionFilterOptions } from '@/types/dtos/sessionDto'
+import { CreateSessionModel, SessionModel, UpdateSessionModel, SessionFilterOptions } from '@/types/models/session'
 
 export const ISessionRepository = Symbol('ISessionRepository')
 

@@ -30,12 +30,6 @@ export class OAuthIdentityLoadRequestDto {
     profileId: string
 }
 
-export class OAuthIdentityFilterOptions {
-    userId?: string
-    providerId?: number
-    profileId?: string
-}
-
 export class OAuthIdentityDeleteRequestDto {
     @ApiProperty({ type: Number })
     @IsInt()

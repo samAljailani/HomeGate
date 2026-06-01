@@ -1,5 +1,4 @@
-import { CreateServiceModel, ServiceModel, UpdateServiceModel } from '@/types/models/service'
-import { ServiceFilterOptions } from '@/types/dtos/serviceDto'
+import { CreateServiceModel, ServiceModel, UpdateServiceModel, ServiceFilterOptions } from '@/types/models/service'
 
 export const IServiceRepository = Symbol('IServiceRepository')
 

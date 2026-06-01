@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { OAuthIdentityFilterOptions } from '@/types/dtos/userOAuthIdentityDto'
+import { OAuthIdentityFilterOptions } from '@/types/models/userOAuthIdentity'
 import { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository'
 import type { UserOAuthIdentityModel as PrismaUserOAuthIdentity } from '@prisma/generated/models'
 import {

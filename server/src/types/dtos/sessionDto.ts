@@ -36,11 +36,6 @@ export class SessionDeleteRequestDto {
     sid: string
 }
 
-export class SessionFilterOptions {
-    userId?: string
-    sid?: string
-}
-
 export class SessionResponseDto {
     @ApiProperty({ type: String })
     @IsUUID()

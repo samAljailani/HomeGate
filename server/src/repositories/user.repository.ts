@@ -1,9 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { UserDeleteRequestDto, UserFilterOptions } from '@/types/dtos/userDto'
 import { IUserRepository } from './IUserRepository'
 import type { UserModel as PrismaUser } from '@prisma/generated/models'
-import { CreateUserModel, UpdateUserModel, UserModel } from '@/types/models/user'
+import { CreateUserModel, UpdateUserModel, UserModel, UserFilterOptions } from '@/types/models/user'
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -73,9 +72,9 @@ export class UserRepository implements IUserRepository {
         return this.mapUser(user)
     }
 
-    async delete(request: UserDeleteRequestDto): Promise<void> {
+    async delete(id: string): Promise<void> {
         await this.db.user.delete({
-            where: { id: request.userId },
+            where: { id: id },
         })
     }
 }

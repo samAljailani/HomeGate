@@ -1,9 +1,13 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { UserAccountFilterOptions } from '@/types/dtos/userAccountDto'
 import { IUserAccountRepository } from './IUserAccountRepository'
 import type { UserAccountModel as PrismaUserAccount } from '@prisma/generated/models'
-import { CreateUserAccountModel, UpdateUserAccountModel, UserAccountModel } from '@/types/models/userAccount'
+import {
+    CreateUserAccountModel,
+    UpdateUserAccountModel,
+    UserAccountModel,
+    UserAccountFilterOptions,
+} from '@/types/models/userAccount'
 
 @Injectable()
 export class UserAccountRepository implements IUserAccountRepository {

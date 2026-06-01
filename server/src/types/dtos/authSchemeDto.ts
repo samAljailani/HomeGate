@@ -9,11 +9,6 @@ export class AuthSchemeLoadRequestDto {
     id: number
 }
 
-export class AuthSchemeFilterOptions {
-    id?: number
-    name?: AuthSchemeName
-}
-
 export class AuthSchemeResponseDto {
     @ApiProperty({ type: Number })
     @IsInt()

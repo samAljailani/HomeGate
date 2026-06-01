@@ -46,7 +46,7 @@ export class PrismaSessionStore extends session.Store {
             const existing = await this.sessionRepository.findById(hashedSid)
 
             if (existing) {
-                await this.sessionRepository.update({sid: hashedSid, data: sessionData, expiresAt: expiresAt})
+                await this.sessionRepository.update({ sid: hashedSid, data: sessionData, expiresAt: expiresAt })
             } else {
                 await this.sessionRepository.create({
                     sid: hashedSid,

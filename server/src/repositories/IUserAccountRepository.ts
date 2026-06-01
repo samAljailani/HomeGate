@@ -1,5 +1,9 @@
-import { CreateUserAccountModel, UpdateUserAccountModel, UserAccountModel } from '@/types/models/userAccount'
-import { UserAccountFilterOptions } from '@/types/dtos/userAccountDto'
+import {
+    CreateUserAccountModel,
+    UpdateUserAccountModel,
+    UserAccountModel,
+    UserAccountFilterOptions,
+} from '@/types/models/userAccount'
 
 export const IUserAccountRepository = Symbol('IUserAccountRepository')
 

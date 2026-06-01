@@ -1,5 +1,4 @@
-import { OAuthProviderModel } from '@/types/models/oauthProvider'
-import { OAuthProviderFilterOptions } from '@/types/dtos/oauthProviderDto'
+import { OAuthProviderModel, OAuthProviderFilterOptions } from '@/types/models/oauthProvider'
 
 export const IOAuthProviderRepository = Symbol('IOAuthProviderRepository')
 
