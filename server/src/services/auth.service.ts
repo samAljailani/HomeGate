@@ -18,7 +18,7 @@ export class AuthService extends BaseService {
     }
 
     async googleLogin(request: OpenIDUserResponseDto): Promise<ApiResponse<UserResponseDto | null>> {
-        let response: ApiResponse<UserResponseDto | null> = {
+        const response: ApiResponse<UserResponseDto | null> = {
             success: true,
             messages: [],
         }
@@ -40,7 +40,7 @@ export class AuthService extends BaseService {
                 return response
             }
 
-            const provider = await this.oauthProviderRepository.getByName(request.provider)
+            const provider = await this.oauthProviderRepository.findByName(request.provider)
 
             if (provider == null || !provider.enabled) {
                 this.logger.fatal(

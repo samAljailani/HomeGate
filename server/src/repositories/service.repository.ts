@@ -1,14 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { Service } from '@prisma/generated'
-import {
-    ServiceCreateRequestDto,
-    ServiceDeleteRequestDto,
-    ServiceFilterOptions,
-    ServiceLoadRequestDto,
-    ServiceUpdateRequestDto,
-} from '@/types/dtos/serviceDto'
+import { ServiceFilterOptions } from '@/types/dtos/serviceDto'
 import { IServiceRepository } from './IServiceRepository'
+import type { ServiceModel as PrismaService } from '@prisma/generated/models'
+import { CreateServiceModel, ServiceModel, UpdateServiceModel } from '@/types/models/service'
 
 @Injectable()
 export class ServiceRepository implements IServiceRepository {
@@ -17,41 +12,59 @@ export class ServiceRepository implements IServiceRepository {
         this.db = db
     }
 
-    async get(request: ServiceLoadRequestDto): Promise<Service | null> {
-        return this.db.service.findUnique({
-            where: { id: request.id },
-        })
+    private mapService(service: PrismaService): ServiceModel {
+        return {
+            id: service.id,
+            name: service.name,
+            authSchemeId: service.authSchemeId,
+        }
     }
 
-    async getByName(name: string): Promise<Service | null> {
-        return this.db.service.findUnique({
+    async findById(id: number): Promise<ServiceModel | null> {
+        const service = await this.db.service.findUnique({
+            where: { id: id },
+        })
+
+        return service ? this.mapService(service) : null
+    }
+
+    async findByName(name: string): Promise<ServiceModel | null> {
+        const service = await this.db.service.findUnique({
             where: { name },
         })
+
+        return service ? this.mapService(service) : null
     }
 
-    async getMany(filter: ServiceFilterOptions): Promise<Service[]> {
-        return this.db.service.findMany({
+    async findMany(filter: ServiceFilterOptions): Promise<ServiceModel[]> {
+        const services = await this.db.service.findMany({
             where: { ...filter },
         })
+
+        return services.map((service) => this.mapService(service))
     }
 
-    async post(request: ServiceCreateRequestDto): Promise<Service | null> {
-        return this.db.service.create({
+    async create(request: CreateServiceModel): Promise<ServiceModel | null> {
+        const service = await this.db.service.create({
             data: request,
         })
+
+        return this.mapService(service)
     }
 
-    async put(request: ServiceUpdateRequestDto): Promise<Service | null> {
+    async update(request: UpdateServiceModel): Promise<ServiceModel | null> {
         const { id, ...data } = request
-        return this.db.service.update({
-            where: { id },
+        const service = await this.db.service.update({
+            where: { id: id },
             data,
         })
+
+        return this.mapService(service)
     }
 
-    async delete(request: ServiceDeleteRequestDto): Promise<void> {
+    async delete(id: number): Promise<void> {
         await this.db.service.delete({
-            where: { id: request.id },
+            where: { id: id },
         })
     }
 }

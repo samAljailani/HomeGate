@@ -1,13 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { Session } from '@prisma/generated'
-import {
-    SessionCreateRequestDto,
-    SessionDeleteRequestDto,
-    SessionFilterOptions,
-    SessionLoadRequestDto,
-} from '@/types/dtos/sessionDto'
+import { SessionFilterOptions } from '@/types/dtos/sessionDto'
 import { ISessionRepository } from './ISessionRepository'
+import type { SessionModel as PrismaSession } from '@prisma/generated/models'
+import { CreateSessionModel, SessionModel, UpdateSessionModel } from '@/types/models/session'
 
 @Injectable()
 export class SessionRepository implements ISessionRepository {
@@ -16,47 +12,74 @@ export class SessionRepository implements ISessionRepository {
         this.db = db
     }
 
-    async get(request: SessionLoadRequestDto): Promise<Session | null> {
-        return this.db.session.findUnique({
-            where: { sid: request.sid },
+    private mapSession(session: PrismaSession): SessionModel {
+        return {
+            id: session.id,
+            userId: session.userId,
+            sid: session.sid,
+            data: session.data,
+            expiresAt: session.expiresAt,
+            createdAt: session.createdAt,
+        }
+    }
+
+    async delete(sid: string): Promise<void> {
+        await this.db.session.deleteMany({
+            where: { sid },
         })
     }
 
-    async getMany(filter: SessionFilterOptions): Promise<Session[]> {
-        return this.db.session.findMany({
-            where: { ...filter },
+    async touch(sid: string, expiresAt: Date): Promise<SessionModel | null> {
+        const session = await this.db.session.update({
+            where: { sid },
+            data: { expiresAt },
         })
+
+        return this.mapSession(session)
     }
 
-    async post(request: SessionCreateRequestDto): Promise<Session | null> {
-        return this.db.session.create({
-            data: request,
+    async findById(sid: string): Promise<SessionModel | null> {
+        const session = await this.db.session.findUnique({
+            where: { sid: sid },
         })
+
+        return session ? this.mapSession(session) : null
     }
 
-    async getByUserId(userId: string): Promise<Session[]> {
-        return this.db.session.findMany({
+    async findByUserId(userId: string): Promise<SessionModel[]> {
+        const sessions = await this.db.session.findMany({
             where: { userId },
         })
+
+        return sessions.map((session) => this.mapSession(session))
     }
 
-    async put(sid: string, data: any, expiresAt: Date): Promise<Session | null> {
-        return this.db.session.update({
-            where: { sid },
-            data: { data, expiresAt },
+    async findMany(filter: SessionFilterOptions): Promise<SessionModel[]> {
+        const sessions = await this.db.session.findMany({
+            where: { ...filter },
         })
+
+        return sessions.map((session) => this.mapSession(session))
     }
 
-    async touch(sid: string, expiresAt: Date): Promise<Session | null> {
-        return this.db.session.update({
-            where: { sid: sid },
-            data: { expiresAt: expiresAt },
+    async create(request: CreateSessionModel): Promise<SessionModel | null> {
+        const session = await this.db.session.create({
+            data: request,
         })
+
+        return this.mapSession(session)
     }
 
-    async delete(request: SessionDeleteRequestDto): Promise<void> {
-        await this.db.session.deleteMany({
+    async update(request: UpdateSessionModel): Promise<SessionModel | null> {
+        const session = await this.db.session.update({
             where: { sid: request.sid },
+            data: {
+                data: request.data,
+                expiresAt: request.expiresAt,
+            },
         })
+
+        return this.mapSession(session)
     }
+
 }

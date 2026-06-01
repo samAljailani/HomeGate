@@ -1,8 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { OAuthProvider, OAuthProviderName } from '@prisma/generated'
-import { OAuthProviderFilterOptions, OAuthProviderLoadRequestDto } from '@/types/dtos/oauthProviderDto'
+import { OAuthProviderName } from '@prisma/generated'
+import type { OAuthProviderModel as PrismaOAuthProvider } from '@prisma/generated/models'
+import { OAuthProviderFilterOptions } from '@/types/dtos/oauthProviderDto'
 import { IOAuthProviderRepository } from './IOAuthProviderRepository'
+import { OAuthProviderModel } from '@/types/models/oauthProvider'
 
 @Injectable()
 export class OAuthProviderRepository implements IOAuthProviderRepository {
@@ -11,24 +13,38 @@ export class OAuthProviderRepository implements IOAuthProviderRepository {
         this.db = db
     }
 
-    async get(request: OAuthProviderLoadRequestDto): Promise<OAuthProvider | null> {
-        return this.db.oAuthProvider.findUnique({
-            where: { id: request.id },
-        })
+    private mapOAuthProvider(provider: PrismaOAuthProvider): OAuthProviderModel {
+        return {
+            id: provider.id,
+            name: provider.name,
+            enabled: provider.enabled,
+        }
     }
 
-    async getByName(name: string): Promise<OAuthProvider | null> {
+    async findById(id: number): Promise<OAuthProviderModel | null> {
+        const provider = await this.db.oAuthProvider.findUnique({
+            where: { id: id },
+        })
+
+        return provider ? this.mapOAuthProvider(provider) : null
+    }
+
+    async findByName(name: string): Promise<OAuthProviderModel | null> {
         if (!Object.values(OAuthProviderName).includes(name as OAuthProviderName)) {
             return null
         }
-        return this.db.oAuthProvider.findUnique({
+        const provider = await this.db.oAuthProvider.findUnique({
             where: { name: name as OAuthProviderName },
         })
+
+        return provider ? this.mapOAuthProvider(provider) : null
     }
 
-    async getMany(filter: OAuthProviderFilterOptions): Promise<OAuthProvider[]> {
-        return this.db.oAuthProvider.findMany({
+    async findMany(filter: OAuthProviderFilterOptions): Promise<OAuthProviderModel[]> {
+        const providers = await this.db.oAuthProvider.findMany({
             where: { ...filter },
         })
+
+        return providers.map((provider) => this.mapOAuthProvider(provider))
     }
 }

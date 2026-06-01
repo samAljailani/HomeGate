@@ -1,20 +1,14 @@
-import { Session } from '@prisma/generated'
-
-import {
-    SessionCreateRequestDto,
-    SessionDeleteRequestDto,
-    SessionFilterOptions,
-    SessionLoadRequestDto,
-} from '@/types/dtos/sessionDto'
+import { CreateSessionModel, SessionModel, UpdateSessionModel } from '@/types/models/session'
+import { SessionFilterOptions } from '@/types/dtos/sessionDto'
 
 export const ISessionRepository = Symbol('ISessionRepository')
 
 export interface ISessionRepository {
-    get(request: SessionLoadRequestDto): Promise<Session | null>
-    getByUserId(user_id: string): Promise<Session[]>
-    getMany(filter: SessionFilterOptions): Promise<Session[]>
-    post(request: SessionCreateRequestDto): Promise<Session | null>
-    put(sid: string, data: any, expires_at: Date): Promise<Session | null>
-    delete(request: SessionDeleteRequestDto): Promise<void>
-    touch(sid: string, expires_at: Date): Promise<Session | null>
+    findById(sid: string): Promise<SessionModel | null>
+    findByUserId(userId: string): Promise<SessionModel[]>
+    findMany(filter: SessionFilterOptions): Promise<SessionModel[]>
+    create(request: CreateSessionModel): Promise<SessionModel | null>
+    update(request: UpdateSessionModel): Promise<SessionModel | null>
+    delete(sid: string): Promise<void>
+    touch(sid: string, expiresAt: Date): Promise<SessionModel | null>
 }

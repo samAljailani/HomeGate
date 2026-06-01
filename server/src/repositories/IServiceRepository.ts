@@ -1,20 +1,13 @@
-import { Service } from '@prisma/generated'
-
-import {
-    ServiceCreateRequestDto,
-    ServiceDeleteRequestDto,
-    ServiceFilterOptions,
-    ServiceLoadRequestDto,
-    ServiceUpdateRequestDto,
-} from '@/types/dtos/serviceDto'
+import { CreateServiceModel, ServiceModel, UpdateServiceModel } from '@/types/models/service'
+import { ServiceFilterOptions } from '@/types/dtos/serviceDto'
 
 export const IServiceRepository = Symbol('IServiceRepository')
 
 export interface IServiceRepository {
-    get(request: ServiceLoadRequestDto): Promise<Service | null>
-    getByName(name: string): Promise<Service | null>
-    getMany(filter: ServiceFilterOptions): Promise<Service[]>
-    post(request: ServiceCreateRequestDto): Promise<Service | null>
-    put(request: ServiceUpdateRequestDto): Promise<Service | null>
-    delete(request: ServiceDeleteRequestDto): Promise<void>
+    findById(id: number): Promise<ServiceModel | null>
+    findByName(name: string): Promise<ServiceModel | null>
+    findMany(filter: ServiceFilterOptions): Promise<ServiceModel[]>
+    create(request: CreateServiceModel): Promise<ServiceModel | null>
+    update(request: UpdateServiceModel): Promise<ServiceModel | null>
+    delete(id: number): Promise<void>
 }

@@ -1,19 +1,13 @@
-import { UserOAuthIdentity } from '@prisma/generated'
-
-import {
-    OAuthIdentityCreateRequestDto,
-    OAuthIdentityDeleteRequestDto,
-    OAuthIdentityFilterOptions,
-    OAuthIdentityLoadRequestDto,
-} from '@/types/dtos/userOAuthIdentityDto'
+import { CreateUserOAuthIdentityModel, UserOAuthIdentityModel } from '@/types/models/userOAuthIdentity'
+import { OAuthIdentityFilterOptions } from '@/types/dtos/userOAuthIdentityDto'
 
 export const IUserOAuthIdentityRepository = Symbol('IUserOAuthIdentityRepository')
 
 export interface IUserOAuthIdentityRepository {
-    get(request: OAuthIdentityLoadRequestDto): Promise<UserOAuthIdentity | null>
-    getMany(filter: OAuthIdentityFilterOptions, take?: number): Promise<UserOAuthIdentity[]>
-    post(request: OAuthIdentityCreateRequestDto): Promise<UserOAuthIdentity | null>
-    delete(request: OAuthIdentityDeleteRequestDto): Promise<void>
-    existsByProviderAndProfileId(provider_id: number, profile_id: string): Promise<boolean>
-    getByUsername(username: string): Promise<UserOAuthIdentity[]>
+    find(providerId: number, profileId: string): Promise<UserOAuthIdentityModel | null>
+    findByUsername(username: string): Promise<UserOAuthIdentityModel[]>
+    findMany(filter: OAuthIdentityFilterOptions, take?: number): Promise<UserOAuthIdentityModel[]>
+    create(request: CreateUserOAuthIdentityModel): Promise<UserOAuthIdentityModel | null>
+    delete(providerId: number, profileId: string): Promise<void>
+    identityExists(providerId: number, profileId: string): Promise<boolean>
 }

@@ -1,5 +1,5 @@
 import { routes } from "@/types/dtos/routes";
-import { Controller, Injectable, Request, Post } from "@nestjs/common";
+import { Controller, Request, Post } from "@nestjs/common";
 import type { Request as ExpressRequest} from 'express'
 
 @Controller(routes.test.basePath)

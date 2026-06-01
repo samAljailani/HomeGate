@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { AuthSchemeName } from '@prisma/generated'
+import { AuthSchemeName } from '@/types/models/authScheme'
 import { IsEnum, IsInt, IsNotEmpty } from 'class-validator'
 
 export class AuthSchemeLoadRequestDto {

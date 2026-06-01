@@ -17,9 +17,7 @@ export class PrismaSessionStore extends session.Store {
     async get(sid: string, callback: (err: unknown, session?: session.SessionData | null) => void): Promise<void> {
         try {
             const hashedSid = this.cryptographyProvider.HashSha256(sid).toString('hex')
-            const sessionRecord = await this.sessionRepository.get({
-                sid: hashedSid,
-            })
+            const sessionRecord = await this.sessionRepository.findById(hashedSid)
 
             if (!sessionRecord) {
                 return callback(null, null)
@@ -45,14 +43,12 @@ export class PrismaSessionStore extends session.Store {
                 ? new Date(sessionData.cookie.expires)
                 : new Date(Date.now() + (sessionData.cookie.maxAge || 0))
 
-            const existing = await this.sessionRepository.get({
-                sid: hashedSid,
-            })
+            const existing = await this.sessionRepository.findById(hashedSid)
 
             if (existing) {
-                await this.sessionRepository.put(hashedSid, sessionData, expiresAt)
+                await this.sessionRepository.update({sid: hashedSid, data: sessionData, expiresAt: expiresAt})
             } else {
-                await this.sessionRepository.post({
+                await this.sessionRepository.create({
                     sid: hashedSid,
                     data: sessionData,
                     expiresAt,
@@ -69,7 +65,7 @@ export class PrismaSessionStore extends session.Store {
     async destroy(sid: string, callback?: (err?: unknown) => void): Promise<void> {
         try {
             const hashedSid = this.cryptographyProvider.HashSha256(sid).toString('hex')
-            await this.sessionRepository.delete({ sid: hashedSid })
+            await this.sessionRepository.delete(hashedSid)
             callback?.()
         } catch (error) {
             callback?.(error)

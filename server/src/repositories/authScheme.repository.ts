@@ -1,8 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { AuthScheme, AuthSchemeName } from '@prisma/generated'
-import { AuthSchemeFilterOptions, AuthSchemeLoadRequestDto } from '@/types/dtos/authSchemeDto'
+import { AuthSchemeName } from '@prisma/generated'
+import type { AuthSchemeModel as PrismaAuthScheme } from '@prisma/generated/models'
+import { AuthSchemeFilterOptions } from '@/types/dtos/authSchemeDto'
 import { IAuthSchemeRepository } from './IAuthSchemeRepository'
+import { AuthSchemeModel } from '@/types/models/authScheme'
 
 @Injectable()
 export class AuthSchemeRepository implements IAuthSchemeRepository {
@@ -11,24 +13,37 @@ export class AuthSchemeRepository implements IAuthSchemeRepository {
         this.db = db
     }
 
-    async get(request: AuthSchemeLoadRequestDto): Promise<AuthScheme | null> {
-        return this.db.authScheme.findUnique({
-            where: { id: request.id },
-        })
+    private mapAuthScheme(authScheme: PrismaAuthScheme): AuthSchemeModel {
+        return {
+            id: authScheme.id,
+            name: authScheme.name,
+        }
     }
 
-    async getByName(name: string): Promise<AuthScheme | null> {
+    async findById(id: number): Promise<AuthSchemeModel | null> {
+        const authScheme = await this.db.authScheme.findUnique({
+            where: { id },
+        })
+
+        return authScheme ? this.mapAuthScheme(authScheme) : null
+    }
+
+    async findByName(name: string): Promise<AuthSchemeModel | null> {
         if (!Object.values(AuthSchemeName).includes(name as AuthSchemeName)) {
             return null
         }
-        return this.db.authScheme.findUnique({
+        const authScheme = await this.db.authScheme.findUnique({
             where: { name: name as AuthSchemeName },
         })
+
+        return authScheme ? this.mapAuthScheme(authScheme) : null
     }
 
-    async getMany(filter: AuthSchemeFilterOptions): Promise<AuthScheme[]> {
-        return this.db.authScheme.findMany({
+    async findMany(filter: AuthSchemeFilterOptions): Promise<AuthSchemeModel[]> {
+        const authSchemes = await this.db.authScheme.findMany({
             where: { ...filter },
         })
+
+        return authSchemes.map((authScheme) => this.mapAuthScheme(authScheme))
     }
 }

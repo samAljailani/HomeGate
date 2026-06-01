@@ -90,7 +90,7 @@ export class DatabaseLogger implements IAppLogger {
         const context = options?.context ?? this.context ?? null
         const stackTrace = options?.stackTrace ?? null
 
-        this.loggingRepository.post({
+        this.loggingRepository.create({
             userId: null,
             sessionId: null,
             correlationId: this.cls?.getId() ?? null,
@@ -469,7 +469,7 @@ export class LoggingProvider {
     private handleFunction(level: LogLevel, targets: LogTarget[], message: LogFunction, details?: LogDetails) {
         let resolvedMessage: string | undefined
 
-        for (let logger of this.loggers) {
+        for (const logger of this.loggers) {
             if (!this.shouldWriteToLogger(logger, level, targets)) {
                 continue
             }
@@ -480,7 +480,7 @@ export class LoggingProvider {
     }
 
     private handleMessage(level: LogLevel, targets: LogTarget[], message: string | Error, details?: LogDetails) {
-        for (let logger of this.loggers) {
+        for (const logger of this.loggers) {
             if (!this.shouldWriteToLogger(logger, level, targets)) {
                 continue
             }

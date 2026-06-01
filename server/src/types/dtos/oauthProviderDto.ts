@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { OAuthProviderName } from '@prisma/generated'
+import { OAuthProviderName } from '@/types/models/oauthProvider'
 import { IsBoolean, IsEnum, IsInt, IsNotEmpty } from 'class-validator'
 
 export class OAuthProviderLoadRequestDto {

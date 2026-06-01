@@ -1,14 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { UserModel } from '@prisma/generated/models'
-import {
-    UserCreateRequestDto,
-    UserDeleteRequestDto,
-    UserFilterOptions,
-    UserLoadRequestDto,
-    UserUpdateRequestDto,
-} from '@/types/dtos/userDto'
+import { UserDeleteRequestDto, UserFilterOptions } from '@/types/dtos/userDto'
 import { IUserRepository } from './IUserRepository'
+import type { UserModel as PrismaUser } from '@prisma/generated/models'
+import { CreateUserModel, UpdateUserModel, UserModel } from '@/types/models/user'
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -17,48 +12,65 @@ export class UserRepository implements IUserRepository {
         this.db = db
     }
 
-    async get(request: UserLoadRequestDto): Promise<UserModel | null> {
-        const user = await this.db.user.findUnique({
-            where: { id: request.userId },
-        })
-
-        return user
+    private mapUser(user: PrismaUser): UserModel {
+        return {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            isAdmin: user.isAdmin,
+            isDeleted: user.isDeleted,
+            createdAt: user.createdAt,
+        }
     }
 
-    async getUserByEmail(email: string): Promise<UserModel | null> {
+    async findById(id: string): Promise<UserModel | null> {
+        const user = await this.db.user.findUnique({
+            where: { id: id },
+        })
+
+        return user ? this.mapUser(user) : null
+    }
+
+    async findByEmail(email: string): Promise<UserModel | null> {
         const user = await this.db.user.findUnique({
             where: { email: email },
         })
 
-        return user
+        return user ? this.mapUser(user) : null
     }
 
-    async getMany(filter: UserFilterOptions, take?: number): Promise<UserModel[]> {
-        return this.db.user.findMany({
+    async findMany(filter: UserFilterOptions, take?: number): Promise<UserModel[]> {
+        const users = await this.db.user.findMany({
             where: { ...filter },
             ...(take !== undefined && { take }),
         })
+
+        return users.map((user) => this.mapUser(user))
     }
 
-    async post(request: UserCreateRequestDto): Promise<UserModel | null> {
+    async create(request: CreateUserModel): Promise<UserModel | null> {
         const user = await this.db.user.create({
             data: request,
         })
 
-        return user
+        return this.mapUser(user)
     }
 
-    async existsByUsername(username: string): Promise<boolean> {
+    async usernameExists(username: string): Promise<boolean> {
         const count = await this.db.user.count({ where: { username } })
         return count > 0
     }
 
-    async put(request: UserUpdateRequestDto): Promise<UserModel | null> {
-        const { userId, ...data } = request
-        return this.db.user.update({
-            where: { id: userId },
+    async update(request: UpdateUserModel): Promise<UserModel | null> {
+        const { id, ...data } = request
+        const user = await this.db.user.update({
+            where: { id },
             data,
         })
+
+        return this.mapUser(user)
     }
 
     async delete(request: UserDeleteRequestDto): Promise<void> {

@@ -1,14 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { UserAccount } from '@prisma/generated'
-import {
-    UserAccountCreateRequestDto,
-    UserAccountDeleteRequestDto,
-    UserAccountFilterOptions,
-    UserAccountLoadRequestDto,
-    UserAccountUpdateRequestDto,
-} from '@/types/dtos/userAccountDto'
+import { UserAccountFilterOptions } from '@/types/dtos/userAccountDto'
 import { IUserAccountRepository } from './IUserAccountRepository'
+import type { UserAccountModel as PrismaUserAccount } from '@prisma/generated/models'
+import { CreateUserAccountModel, UpdateUserAccountModel, UserAccountModel } from '@/types/models/userAccount'
 
 @Injectable()
 export class UserAccountRepository implements IUserAccountRepository {
@@ -17,45 +12,63 @@ export class UserAccountRepository implements IUserAccountRepository {
         this.db = db
     }
 
-    async get(request: UserAccountLoadRequestDto): Promise<UserAccount | null> {
-        return this.db.userAccount.findUnique({
+    private mapUserAccount(userAccount: PrismaUserAccount): UserAccountModel {
+        return {
+            userId: userAccount.userId,
+            serviceId: userAccount.serviceId,
+            username: userAccount.username,
+            isActive: userAccount.isActive,
+            createdAt: userAccount.createdAt,
+        }
+    }
+
+    async find(userId: string, serviceId: number): Promise<UserAccountModel | null> {
+        const userAccount = await this.db.userAccount.findUnique({
             where: {
                 userId_serviceId: {
-                    userId: request.userId,
-                    serviceId: request.serviceId,
+                    userId: userId,
+                    serviceId: serviceId,
                 },
             },
         })
+
+        return userAccount ? this.mapUserAccount(userAccount) : null
     }
 
-    async getMany(filter: UserAccountFilterOptions): Promise<UserAccount[]> {
-        return this.db.userAccount.findMany({
+    async findMany(filter: UserAccountFilterOptions): Promise<UserAccountModel[]> {
+        const userAccounts = await this.db.userAccount.findMany({
             where: { ...filter },
         })
+
+        return userAccounts.map((userAccount) => this.mapUserAccount(userAccount))
     }
 
-    async post(request: UserAccountCreateRequestDto): Promise<UserAccount | null> {
-        return this.db.userAccount.create({
+    async create(request: CreateUserAccountModel): Promise<UserAccountModel | null> {
+        const userAccount = await this.db.userAccount.create({
             data: request,
         })
+
+        return this.mapUserAccount(userAccount)
     }
 
-    async put(request: UserAccountUpdateRequestDto): Promise<UserAccount | null> {
+    async update(request: UpdateUserAccountModel): Promise<UserAccountModel | null> {
         const { userId, serviceId, ...data } = request
-        return this.db.userAccount.update({
+        const userAccount = await this.db.userAccount.update({
             where: {
                 userId_serviceId: { userId, serviceId },
             },
             data,
         })
+
+        return this.mapUserAccount(userAccount)
     }
 
-    async delete(request: UserAccountDeleteRequestDto): Promise<void> {
+    async delete(userId: string, serviceId: number): Promise<void> {
         await this.db.userAccount.delete({
             where: {
                 userId_serviceId: {
-                    userId: request.userId,
-                    serviceId: request.serviceId,
+                    userId: userId,
+                    serviceId: serviceId,
                 },
             },
         })

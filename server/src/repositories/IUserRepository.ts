@@ -1,21 +1,14 @@
-import { UserModel } from '@prisma/generated/models'
-
-import {
-    UserCreateRequestDto,
-    UserDeleteRequestDto,
-    UserFilterOptions,
-    UserLoadRequestDto,
-    UserUpdateRequestDto,
-} from '@/types/dtos/userDto'
+import { UserDeleteRequestDto, UserFilterOptions } from '@/types/dtos/userDto'
+import { CreateUserModel, UpdateUserModel, UserModel } from '@/types/models/user'
 
 export const IUserRepository = Symbol('IUserRepository')
 
 export interface IUserRepository {
-    get(request: UserLoadRequestDto): Promise<UserModel | null>
-    getUserByEmail(email: string): Promise<UserModel | null>
-    getMany(filter: UserFilterOptions, take?: number): Promise<UserModel[]>
-    post(request: UserCreateRequestDto): Promise<UserModel | null>
-    put(request: UserUpdateRequestDto): Promise<UserModel | null>
+    findById(id: string): Promise<UserModel | null>
+    findByEmail(email: string): Promise<UserModel | null>
+    findMany(filter: UserFilterOptions, take?: number): Promise<UserModel[]>
+    create(request: CreateUserModel): Promise<UserModel | null>
+    update(request: UpdateUserModel): Promise<UserModel | null>
+    usernameExists(username: string): Promise<boolean>
     delete(request: UserDeleteRequestDto): Promise<void>
-    existsByUsername(username: string): Promise<boolean>
 }

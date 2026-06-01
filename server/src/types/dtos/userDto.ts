@@ -2,8 +2,8 @@ import { ApiProperty } from '@nestjs/swagger'
 import { IsBoolean, IsDate, IsEmail, IsNotEmpty, IsString, IsUUID } from 'class-validator'
 
 export class UserFindOptions {
-    withDeleted?: Boolean
-    withActive?: Boolean
+    withDeleted?: boolean
+    withActive?: boolean
 }
 
 export class UserFilterOptions {
@@ -24,11 +24,6 @@ export class UserLoadRequestDto {
 }
 
 export class UserCreateRequestDto {
-    @ApiProperty({ type: String })
-    @IsString()
-    @IsNotEmpty()
-    password: string
-
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
@@ -98,10 +93,6 @@ export class UserUpdateRequestDto {
     @ApiProperty({ type: String, required: false })
     @IsString()
     username?: string
-
-    @ApiProperty({ type: String, required: false })
-    @IsString()
-    password?: string
 }
 
 export class UserDeleteRequestDto {

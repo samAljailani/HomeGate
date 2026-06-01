@@ -7,7 +7,7 @@ import {
     UserResponseDto,
     UserResponseForAdmin,
 } from '@/types/dtos/userDto'
-import { UserModel } from '@prisma/generated/models'
+import { UserModel } from '@/types/models/user'
 import { randomInt } from 'crypto'
 import { IUserOAuthIdentityRepository } from '@/repositories'
 import { OAuthIdentityCreateRequestDto, OAuthIdentityResponseDto } from '@/types/dtos/userOAuthIdentityDto'
@@ -36,7 +36,7 @@ export class UserService extends BaseService {
 
         newUser.username = await this.generateUsername(newUser.email)
 
-        const savedUser = await this.userRepository.post(newUser)
+        const savedUser = await this.userRepository.create(newUser)
 
         if (savedUser) {
             response = this.userModelToLoadRequest(savedUser!)
@@ -46,7 +46,7 @@ export class UserService extends BaseService {
     }
 
     async getUserById(request: UserLoadRequestDto): Promise<UserResponseDto | null> {
-        const user = await this.userRepository.get(request)
+        const user = await this.userRepository.findById(request.userId)
 
         if (!!user) {
             return this.userModelToLoadRequest(user!)
@@ -57,7 +57,7 @@ export class UserService extends BaseService {
 
     //TODO: move this to a different Admin User service.
     async getUserByEmail(email: string): Promise<UserResponseForAdmin | null> {
-        const user = await this.userRepository.getUserByEmail(email)
+        const user = await this.userRepository.findByEmail(email)
         if (!!user) {
             return {
                 id: user.id,
@@ -74,7 +74,7 @@ export class UserService extends BaseService {
     }
 
     async getUserByProperties(filter: UserFilterOptions): Promise<UserResponseDto[]> {
-        const users = await this.userRepository.getMany(filter)
+        const users = await this.userRepository.findMany(filter)
         return users.map((u) => this.userModelToLoadRequest(u))
     }
 
@@ -84,8 +84,8 @@ export class UserService extends BaseService {
 
         let username = base
 
-        while (await this.userRepository.existsByUsername(username)) {
-            let counter = randomInt(1, 10000000)
+        while (await this.userRepository.usernameExists(username)) {
+            const counter = randomInt(1, 10000000)
             username = `${base}${counter}`
         }
 
@@ -97,10 +97,7 @@ export class UserService extends BaseService {
     // #region UserOAuthIdentity Methods
 
     async getUserOAuthIdentity(providerId: number, profileId: string): Promise<OAuthIdentityResponseDto | null> {
-        const identity = await this.userOAuthIdentityRepository.get({
-            providerId: providerId,
-            profileId: profileId,
-        })
+        const identity = await this.userOAuthIdentityRepository.find(providerId, profileId)
         if (!identity) return null
 
         return {
@@ -113,7 +110,7 @@ export class UserService extends BaseService {
     }
 
     async CreateUserOAuthIdentity(request: OAuthIdentityCreateRequestDto): Promise<OAuthIdentityResponseDto | null> {
-        const identity = await this.userOAuthIdentityRepository.post(request)
+        const identity = await this.userOAuthIdentityRepository.create(request)
         if (!identity) return null
 
         return {
@@ -126,6 +123,8 @@ export class UserService extends BaseService {
     }
 
     // #endregion UserOAuthIdentity Methods
+
+    // #region Mappers
 
     userModelToLoadRequestForAdmin(userModel: UserModel): UserResponseForAdmin {
         const dto: UserResponseForAdmin = {
@@ -142,7 +141,6 @@ export class UserService extends BaseService {
         return dto
     }
 
-    // #region Mappers
     userModelToLoadRequest(userModel: UserModel): UserResponseDto {
         const dto: UserResponseDto = {
             id: userModel.id,

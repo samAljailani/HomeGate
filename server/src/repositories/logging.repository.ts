@@ -8,7 +8,7 @@ import { LogLevel } from '@prisma/generated'
 export class LoggingRepository implements ILoggingRepository {
     constructor(@Inject(PrismaProvider) private db: PrismaProvider) {}
 
-    public async post(log: CreateLogModel): Promise<boolean> {
+    public async create(log: CreateLogModel): Promise<boolean> {
         // logging should not crash the request flow, and hence this db call is wrapped in a try catch.
         try {
             await this.db.log.create({
