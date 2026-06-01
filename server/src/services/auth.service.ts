@@ -42,9 +42,9 @@ export class AuthService extends BaseService {
 
             const provider = await this.oauthProviderRepository.getByName(request.provider)
 
-            if (provider == null) {
+            if (provider == null || !provider.enabled) {
                 this.logger.fatal(
-                    `Attempted login for user with email: ${request.email}, provider: ${request.provider}, yet the provider is not a recognized provider.`
+                    `Attempted login for user with email: ${request.email}, provider: ${request.provider}, yet the provider is not a recognized provider or is disabled.`
                 )
                 response.success = false
                 return response

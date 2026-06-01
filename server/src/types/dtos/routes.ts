@@ -33,6 +33,7 @@ export const routes = {
         google: 'google',
         googleRedirect: 'google/redirect',
     }),
+    csrf: defineRoutes('/api/csrf', {}),
     test: defineRoutes('/api/test', {}),
 } satisfies RoutesConfig
 

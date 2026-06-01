@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 
 export class AuthResponseDto {
@@ -30,6 +30,12 @@ export class OpenIDRequestDto {
     @IsString({ each: true })
     @IsNotEmpty()
     scope: string[]
+
+    @IsBoolean()
+    pkce?: boolean
+
+    @IsBoolean()
+    state?: boolean
 }
 
 export class OpenIDUserResponseDto {

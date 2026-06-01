@@ -20,6 +20,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
             clientSecret: clientSecret,
             callbackURL: `${host}${routes.auth.googleRedirect}`,
             scope: scope,
+            pkce: true,
+            state: true,
         }
 
         super(dto)
