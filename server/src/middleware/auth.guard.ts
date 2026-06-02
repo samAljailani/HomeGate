@@ -25,12 +25,14 @@ export class AuthGuard implements CanActivate {
         const request = context.switchToHttp().getRequest<Request>()
 
         if (!request.session?.userId) {
+            request.session.destroy(() => {})
             return false
         }
 
         const user = await this.userRepository.findById(request.session.userId)
 
         if (!user || user.isDeleted) {
+            request.session.destroy(() => {})
             return false
         }
 

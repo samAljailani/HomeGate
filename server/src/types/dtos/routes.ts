@@ -32,6 +32,7 @@ export const routes = {
     auth: defineRoutes('/api/auth', {
         google: 'google',
         googleRedirect: 'google/redirect',
+        signOut: 'signOut',
     }),
     csrf: defineRoutes('/api/csrf', {}),
     test: defineRoutes('/api/test', {}),

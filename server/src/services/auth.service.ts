@@ -77,4 +77,8 @@ export class AuthService extends BaseService {
 
         return response
     }
+
+    async signOut(userId: string | undefined, username?: string | undefined): Promise<void> {
+        this.logger.log(`User ${username ?? userId ?? 'unknown'} logged out`)
+    }
 }
