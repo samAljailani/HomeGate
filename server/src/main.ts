@@ -13,6 +13,7 @@ import { AppModule } from '@/app.module'
 import { AppEnv } from '@/types/models/EnvData'
 
 import { PrismaSessionStore } from '@/infrastructure/prismaSession.store'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { ConfigRepository } from '@/repositories/config.repository'
 import { csrfSynchronisedProtection } from '@/security/csrf'
 
@@ -21,6 +22,17 @@ async function bootstrap() {
 
     const sessionStore = app.get(PrismaSessionStore)
     const configRepository = app.get(ConfigRepository)
+    const logger = app.get(LoggingProvider)
+    logger.setContext('Process')
+
+    process.on('unhandledRejection', (reason: unknown) => {
+        logger.fatal(`Unhandled promise rejection: ${reason instanceof Error ? reason.stack : reason}`)
+    })
+
+    process.on('uncaughtException', (error: Error) => {
+        logger.fatal(`Uncaught exception: ${error.stack}`)
+        process.exit(1)
+    })
 
     const env = configRepository.getEnv()
 

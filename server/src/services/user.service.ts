@@ -47,8 +47,8 @@ export class UserService extends BaseService {
     async getUserById(request: UserLoadRequestDto): Promise<UserResponseDto | null> {
         const user = await this.userRepository.findById(request.userId)
 
-        if (!!user) {
-            return this.userModelToLoadRequest(user!)
+        if (user) {
+            return this.userModelToLoadRequest(user)
         }
 
         return null
@@ -57,19 +57,17 @@ export class UserService extends BaseService {
     //TODO: move this to a different Admin User service.
     async getUserByEmail(email: string): Promise<UserResponseForAdmin | null> {
         const user = await this.userRepository.findByEmail(email)
-        if (!!user) {
-            return {
-                id: user.id,
-                email: user.email,
-                username: user.username,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                isAdmin: user.isAdmin,
-                isDeleted: user.isDeleted,
-                createdAt: user.createdAt,
-            }
+        if (!user) return null
+        return {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            isAdmin: user.isAdmin,
+            isDeleted: user.isDeleted,
+            createdAt: user.createdAt,
         }
-        return null
     }
 
     async getUserByProperties(filter: UserFilterOptions): Promise<UserResponseDto[]> {

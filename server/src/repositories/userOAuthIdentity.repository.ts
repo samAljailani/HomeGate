@@ -1,5 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { BaseRepository } from './base.repository'
 import { OAuthIdentityFilterOptions } from '@/types/models/userOAuthIdentity'
 import { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository'
 import type { UserOAuthIdentityModel as PrismaUserOAuthIdentity } from '@prisma/generated/models'
@@ -10,10 +12,12 @@ import {
 } from '@/types/models/userOAuthIdentity'
 
 @Injectable()
-export class UserOAuthIdentityRepository implements IUserOAuthIdentityRepository {
-    private db: PrismaProvider
-    constructor(@Inject(PrismaProvider) db: PrismaProvider) {
-        this.db = db
+export class UserOAuthIdentityRepository extends BaseRepository implements IUserOAuthIdentityRepository {
+    constructor(
+        @Inject(PrismaProvider) db: PrismaProvider,
+        @Inject(LoggingProvider) logger: LoggingProvider
+    ) {
+        super(db, logger)
     }
 
     private mapIdentity(identity: PrismaUserOAuthIdentity): UserOAuthIdentityModel {
@@ -27,70 +31,95 @@ export class UserOAuthIdentityRepository implements IUserOAuthIdentityRepository
     }
 
     async find(providerId: number, profileId: string): Promise<UserOAuthIdentityModel | null> {
-        const identity = await this.db.userOAuthIdentity.findUnique({
-            where: {
-                providerId_profileId: {
-                    providerId: providerId,
-                    profileId: profileId,
-                },
-            },
-        })
-
-        return identity ? this.mapIdentity(identity) : null
+        try {
+            const identity = await this.db.userOAuthIdentity.findUnique({
+                where: { providerId_profileId: { providerId, profileId } },
+            })
+            return identity ? this.mapIdentity(identity) : null
+        } catch (error) {
+            this.logger.error(`find failed for providerId: ${providerId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 
     async findByUsername(username: string): Promise<UserOAuthIdentityModel[]> {
-        const identities = await this.db.userOAuthIdentity.findMany({
-            where: {
-                user: { username },
-            },
-        })
-
-        return identities.map((identity) => this.mapIdentity(identity))
+        try {
+            const identities = await this.db.userOAuthIdentity.findMany({
+                where: { user: { username } },
+            })
+            return identities.map((identity) => this.mapIdentity(identity))
+        } catch (error) {
+            this.logger.error(`findByUsername failed for username: ${username}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 
     async findMany(filter: OAuthIdentityFilterOptions, take?: number): Promise<UserOAuthIdentityModel[]> {
-        const identities = await this.db.userOAuthIdentity.findMany({
-            where: { ...filter },
-            ...(take !== undefined && { take }),
-        })
-
-        return identities.map((identity) => this.mapIdentity(identity))
+        try {
+            const identities = await this.db.userOAuthIdentity.findMany({
+                where: { ...filter },
+                ...(take !== undefined && { take }),
+            })
+            return identities.map((identity) => this.mapIdentity(identity))
+        } catch (error) {
+            this.logger.error('findMany failed', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 
     async create(request: CreateUserOAuthIdentityModel): Promise<UserOAuthIdentityModel | null> {
-        const identity = await this.db.userOAuthIdentity.create({
-            data: request,
-        })
-
-        return this.mapIdentity(identity)
+        try {
+            const identity = await this.db.userOAuthIdentity.create({ data: request })
+            return this.mapIdentity(identity)
+        } catch (error) {
+            this.logger.error('create failed', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 
     async update(request: UpdateUserOAuthIdentityModel): Promise<UserOAuthIdentityModel | null> {
-        const { id, ...data } = request
-        const identity = await this.db.userOAuthIdentity.update({
-            where: { id },
-            data,
-        })
-
-        return this.mapIdentity(identity)
+        try {
+            const { id, ...data } = request
+            const identity = await this.db.userOAuthIdentity.update({ where: { id }, data })
+            return this.mapIdentity(identity)
+        } catch (error) {
+            this.logger.error(`update failed for id: ${request.id}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 
     async delete(providerId: number, profileId: string): Promise<void> {
-        await this.db.userOAuthIdentity.delete({
-            where: {
-                providerId_profileId: {
-                    providerId: providerId,
-                    profileId: profileId,
-                },
-            },
-        })
+        try {
+            await this.db.userOAuthIdentity.delete({
+                where: { providerId_profileId: { providerId, profileId } },
+            })
+        } catch (error) {
+            this.logger.error(`delete failed for providerId: ${providerId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 
     async identityExists(providerId: number, profileId: string): Promise<boolean> {
-        const count = await this.db.userOAuthIdentity.count({
-            where: { providerId, profileId },
-        })
-        return count > 0
+        try {
+            const count = await this.db.userOAuthIdentity.count({ where: { providerId, profileId } })
+            return count > 0
+        } catch (error) {
+            this.logger.error(`identityExists check failed for providerId: ${providerId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 }

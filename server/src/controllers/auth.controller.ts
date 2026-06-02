@@ -6,10 +6,16 @@ import type { Request as ExpressRequest, Response as ExpressResponse } from 'exp
 import { routes, clientRoutes } from '../types/dtos/routes'
 import { Public } from '@/decorators'
 import { Throttle } from '@nestjs/throttler'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
 
 @Controller(routes.auth.basePath)
 export class AuthController {
-    constructor(@Inject(AuthService) private readonly authService: AuthService) {}
+    constructor(
+        @Inject(AuthService) private readonly authService: AuthService,
+        @Inject(LoggingProvider) private readonly logger: LoggingProvider
+    ) {
+        this.logger.setContext(AuthController.name)
+    }
 
     @Public()
     @Get(routes.auth.subPath.google)
@@ -50,6 +56,9 @@ export class AuthController {
 
             return res.redirect(clientRoutes.home)
         } catch (error) {
+            this.logger.error('Session regeneration or save failed after Google login', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
             response.success = false
             response.data = null
             return res.redirect(`${clientRoutes.signIn}?error=session_failed`)
@@ -61,9 +70,14 @@ export class AuthController {
         const userId = req.session.userId
         const username = req.session.username
 
-        await this.authService.signOut(userId, username)
-
-        await new Promise<void>((resolve) => req.session.destroy(() => resolve()))
+        try {
+            await this.authService.signOut(userId, username)
+            await new Promise<void>((resolve) => req.session.destroy(() => resolve()))
+        } catch (error) {
+            this.logger.error(`Failed to sign out user ${userId ?? 'unknown'}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+        }
 
         return res.redirect(clientRoutes.signIn)
     }

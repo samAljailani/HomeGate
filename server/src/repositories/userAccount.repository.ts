@@ -1,5 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { BaseRepository } from './base.repository'
 import { IUserAccountRepository } from './IUserAccountRepository'
 import type { UserAccountModel as PrismaUserAccount } from '@prisma/generated/models'
 import {
@@ -10,10 +12,12 @@ import {
 } from '@/types/models/userAccount'
 
 @Injectable()
-export class UserAccountRepository implements IUserAccountRepository {
-    private db: PrismaProvider
-    constructor(@Inject(PrismaProvider) db: PrismaProvider) {
-        this.db = db
+export class UserAccountRepository extends BaseRepository implements IUserAccountRepository {
+    constructor(
+        @Inject(PrismaProvider) db: PrismaProvider,
+        @Inject(LoggingProvider) logger: LoggingProvider
+    ) {
+        super(db, logger)
     }
 
     private mapUserAccount(userAccount: PrismaUserAccount): UserAccountModel {
@@ -27,54 +31,69 @@ export class UserAccountRepository implements IUserAccountRepository {
     }
 
     async find(userId: string, serviceId: number): Promise<UserAccountModel | null> {
-        const userAccount = await this.db.userAccount.findUnique({
-            where: {
-                userId_serviceId: {
-                    userId: userId,
-                    serviceId: serviceId,
-                },
-            },
-        })
-
-        return userAccount ? this.mapUserAccount(userAccount) : null
+        try {
+            const userAccount = await this.db.userAccount.findUnique({
+                where: { userId_serviceId: { userId, serviceId } },
+            })
+            return userAccount ? this.mapUserAccount(userAccount) : null
+        } catch (error) {
+            this.logger.error(`find failed for userId: ${userId}, serviceId: ${serviceId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 
     async findMany(filter: UserAccountFilterOptions): Promise<UserAccountModel[]> {
-        const userAccounts = await this.db.userAccount.findMany({
-            where: { ...filter },
-        })
-
-        return userAccounts.map((userAccount) => this.mapUserAccount(userAccount))
+        try {
+            const userAccounts = await this.db.userAccount.findMany({ where: { ...filter } })
+            return userAccounts.map((userAccount) => this.mapUserAccount(userAccount))
+        } catch (error) {
+            this.logger.error('findMany failed', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 
     async create(request: CreateUserAccountModel): Promise<UserAccountModel | null> {
-        const userAccount = await this.db.userAccount.create({
-            data: request,
-        })
-
-        return this.mapUserAccount(userAccount)
+        try {
+            const userAccount = await this.db.userAccount.create({ data: request })
+            return this.mapUserAccount(userAccount)
+        } catch (error) {
+            this.logger.error('create failed', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 
     async update(request: UpdateUserAccountModel): Promise<UserAccountModel | null> {
-        const { userId, serviceId, ...data } = request
-        const userAccount = await this.db.userAccount.update({
-            where: {
-                userId_serviceId: { userId, serviceId },
-            },
-            data,
-        })
-
-        return this.mapUserAccount(userAccount)
+        try {
+            const { userId, serviceId, ...data } = request
+            const userAccount = await this.db.userAccount.update({
+                where: { userId_serviceId: { userId, serviceId } },
+                data,
+            })
+            return this.mapUserAccount(userAccount)
+        } catch (error) {
+            this.logger.error(`update failed for userId: ${request.userId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 
     async delete(userId: string, serviceId: number): Promise<void> {
-        await this.db.userAccount.delete({
-            where: {
-                userId_serviceId: {
-                    userId: userId,
-                    serviceId: serviceId,
-                },
-            },
-        })
+        try {
+            await this.db.userAccount.delete({
+                where: { userId_serviceId: { userId, serviceId } },
+            })
+        } catch (error) {
+            this.logger.error(`delete failed for userId: ${userId}, serviceId: ${serviceId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            throw error
+        }
     }
 }
