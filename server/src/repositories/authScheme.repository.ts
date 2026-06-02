@@ -6,6 +6,8 @@ import { AuthSchemeName } from '@prisma/generated'
 import type { AuthSchemeModel as PrismaAuthScheme } from '@prisma/generated/models'
 import { IAuthSchemeRepository } from './IAuthSchemeRepository'
 import { AuthSchemeModel, AuthSchemeFilterOptions } from '@/types/models/authScheme'
+import { mapPrismaError } from './util'
+import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class AuthSchemeRepository extends BaseRepository implements IAuthSchemeRepository {
@@ -31,7 +33,7 @@ export class AuthSchemeRepository extends BaseRepository implements IAuthSchemeR
             this.logger.error(`findById failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.authScheme)
         }
     }
 
@@ -48,7 +50,7 @@ export class AuthSchemeRepository extends BaseRepository implements IAuthSchemeR
             this.logger.error(`findByName failed for name: ${name}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.authScheme)
         }
     }
 
@@ -60,7 +62,7 @@ export class AuthSchemeRepository extends BaseRepository implements IAuthSchemeR
             this.logger.error('findMany failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.authScheme)
         }
     }
 }

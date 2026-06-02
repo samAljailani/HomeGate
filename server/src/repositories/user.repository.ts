@@ -5,6 +5,8 @@ import { BaseRepository } from './base.repository'
 import { IUserRepository } from './IUserRepository'
 import type { UserModel as PrismaUser } from '@prisma/generated/models'
 import { CreateUserModel, UpdateUserModel, UserModel, UserFilterOptions } from '@/types/models/user'
+import { mapPrismaError } from './util'
+import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class UserRepository extends BaseRepository implements IUserRepository {
@@ -36,7 +38,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             this.logger.error(`findById failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.user)
         }
     }
 
@@ -48,7 +50,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             this.logger.error(`findByEmail failed for email: ${email}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.user)
         }
     }
 
@@ -63,7 +65,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             this.logger.error('findMany failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.user)
         }
     }
 
@@ -75,7 +77,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             this.logger.error(`create failed for email: ${request.email}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.user)
         }
     }
 
@@ -87,7 +89,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             this.logger.error(`usernameExists check failed for username: ${username}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.user)
         }
     }
 
@@ -100,7 +102,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             this.logger.error(`update failed for id: ${request.id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.user)
         }
     }
 
@@ -111,7 +113,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             this.logger.error(`delete failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.user)
         }
     }
 }

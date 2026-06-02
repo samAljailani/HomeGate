@@ -5,6 +5,8 @@ import { BaseRepository } from './base.repository'
 import { IServiceRepository } from './IServiceRepository'
 import type { ServiceModel as PrismaService } from '@prisma/generated/models'
 import { CreateServiceModel, ServiceModel, UpdateServiceModel, ServiceFilterOptions } from '@/types/models/service'
+import { mapPrismaError } from './util'
+import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class ServiceRepository extends BaseRepository implements IServiceRepository {
@@ -31,7 +33,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
             this.logger.error(`findById failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.service)
         }
     }
 
@@ -43,7 +45,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
             this.logger.error(`findByName failed for name: ${name}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.service)
         }
     }
 
@@ -55,7 +57,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
             this.logger.error('findMany failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.service)
         }
     }
 
@@ -67,7 +69,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
             this.logger.error('create failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.service)
         }
     }
 
@@ -80,7 +82,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
             this.logger.error(`update failed for id: ${request.id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.service)
         }
     }
 
@@ -91,7 +93,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
             this.logger.error(`delete failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.service)
         }
     }
 }

@@ -10,6 +10,8 @@ import {
     UserAccountModel,
     UserAccountFilterOptions,
 } from '@/types/models/userAccount'
+import { mapPrismaError } from './util'
+import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class UserAccountRepository extends BaseRepository implements IUserAccountRepository {
@@ -40,7 +42,7 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
             this.logger.error(`find failed for userId: ${userId}, serviceId: ${serviceId}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userAccount)
         }
     }
 
@@ -52,7 +54,7 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
             this.logger.error('findMany failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userAccount)
         }
     }
 
@@ -64,7 +66,7 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
             this.logger.error('create failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userAccount)
         }
     }
 
@@ -80,7 +82,7 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
             this.logger.error(`update failed for userId: ${request.userId}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userAccount)
         }
     }
 
@@ -93,7 +95,7 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
             this.logger.error(`delete failed for userId: ${userId}, serviceId: ${serviceId}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userAccount)
         }
     }
 }

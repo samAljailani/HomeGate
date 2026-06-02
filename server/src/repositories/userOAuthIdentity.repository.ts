@@ -10,6 +10,8 @@ import {
     UpdateUserOAuthIdentityModel,
     UserOAuthIdentityModel,
 } from '@/types/models/userOAuthIdentity'
+import { mapPrismaError } from './util'
+import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class UserOAuthIdentityRepository extends BaseRepository implements IUserOAuthIdentityRepository {
@@ -40,7 +42,7 @@ export class UserOAuthIdentityRepository extends BaseRepository implements IUser
             this.logger.error(`find failed for providerId: ${providerId}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userOAuthIdentity)
         }
     }
 
@@ -54,7 +56,7 @@ export class UserOAuthIdentityRepository extends BaseRepository implements IUser
             this.logger.error(`findByUsername failed for username: ${username}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userOAuthIdentity)
         }
     }
 
@@ -69,7 +71,7 @@ export class UserOAuthIdentityRepository extends BaseRepository implements IUser
             this.logger.error('findMany failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userOAuthIdentity)
         }
     }
 
@@ -81,7 +83,7 @@ export class UserOAuthIdentityRepository extends BaseRepository implements IUser
             this.logger.error('create failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userOAuthIdentity)
         }
     }
 
@@ -94,7 +96,7 @@ export class UserOAuthIdentityRepository extends BaseRepository implements IUser
             this.logger.error(`update failed for id: ${request.id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userOAuthIdentity)
         }
     }
 
@@ -107,7 +109,7 @@ export class UserOAuthIdentityRepository extends BaseRepository implements IUser
             this.logger.error(`delete failed for providerId: ${providerId}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userOAuthIdentity)
         }
     }
 
@@ -119,7 +121,7 @@ export class UserOAuthIdentityRepository extends BaseRepository implements IUser
             this.logger.error(`identityExists check failed for providerId: ${providerId}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.userOAuthIdentity)
         }
     }
 }

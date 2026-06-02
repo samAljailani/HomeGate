@@ -6,6 +6,8 @@ import { OAuthProviderName } from '@prisma/generated'
 import type { OAuthProviderModel as PrismaOAuthProvider } from '@prisma/generated/models'
 import { IOAuthProviderRepository } from './IOAuthProviderRepository'
 import { OAuthProviderModel, OAuthProviderFilterOptions } from '@/types/models/oauthProvider'
+import { mapPrismaError } from './util'
+import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class OAuthProviderRepository extends BaseRepository implements IOAuthProviderRepository {
@@ -32,7 +34,7 @@ export class OAuthProviderRepository extends BaseRepository implements IOAuthPro
             this.logger.error(`findById failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.oauthProvider)
         }
     }
 
@@ -49,7 +51,7 @@ export class OAuthProviderRepository extends BaseRepository implements IOAuthPro
             this.logger.error(`findByName failed for name: ${name}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.oauthProvider)
         }
     }
 
@@ -61,7 +63,7 @@ export class OAuthProviderRepository extends BaseRepository implements IOAuthPro
             this.logger.error('findMany failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.oauthProvider)
         }
     }
 }

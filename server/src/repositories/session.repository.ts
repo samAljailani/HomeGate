@@ -5,6 +5,8 @@ import { BaseRepository } from './base.repository'
 import { ISessionRepository } from './ISessionRepository'
 import type { SessionModel as PrismaSession } from '@prisma/generated/models'
 import { CreateSessionModel, SessionModel, UpdateSessionModel, SessionFilterOptions } from '@/types/models/session'
+import { mapPrismaError } from './util'
+import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class SessionRepository extends BaseRepository implements ISessionRepository {
@@ -33,7 +35,7 @@ export class SessionRepository extends BaseRepository implements ISessionReposit
             this.logger.error(`delete failed for sid: ${sid}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.session)
         }
     }
 
@@ -45,7 +47,7 @@ export class SessionRepository extends BaseRepository implements ISessionReposit
             this.logger.error(`touch failed for sid: ${sid}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.session)
         }
     }
 
@@ -57,7 +59,7 @@ export class SessionRepository extends BaseRepository implements ISessionReposit
             this.logger.error(`findById failed for sid: ${sid}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.session)
         }
     }
 
@@ -69,7 +71,7 @@ export class SessionRepository extends BaseRepository implements ISessionReposit
             this.logger.error(`findByUserId failed for userId: ${userId}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.session)
         }
     }
 
@@ -81,7 +83,7 @@ export class SessionRepository extends BaseRepository implements ISessionReposit
             this.logger.error('findMany failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.session)
         }
     }
 
@@ -93,7 +95,7 @@ export class SessionRepository extends BaseRepository implements ISessionReposit
             this.logger.error('create failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.session)
         }
     }
 
@@ -108,7 +110,7 @@ export class SessionRepository extends BaseRepository implements ISessionReposit
             this.logger.error(`update failed for sid: ${request.sid}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            throw error
+            mapPrismaError(error, repositoryErrorMessages.session)
         }
     }
 }
