@@ -4,7 +4,7 @@ import { Strategy, VerifyCallback, Profile } from 'passport-google-oauth20'
 import { Inject, Injectable } from '@nestjs/common'
 import { ConfigRepository } from '@/repositories/config.repository'
 import { routes } from '@/types/dtos/routes'
-import { OpenIDRequestDto, OpenIDUserResponseDto } from '@/types/dtos/authDto'
+import { OpenIDRequestDto, OAuthUserProfileDto } from '@/types/dtos/authDto'
 import { OAuthProviderName } from '@/types/models/oauthProvider'
 
 @Injectable()
@@ -33,7 +33,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         const email = emails?.[0]?.value
         if (!email) throw new UnauthorizedException('No email from Google profile')
 
-        const user: OpenIDUserResponseDto = {
+        const user: OAuthUserProfileDto = {
             providerAccountId: id,
             email,
             ...(name?.givenName && { firstName: name.givenName }),

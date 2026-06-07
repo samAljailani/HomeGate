@@ -38,7 +38,7 @@ export class OpenIDRequestDto {
     state?: boolean
 }
 
-export class OpenIDUserResponseDto {
+export class OAuthUserProfileDto {
     @IsString()
     @IsNotEmpty()
     providerAccountId: string

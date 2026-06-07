@@ -1,8 +1,7 @@
-import { OpenIDUserResponseDto } from '@/types/dtos/authDto'
+import { OAuthUserProfileDto } from '@/types/dtos/authDto'
 import { Injectable, Inject, forwardRef } from '@nestjs/common'
 import { UserService } from './user.service'
 import { IOAuthProviderRepository } from '@/repositories'
-import { ApiResponse } from '../../lib/ApiMessaging'
 import { UserResponseDto } from '@/types/dtos/userDto'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -17,11 +16,7 @@ export class AuthService extends BaseService {
         super(logger)
     }
 
-    async googleLogin(request: OpenIDUserResponseDto): Promise<ApiResponse<UserResponseDto | null>> {
-        const response: ApiResponse<UserResponseDto | null> = {
-            success: true,
-            messages: [],
-        }
+    async authorize(request: OAuthUserProfileDto): Promise<UserResponseDto | null> {
 
         try {
             const user = await this.userService.getUserByEmail(request.email)
@@ -30,14 +25,14 @@ export class AuthService extends BaseService {
                 this.logger.log(
                     `Failed Login attempt for non registered user. Provider: ${request.provider}, Email: ${request.email}.`
                 )
-                response.success = false
-                return response
+                
+                return null;
             }
 
             if (user.isDeleted) {
                 this.logger.log(`Attempted login for user with email: ${request.email}, provider: ${request.provider}`)
-                response.success = false
-                return response
+                
+                return null
             }
 
             const provider = await this.oauthProviderRepository.findByName(request.provider)
@@ -46,8 +41,8 @@ export class AuthService extends BaseService {
                 this.logger.fatal(
                     `Attempted login for user with email: ${request.email}, provider: ${request.provider}, yet the provider is not a recognized provider or is disabled.`
                 )
-                response.success = false
-                return response
+
+                return null
             }
 
             const identity = await this.userService.getUserOAuthIdentity(provider.id, request.providerAccountId)
@@ -62,9 +57,9 @@ export class AuthService extends BaseService {
                 })
             }
 
-            response.success = true
-            response.data = user
             this.logger.log(`user ${user.username} successfully logged in`)
+
+            return user;
         } catch (error: unknown) {
             const stackTrace = error instanceof Error ? error.stack : undefined
             this.logger.error(
@@ -72,10 +67,9 @@ export class AuthService extends BaseService {
                 { stackTrace: stackTrace }
             )
 
-            response.success = false
         }
 
-        return response
+        return null
     }
 
     async signOut(userId: string | undefined, username?: string | undefined): Promise<void> {

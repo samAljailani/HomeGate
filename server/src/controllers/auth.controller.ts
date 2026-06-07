@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Request, Inject, Res, UseGuards } from '@nestjs/common'
 import { AuthService } from '@/services/auth.service'
-import { OpenIDUserResponseDto } from '@/types/dtos/authDto'
+import { OAuthUserProfileDto } from '@/types/dtos/authDto'
 import { GoogleOAuthGuard } from '@/middleware/google-oauth.guard'
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
 import { routes, clientRoutes } from '../types/dtos/routes'
@@ -30,39 +30,7 @@ export class AuthController {
     @UseGuards(GoogleOAuthGuard)
     @Throttle({ short: { ttl: 60_000, limit: 10 } })
     async googleAuthRedirect(@Request() req: ExpressRequest, @Res() res: ExpressResponse) {
-        const body = req.user as OpenIDUserResponseDto
-
-        const response = await this.authService.googleLogin(body)
-        if (!response.success || !response.data) {
-            return res.redirect(`${clientRoutes.signIn}?error=auth_failed`)
-        }
-
-        try {
-            await new Promise<void>((resolve, reject) => {
-                req.session.regenerate((err) => {
-                    if (err) return reject(err)
-
-                    req.session.userId = response.data!.id
-                    req.session.username = response.data!.username
-                    req.session.isAdmin = response.data!.isAdmin
-
-                    req.session.save((err) => {
-                        if (err) return reject(err)
-
-                        resolve()
-                    })
-                })
-            })
-
-            return res.redirect(clientRoutes.home)
-        } catch (error) {
-            this.logger.error('Session regeneration or save failed after Google login', {
-                stackTrace: error instanceof Error ? error.stack : undefined,
-            })
-            response.success = false
-            response.data = null
-            return res.redirect(`${clientRoutes.signIn}?error=session_failed`)
-        }
+        return this.handleOAuthRedirect(req, res)
     }
 
     @Post(routes.auth.subPath.signOut)
@@ -80,5 +48,39 @@ export class AuthController {
         }
 
         return res.redirect(clientRoutes.signIn)
+    }
+
+    private async handleOAuthRedirect(req: ExpressRequest, res: ExpressResponse) {
+        const body = req.user as OAuthUserProfileDto
+        const response = await this.authService.authorize(body)
+
+        if (!response || response.id === '' || response.id == null) {
+            return res.redirect(`${clientRoutes.signIn}?error=auth_failed`)
+        }
+
+        try {
+            await new Promise<void>((resolve, reject) => {
+                req.session.regenerate((err) => {
+                    if (err) return reject(err)
+
+                    req.session.userId = response.id
+                    req.session.username = response.username
+                    req.session.isAdmin = response.isAdmin
+
+                    req.session.save((err) => {
+                        if (err) return reject(err)
+
+                        resolve()
+                    })
+                })
+            })
+
+            return res.redirect(clientRoutes.home)
+        } catch (error) {
+            this.logger.error('Session regeneration or save failed after OAuth login', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            return res.redirect(`${clientRoutes.signIn}?error=session_failed`)
+        }
     }
 }

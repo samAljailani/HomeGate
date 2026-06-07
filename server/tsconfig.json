@@ -47,8 +47,5 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true
-  },
-  "references": [
-    { "path": "../packages/types" }
-  ]
+  }
 }
