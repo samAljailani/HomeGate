@@ -1,8 +1,6 @@
 import { UserModel } from '@/types/models/user'
 
-export function createUserFixture(
-    overrides: Partial<UserModel> = {},
-): UserModel {
+export function createUserFixture(overrides: Partial<UserModel> = {}): UserModel {
     return {
         id: 'xxx',
         email: 'test@example.com',

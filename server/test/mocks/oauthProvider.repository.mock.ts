@@ -1,4 +1,4 @@
-import { IOAuthProviderRepository } from '@/repositories/IOAuthProviderRepository'
+import { IOAuthProviderRepository } from '@/data/repositories/IOAuthProviderRepository'
 
 export function createOAuthProviderRepositoryMock(): jest.Mocked<IOAuthProviderRepository> {
     return {

@@ -1,4 +1,4 @@
-import { ConfigRepository } from '@/repositories/config.repository'
+import { ConfigRepository } from '@/data/repositories/config.repository'
 
 import { IAuthSchemeRepository } from './IAuthSchemeRepository'
 import { IOAuthProviderRepository } from './IOAuthProviderRepository'

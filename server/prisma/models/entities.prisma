@@ -56,13 +56,14 @@ model Service {
 }
 
 model UserAccount {
-  userId    String   @map("user_id") @db.Uuid
-  serviceId Int      @map("service_id")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  isActive  Boolean  @default(true) @map("is_active")
-  username  String   @unique @db.VarChar(64)
-  service   Service  @relation("ServiceAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
-  user      User     @relation("UserAccounts", fields: [userId], references: [id], onDelete: Cascade)
+  userId               String   @map("user_id") @db.Uuid
+  userServiceAccountId String   @map("user_service_account_id")
+  serviceId            Int      @map("service_id")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  isActive             Boolean  @default(true) @map("is_active")
+  username             String   @unique @db.VarChar(64)
+  service              Service  @relation("ServiceAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
+  user                 User     @relation("UserAccounts", fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, serviceId], map: "user_accounts_pkey")
   @@map("user_accounts")

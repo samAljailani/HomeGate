@@ -2,7 +2,7 @@ import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/com
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
 import { AuthGuard } from '@nestjs/passport'
-import { OAuthUserProfileDto } from '../types/dtos/authDto'
+import { OAuthUserProfileDto } from '../../types/dtos/authDto'
 
 @Injectable()
 export class GoogleOAuthGuard extends AuthGuard('google') {

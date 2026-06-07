@@ -50,4 +50,10 @@ export interface EnvData {
     cls: {
         config: ClsModuleOptions
     }
+    jellyfin: {
+        baseUrl: string
+        apiKey: string
+        clientName: string
+        deviceId: string
+    }
 }

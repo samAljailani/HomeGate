@@ -1,8 +1,6 @@
 import { OAuthUserProfileDto } from '@/types/dtos/authDto'
 
-export function createOpenIDUserFixture(
-    overrides: Partial<OAuthUserProfileDto> = {},
-): OAuthUserProfileDto {
+export function createOpenIDUserFixture(overrides: Partial<OAuthUserProfileDto> = {}): OAuthUserProfileDto {
     const dto = new OAuthUserProfileDto()
     Object.assign(dto, {
         providerAccountId: 'google-profile-123',

@@ -15,10 +15,7 @@ import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class UserOAuthIdentityRepository extends BaseRepository implements IUserOAuthIdentityRepository {
-    constructor(
-        @Inject(PrismaProvider) db: PrismaProvider,
-        @Inject(LoggingProvider) logger: LoggingProvider
-    ) {
+    constructor(@Inject(PrismaProvider) db: PrismaProvider, @Inject(LoggingProvider) logger: LoggingProvider) {
         super(db, logger)
     }
 

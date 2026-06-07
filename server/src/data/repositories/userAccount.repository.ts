@@ -15,16 +15,14 @@ import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class UserAccountRepository extends BaseRepository implements IUserAccountRepository {
-    constructor(
-        @Inject(PrismaProvider) db: PrismaProvider,
-        @Inject(LoggingProvider) logger: LoggingProvider
-    ) {
+    constructor(@Inject(PrismaProvider) db: PrismaProvider, @Inject(LoggingProvider) logger: LoggingProvider) {
         super(db, logger)
     }
 
     private mapUserAccount(userAccount: PrismaUserAccount): UserAccountModel {
         return {
             userId: userAccount.userId,
+            userServiceAccountId: userAccount.userServiceAccountId,
             serviceId: userAccount.serviceId,
             username: userAccount.username,
             isActive: userAccount.isActive,

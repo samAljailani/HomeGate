@@ -1,7 +1,7 @@
 import { ExecutionContext } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { AuthGuard } from '@/middleware/auth.guard'
-import { IUserRepository } from '@/repositories'
+import { AuthGuard } from '@/api/middleware/auth.guard'
+import { IUserRepository } from '@/data/repositories'
 import { createRequestMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 

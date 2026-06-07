@@ -1,15 +1,15 @@
-import { AuthService } from "@/services/auth.service"
-import { createAuthServiceMock } from "../../mocks/auth.service.mock"
-import { createLoggerMock } from "../../mocks/logger.provider.mock"
-import { LoggingProvider } from "@/infrastructure/logger.provider"
-import { AuthController } from "@/controllers/auth.controller"
-import { Test, TestingModule } from "@nestjs/testing"
-import { createOAuthUserProfileFixture } from "../../fixtures/auth.stub"
-import { createRequestMock, createResponseMock } from "../../mocks/httpContext.mock"
-import { createUserFixture } from "../../fixtures/user.stub"
+import { AuthService } from '@/api/services/auth.service'
+import { createAuthServiceMock } from '../../mocks/auth.service.mock'
+import { createLoggerMock } from '../../mocks/logger.provider.mock'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { AuthController } from '@/api/controllers/auth.controller'
+import { Test, TestingModule } from '@nestjs/testing'
+import { createOAuthUserProfileFixture } from '../../fixtures/auth.stub'
+import { createRequestMock, createResponseMock } from '../../mocks/httpContext.mock'
+import { createUserFixture } from '../../fixtures/user.stub'
 
-describe("AuthController", () => {
-    let controller: AuthController;
+describe('AuthController', () => {
+    let controller: AuthController
     let authServiceMock: ReturnType<typeof createAuthServiceMock>
     let loggingProviderMock: ReturnType<typeof createLoggerMock>
     let expressRequestMock: ReturnType<typeof createRequestMock>
@@ -26,7 +26,7 @@ describe("AuthController", () => {
                 { provide: AuthService, useValue: authServiceMock },
                 { provide: LoggingProvider, useValue: loggingProviderMock },
                 AuthController,
-            ]
+            ],
         }).compile()
 
         controller = module.get<AuthController>(AuthController)
@@ -36,8 +36,7 @@ describe("AuthController", () => {
         expect(controller).toBeDefined()
     })
 
-    describe("googleAuthRedirect", () => {
-
+    describe('googleAuthRedirect', () => {
         describe('when user is not authenticated', () => {
             it('does not create a session and redirects to sign-in with error', async () => {
                 //Arrange

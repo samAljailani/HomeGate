@@ -1,5 +1,5 @@
 import { IS_PUBLIC } from '@/decorators'
-import { IUserRepository } from '@/repositories'
+import { IUserRepository } from '@/data/repositories'
 import { Injectable, Inject, CanActivate, ExecutionContext } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { Request } from 'express'

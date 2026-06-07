@@ -21,6 +21,11 @@ const getEnv = (): EnvData => {
         .map((x) => x.trim())
         .filter(Boolean) as LogTarget[]
 
+    const JELLYFIN_BASE_URL = process.env['JELLYFIN_BASE_URL']
+    const JELLYFIN_API_KEY = process.env['JELLYFIN_API_KEY']
+    const JELLYFIN_CLIENT_NAME = process.env['CLIENT_ID']
+    const JELLYFIN_DEVICE_ID = process.env['DEVICE_ID']
+
     const COLOR_LOGS = process.env['COLOR_LOGS']?.toLowerCase() === 'true'
 
     const envData: EnvData = {
@@ -66,6 +71,12 @@ const getEnv = (): EnvData => {
                     },
                 },
             },
+        },
+        jellyfin: {
+            baseUrl: JELLYFIN_BASE_URL!,
+            apiKey: JELLYFIN_API_KEY!,
+            clientName: JELLYFIN_CLIENT_NAME!,
+            deviceId: JELLYFIN_DEVICE_ID!,
         },
     }
 

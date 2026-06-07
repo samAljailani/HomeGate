@@ -3,7 +3,10 @@ import { GlobalExceptionFilter } from '@/infrastructure/global-exception.filter'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createRequestMock, createResponseMock } from '../../mocks/httpContext.mock'
 
-function createMockHost(req: ReturnType<typeof createRequestMock>, res: ReturnType<typeof createResponseMock>): ArgumentsHost {
+function createMockHost(
+    req: ReturnType<typeof createRequestMock>,
+    res: ReturnType<typeof createResponseMock>
+): ArgumentsHost {
     return {
         switchToHttp: jest.fn().mockReturnValue({
             getRequest: jest.fn().mockReturnValue(req),
@@ -43,10 +46,12 @@ describe('GlobalExceptionFilter', () => {
             filter.catch(new HttpException('Not found', HttpStatus.NOT_FOUND), host)
 
             expect(res.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND)
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-                statusCode: HttpStatus.NOT_FOUND,
-                message: 'Not found',
-            }))
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Not found',
+                })
+            )
         })
 
         it('does not log 4xx errors', () => {
@@ -82,9 +87,11 @@ describe('GlobalExceptionFilter', () => {
             filter.catch(error, host)
 
             expect(res.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR)
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            }))
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                })
+            )
             expect(loggerMock.error).toHaveBeenCalled()
         })
     })

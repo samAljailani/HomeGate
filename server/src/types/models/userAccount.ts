@@ -1,5 +1,6 @@
 export type UserAccountModel = {
     userId: string
+    userServiceAccountId: string
     serviceId: number
     username: string
     isActive: boolean

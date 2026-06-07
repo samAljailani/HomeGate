@@ -1,8 +1,8 @@
 import { APP_GUARD } from '@nestjs/core'
 import { ThrottlerGuard } from '@nestjs/throttler'
 
-import { AuthGuard } from '@/middleware/auth.guard'
-import { GoogleOAuthGuard } from '@/middleware/google-oauth.guard'
+import { AuthGuard } from '@/api/middleware/auth.guard'
+import { GoogleOAuthGuard } from '@/api/middleware/google-oauth.guard'
 
 export const middleware = [
     GoogleOAuthGuard,
@@ -13,5 +13,5 @@ export const middleware = [
     {
         provide: APP_GUARD,
         useClass: ThrottlerGuard,
-    }
+    },
 ]

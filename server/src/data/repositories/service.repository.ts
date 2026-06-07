@@ -10,10 +10,7 @@ import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class ServiceRepository extends BaseRepository implements IServiceRepository {
-    constructor(
-        @Inject(PrismaProvider) db: PrismaProvider,
-        @Inject(LoggingProvider) logger: LoggingProvider
-    ) {
+    constructor(@Inject(PrismaProvider) db: PrismaProvider, @Inject(LoggingProvider) logger: LoggingProvider) {
         super(db, logger)
     }
 

@@ -7,10 +7,7 @@ export abstract class BaseRepository {
     protected readonly db: PrismaProvider
     protected readonly logger: LoggingProvider
 
-    constructor(
-        @Inject(PrismaProvider) db: PrismaProvider,
-        @Inject(LoggingProvider) logger: LoggingProvider
-    ) {
+    constructor(@Inject(PrismaProvider) db: PrismaProvider, @Inject(LoggingProvider) logger: LoggingProvider) {
         this.db = db
         this.logger = logger
         this.logger.setContext(this.constructor.name)

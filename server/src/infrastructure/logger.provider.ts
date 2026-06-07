@@ -1,9 +1,9 @@
 import { Scope, Injectable, Inject } from '@nestjs/common'
 import { isLogLevelEnabled } from '@nestjs/common/services/utils/is-log-level-enabled.util'
 import { ClsService } from 'nestjs-cls'
-import { ConfigRepository } from '@/repositories/config.repository'
+import { ConfigRepository } from '@/data/repositories/config.repository'
 import { LogColor, LogFormat, LogLevel, LogTarget } from '@/types/enums'
-import { ILoggingRepository } from '@/repositories/ILoggingRepository'
+import { ILoggingRepository } from '@/data/repositories/ILoggingRepository'
 
 type LogDetails = {
     context?: string

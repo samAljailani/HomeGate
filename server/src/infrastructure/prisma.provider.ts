@@ -1,4 +1,4 @@
-import { ConfigRepository } from '@/repositories/config.repository'
+import { ConfigRepository } from '@/data/repositories/config.repository'
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Logger } from '@nestjs/common'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/generated'

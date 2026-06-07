@@ -1,4 +1,4 @@
-import { UserService } from '@/services/user.service'
+import { UserService } from '@/api/services/user.service'
 
 export function createUserServiceMock(): jest.Mocked<
     Pick<UserService, 'getUserByEmail' | 'getUserOAuthIdentity' | 'CreateUserOAuthIdentity'>

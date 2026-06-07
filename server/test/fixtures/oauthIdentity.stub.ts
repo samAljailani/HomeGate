@@ -1,7 +1,7 @@
 import { OAuthIdentityResponseDto } from '@/types/dtos/userOAuthIdentityDto'
 
 export function createOAuthIdentityFixture(
-    overrides: Partial<OAuthIdentityResponseDto> = {},
+    overrides: Partial<OAuthIdentityResponseDto> = {}
 ): OAuthIdentityResponseDto {
     const dto = new OAuthIdentityResponseDto()
     Object.assign(dto, {

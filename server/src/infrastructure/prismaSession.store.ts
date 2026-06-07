@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common'
 import session from 'express-session'
-import { ISessionRepository } from '@/repositories/ISessionRepository'
+import { ISessionRepository } from '@/data/repositories/ISessionRepository'
 import { CryptographyProvider } from '@/infrastructure/cryptography.provider'
 
 @Injectable()

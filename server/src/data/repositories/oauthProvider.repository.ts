@@ -11,10 +11,7 @@ import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class OAuthProviderRepository extends BaseRepository implements IOAuthProviderRepository {
-    constructor(
-        @Inject(PrismaProvider) db: PrismaProvider,
-        @Inject(LoggingProvider) logger: LoggingProvider
-    ) {
+    constructor(@Inject(PrismaProvider) db: PrismaProvider, @Inject(LoggingProvider) logger: LoggingProvider) {
         super(db, logger)
     }
 

@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { AuthService } from '@/services/auth.service'
-import { UserService } from '@/services/user.service'
+import { AuthService } from '@/api/services/auth.service'
+import { UserService } from '@/api/services/user.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
-import { IOAuthProviderRepository } from '@/repositories/IOAuthProviderRepository'
+import { IOAuthProviderRepository } from '@/data/repositories/IOAuthProviderRepository'
 import { createUserFixture } from '../../fixtures/user.stub'
 import { createOAuthProviderFixture } from '../../fixtures/oauthProvider.stub'
 import { createOpenIDUserFixture } from '../../fixtures/openIdUser.stub'
@@ -78,9 +78,7 @@ describe('AuthService', () => {
         describe('when the OAuth provider is disabled', () => {
             it('returns null', async () => {
                 userServiceMock.getUserByEmail.mockResolvedValue(user)
-                oauthProviderRepositoryMock.findByName.mockResolvedValue(
-                    createOAuthProviderFixture({ enabled: false }),
-                )
+                oauthProviderRepositoryMock.findByName.mockResolvedValue(createOAuthProviderFixture({ enabled: false }))
 
                 const result = await service.authorize(request)
 
@@ -89,9 +87,7 @@ describe('AuthService', () => {
 
             it('does not attempt to look up or create an identity', async () => {
                 userServiceMock.getUserByEmail.mockResolvedValue(user)
-                oauthProviderRepositoryMock.findByName.mockResolvedValue(
-                    createOAuthProviderFixture({ enabled: false }),
-                )
+                oauthProviderRepositoryMock.findByName.mockResolvedValue(createOAuthProviderFixture({ enabled: false }))
 
                 await service.authorize(request)
 

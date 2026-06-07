@@ -1,5 +1,5 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common'
-import { GoogleOAuthGuard } from '@/middleware/google-oauth.guard'
+import { GoogleOAuthGuard } from '@/api/middleware/google-oauth.guard'
 import { createOAuthUserProfileFixture } from '../../fixtures/auth.stub'
 
 describe('GoogleOAuthGuard', () => {

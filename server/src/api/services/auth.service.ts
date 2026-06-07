@@ -1,7 +1,7 @@
 import { OAuthUserProfileDto } from '@/types/dtos/authDto'
 import { Injectable, Inject, forwardRef } from '@nestjs/common'
 import { UserService } from './user.service'
-import { IOAuthProviderRepository } from '@/repositories'
+import { IOAuthProviderRepository } from '@/data/repositories'
 import { UserResponseDto } from '@/types/dtos/userDto'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -17,7 +17,6 @@ export class AuthService extends BaseService {
     }
 
     async authorize(request: OAuthUserProfileDto): Promise<UserResponseDto | null> {
-
         try {
             const user = await this.userService.getUserByEmail(request.email)
 
@@ -25,13 +24,13 @@ export class AuthService extends BaseService {
                 this.logger.log(
                     `Failed Login attempt for non registered user. Provider: ${request.provider}, Email: ${request.email}.`
                 )
-                
-                return null;
+
+                return null
             }
 
             if (user.isDeleted) {
                 this.logger.log(`Attempted login for user with email: ${request.email}, provider: ${request.provider}`)
-                
+
                 return null
             }
 
@@ -59,14 +58,13 @@ export class AuthService extends BaseService {
 
             this.logger.log(`user ${user.username} successfully logged in`)
 
-            return user;
+            return user
         } catch (error: unknown) {
             const stackTrace = error instanceof Error ? error.stack : undefined
             this.logger.error(
                 `An unhandle error occured while attempting to login user with email: ${request.email}, provider: ${request.provider}`,
                 { stackTrace: stackTrace }
             )
-
         }
 
         return null
