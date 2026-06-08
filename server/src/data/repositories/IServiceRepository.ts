@@ -5,7 +5,7 @@ export const IServiceRepository = Symbol('IServiceRepository')
 
 export interface IServiceRepository {
     findById(id: number): Promise<ServiceModel | null>
-    findByName(name: string): Promise<ServiceModel | null>
+    findByName(name: ApplicationClientNames): Promise<ServiceModel | null>
     findMany(filter: ServiceFilterOptions): Promise<ServiceModel[]>
     findEnabled(): Promise<ServiceModel[]>
     isEnabled(name: ApplicationClientNames): Promise<boolean>

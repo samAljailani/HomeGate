@@ -51,7 +51,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async findByName(name: string): Promise<ServiceModel | null> {
+    async findByName(name: ApplicationClientNames): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.findUnique({
                 where: { name },

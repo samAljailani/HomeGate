@@ -15,11 +15,17 @@ export class ApplicationClientRegistry{
         this.logger.setContext(this.constructor.name)
     }
 
-    register(client: IApplicationClient): void {
+    async register(client: IApplicationClient): Promise<void> {
         if (this.clients.has(client.name)) {
             throw new Error(
                 `Application client "${client.name}" is already registered`,
             )
+        }
+
+        const dbClinet = await this.applicationClientRepository.findByName(client.name)
+
+        if(!dbClinet || dbClinet.name == ""){
+            throw new Error(`Cannot register Application client "${client.name}". The client is not a configured service`,)
         }
 
         this.clients.set(client.name, client)
