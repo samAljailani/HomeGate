@@ -178,7 +178,7 @@ export class JellyfinClient implements IApplicationClient {
                 isActive: data.Policy?.IsDisabled === true ? false : true, // assume user is enabled if not provided in the response
             }
         } catch (error) {
-            this.logger.error(`Error creating Jellyfin user given request: ${JSON.stringify(user)}`, {
+            this.logger.error(`Error creating Jellyfin user given request: user: ${user.username} email: ${user.email ?? ''}`, {
                 stackTrace: error instanceof Error ? error.stack : String(error),
             })
 
