@@ -1,4 +1,3 @@
-import { ServiceRepository } from "@/data/repositories/service.repository";
 import { LoggingProvider } from "@/infrastructure/logger.provider";
 import { ApplicationClientNames } from "@/types/enums";
 import { Inject, Injectable } from "@nestjs/common";
@@ -10,7 +9,7 @@ export class ApplicationClientRegistry{
     private readonly clients = new Map<ApplicationClientNames, IApplicationClient>()
     constructor(
         @Inject(LoggingProvider) private logger: LoggingProvider,
-        @Inject(IServiceRepository) private applicationClientRepository: ServiceRepository
+        @Inject(IServiceRepository) private applicationClientRepository: IServiceRepository
     ){
         this.logger.setContext(this.constructor.name)
     }

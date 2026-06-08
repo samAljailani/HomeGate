@@ -100,7 +100,7 @@ export class ImmichClient implements IApplicationClient {
 
             for (const user of data) {
                 if (!user.id || (!user.email && !user.name)) {
-                    this.logger.error(`Immich returned a user with missing information. user: ${JSON.stringify(user)}`)
+                    this.logger.error(`Immich returned a user with missing information. user: ${user.name ?? ''} user: ${user.email ?? ''}`)
                     continue
                 }
 
@@ -175,7 +175,7 @@ export class ImmichClient implements IApplicationClient {
                 isActive: !data.deletedAt,
             }
         } catch (error) {
-            this.logger.error(`Error creating Immich user given request: ${JSON.stringify(user)}`, {
+            this.logger.error(`Error creating Immich user given request: user:${user.username ?? '' } email: ${user.email ?? ''}`, {
                 stackTrace: error instanceof Error ? error.stack : String(error),
             })
 

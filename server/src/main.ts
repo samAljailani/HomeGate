@@ -24,7 +24,7 @@ async function bootstrap() {
     const sessionStore = app.get(PrismaSessionStore)
     const configRepository = app.get(ConfigRepository)
 
-    configureApplicationClients(app)
+    await configureApplicationClients(app)
 
     const env = configRepository.getEnv()
 
@@ -73,11 +73,11 @@ async function bootstrap() {
     console.log(`Server listening on http://localhost:${port}`)
 }
 
-function configureApplicationClients(app: NestExpressApplication) {
+async function configureApplicationClients(app: NestExpressApplication) {
     const applicationClientRegistry = app.get(ApplicationClientRegistry)
 
     for(let client of clients){
-        applicationClientRegistry.register(app.get(client))
+        await applicationClientRegistry.register(app.get(client))
     }
 }
 

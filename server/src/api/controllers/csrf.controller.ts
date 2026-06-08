@@ -7,7 +7,7 @@ import { Throttle } from '@nestjs/throttler'
 @Controller(routes.csrf.basePath)
 export class CsrfController {
     @Get()
-    @Throttle({ short: { ttl: 60_000, limit: 30 } })
+    @Throttle({ default: { ttl: 60_000, limit: 30 } })
     getCsrfToken(@Req() req: Request) {
         return {
             csrfToken: generateToken(req),
