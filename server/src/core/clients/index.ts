@@ -1,3 +1,5 @@
-import { JellyfinClient } from './jellyfin.client'
+import { ImmichClient } from './immich/immich.client'
+import { JellyfinClient } from './jellyfin/jellyfin.client'
 
-export const clients = [JellyfinClient]
+//do NOT include the registery in the clients list.
+export const clients = [JellyfinClient, ImmichClient]

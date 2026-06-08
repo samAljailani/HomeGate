@@ -1,5 +1,4 @@
 import 'dotenv/config'
-
 import 'reflect-metadata'
 
 import { ValidationPipe } from '@nestjs/common'
@@ -13,26 +12,19 @@ import { AppModule } from '@/app.module'
 import { AppEnv } from '@/types/models/EnvData'
 
 import { PrismaSessionStore } from '@/infrastructure/prismaSession.store'
-//import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { ConfigRepository } from '@/data/repositories/config.repository'
 import { csrfSynchronisedProtection } from '@/api/security/csrf'
+
+import { ApplicationClientRegistry } from './core/clients/applicationClientRegistry'
+import { clients } from './core/clients'
 
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule)
 
     const sessionStore = app.get(PrismaSessionStore)
     const configRepository = app.get(ConfigRepository)
-    // const logger = app.get(LoggingProvider)
-    // logger.setContext('Process')
 
-    // process.on('unhandledRejection', (reason: unknown) => {
-    //     logger.fatal(`Unhandled promise rejection: ${reason instanceof Error ? reason.stack : reason}`)
-    // })
-
-    // process.on('uncaughtException', (error: Error) => {
-    //     logger.fatal(`Uncaught exception: ${error.stack}`)
-    //     process.exit(1)
-    // })
+    configureApplicationClients(app)
 
     const env = configRepository.getEnv()
 
@@ -45,7 +37,7 @@ async function bootstrap() {
         cookie: {
             httpOnly: true,
             sameSite: 'lax',
-            maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+            maxAge: 1000 * 60 * 60 * 24 * 30,
         },
     }
 
@@ -58,11 +50,9 @@ async function bootstrap() {
         }
     }
 
-    // Global middleware
     app.use(session(sessionOptions))
     app.use(csrfSynchronisedProtection)
 
-    // Global validation pipe
     app.useGlobalPipes(
         new ValidationPipe({
             whitelist: true,
@@ -71,7 +61,7 @@ async function bootstrap() {
             transformOptions: {
                 enableImplicitConversion: true,
             },
-        })
+        }),
     )
 
     const port = env.port
@@ -80,8 +70,16 @@ async function bootstrap() {
 
     await app.listen(port)
 
-    //TODO: replace this console.log call with a logger once that infrastrcture is complete.
     console.log(`Server listening on http://localhost:${port}`)
+}
+
+function configureApplicationClients(app: NestExpressApplication) {
+    ApplicationClientRegistry
+    const applicationClientRegistry = app.get(ApplicationClientRegistry)
+
+    for(let client of clients){
+        applicationClientRegistry.register(app.get(client))
+    }
 }
 
 function configureSwagger(app: NestExpressApplication) {
@@ -96,10 +94,11 @@ function configureSwagger(app: NestExpressApplication) {
                 in: 'header',
                 description: 'CSRF token from GET /api/csrf',
             },
-            'csrf-token'
+            'csrf-token',
         )
         .addSecurityRequirements('csrf-token')
         .build()
+
     const document = SwaggerModule.createDocument(app, config)
     SwaggerModule.setup('api', app, document)
 }

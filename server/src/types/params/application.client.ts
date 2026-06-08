@@ -7,12 +7,14 @@ export type ApplicationUserModel = {
 export type CreateApplicationUserParam = {
     username: string
     password?: string
+    email?: string
     displayName?: string
 }
 
 export type UpdateApplicationUserParam = {
     username?: string
     password?: string
+    email?: string
     displayName?: string
     isActive?: boolean
 }

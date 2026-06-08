@@ -48,6 +48,7 @@ model AuthScheme {
 model Service {
   id           Int           @id @default(autoincrement())
   name         String        @unique @db.VarChar(64)
+  enabled      Boolean
   authSchemeId Int           @map("auth_scheme_id")
   authScheme   AuthScheme    @relation("ServiceAuthScheme", fields: [authSchemeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   userAccounts UserAccount[] @relation("ServiceAccounts")

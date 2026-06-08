@@ -11,6 +11,7 @@ import { repositories } from '@/data/repositories'
 import { providers } from '@/infrastructure'
 import { clients } from './core/clients'
 import { ClsModule } from 'nestjs-cls'
+import { ApplicationClientRegistry } from './core/clients/applicationClientRegistry'
 
 const configRepository: ConfigRepository = new ConfigRepository()
 const env = configRepository.getEnv()
@@ -30,6 +31,6 @@ const env = configRepository.getEnv()
         ]),
     ],
     controllers: [...controllers],
-    providers: [...repositories, ...providers, ...services, ...strategies, ...middleware, ...clients],
+    providers: [...repositories, ...providers, ...services, ...strategies, ...middleware, ...clients, ApplicationClientRegistry],
 })
 export class AppModule {}

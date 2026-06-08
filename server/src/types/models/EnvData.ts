@@ -1,6 +1,7 @@
 import { OAuthProviderName } from '@prisma/generated'
 import { ClsModuleOptions } from 'nestjs-cls'
 import { LogFormat, LogTarget } from '@/types/enums'
+import { ImmichProvisioningMode } from '@/types/enums'
 
 export enum AppEnv {
     Development = 'development',
@@ -55,5 +56,10 @@ export interface EnvData {
         apiKey: string
         clientName: string
         deviceId: string
+    }
+    immich: {
+        baseUrl: string
+        apiKey: string
+        provisioningMode: ImmichProvisioningMode
     }
 }

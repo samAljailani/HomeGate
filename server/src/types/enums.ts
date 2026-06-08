@@ -29,3 +29,13 @@ export enum LogTarget {
     Console = 'console',
     Database = 'database',
 }
+
+export enum ImmichProvisioningMode {
+    Local = 'local',
+    OAuth = 'oauth',
+}
+
+export enum ApplicationClientNames {
+    Jellyfin = 'jellyfin',
+    Immich = 'immich',
+}

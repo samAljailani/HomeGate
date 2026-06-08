@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common'
 import { CLS_ID } from 'nestjs-cls'
 import { Request, Response } from 'express'
 import { OAuthProviderName } from '@prisma/generated'
+import { ImmichProvisioningMode } from '@/types/enums'
 
 const getEnv = (): EnvData => {
     const APP_ENV = process.env['APP_ENV']
@@ -20,13 +21,16 @@ const getEnv = (): EnvData => {
         .split(',')
         .map((x) => x.trim())
         .filter(Boolean) as LogTarget[]
+    const COLOR_LOGS = process.env['COLOR_LOGS']?.toLowerCase() === 'true'
 
     const JELLYFIN_BASE_URL = process.env['JELLYFIN_BASE_URL']
     const JELLYFIN_API_KEY = process.env['JELLYFIN_API_KEY']
-    const JELLYFIN_CLIENT_NAME = process.env['CLIENT_ID']
-    const JELLYFIN_DEVICE_ID = process.env['DEVICE_ID']
+    const JELLYFIN_CLIENT_NAME = process.env['JELLYFIN_CLIENT_NAME']
+    const JELLYFIN_DEVICE_ID = process.env['JELLYFIN_DEVICE_ID']
 
-    const COLOR_LOGS = process.env['COLOR_LOGS']?.toLowerCase() === 'true'
+    const IMMICH_BASE_URL = process.env['IMMICH_BASE_URL']
+    const IMMICH_API_KEY = process.env['IMMICH_API_KEY']
+    const IMMICH_PROCISIONING_MODE = process.env['IMMICH_PROVISIONING_MODE'] as ImmichProvisioningMode
 
     const envData: EnvData = {
         //host: process.env['HOST'];
@@ -78,6 +82,11 @@ const getEnv = (): EnvData => {
             clientName: JELLYFIN_CLIENT_NAME!,
             deviceId: JELLYFIN_DEVICE_ID!,
         },
+        immich: {
+            baseUrl: IMMICH_BASE_URL!,
+            apiKey: IMMICH_API_KEY!,
+            provisioningMode: IMMICH_PROCISIONING_MODE!,
+        },
     }
 
     validateEnvData(envData)
@@ -99,6 +108,12 @@ const validateEnvData = (envData: EnvData): void => {
         !envData.logger && 'logger',
         !envData.logger?.targets?.length && 'logger.targets',
         !envData.logger?.logFormat && 'logger.logFormat',
+        !envData.jellyfin.baseUrl && 'jellyfin.baseUrl',
+        !envData.jellyfin.apiKey && 'jellyfin.apiKey',
+        !envData.jellyfin.clientName && 'jellyfin.clientName',
+        !envData.jellyfin.deviceId && 'jellyfin.deviceId',
+        !envData.immich.baseUrl && 'immich.baseUrl',
+        !envData.immich.apiKey && 'immich.apiKey',
     ].filter(Boolean)
 
     if (missing.length > 0) {
@@ -137,6 +152,13 @@ const validateEnvData = (envData: EnvData): void => {
     if (!Object.values(LogFormat).includes(envData.logger.logFormat as LogFormat)) {
         throw new Error(
             `Invalid log format: ${envData.logger.logFormat}. Must be one of: ${Object.values(LogFormat).join(', ')}`
+        )
+    }
+
+    if (!Object.values(ImmichProvisioningMode).includes(envData.immich.provisioningMode as ImmichProvisioningMode)) {
+        throw new Error(
+            `Invalid Immich provisioning mode: ${envData.immich.provisioningMode}. ` +
+                `Must be one of: ${Object.values(ImmichProvisioningMode).join(', ')}`
         )
     }
 
