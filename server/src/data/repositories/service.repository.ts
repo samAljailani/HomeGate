@@ -31,7 +31,6 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         return {
             id: service.id,
             name: service.name as ApplicationClientNames,
-            authSchemeId: service.authSchemeId,
             enabled: service.enabled,
         }
     }

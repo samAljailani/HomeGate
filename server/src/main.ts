@@ -74,7 +74,6 @@ async function bootstrap() {
 }
 
 function configureApplicationClients(app: NestExpressApplication) {
-    ApplicationClientRegistry
     const applicationClientRegistry = app.get(ApplicationClientRegistry)
 
     for(let client of clients){
