@@ -20,7 +20,7 @@ export class AuthController {
     @Public()
     @Get(routes.auth.subPath.google)
     @UseGuards(GoogleOAuthGuard)
-    @Throttle({ short: { ttl: 60_000, limit: 10 } })
+    @Throttle({ default: { ttl: 60_000, limit: 10 } })
     googleAuth() {
         /*method body never executed due to passport redirect*/
     }
@@ -28,7 +28,7 @@ export class AuthController {
     @Public()
     @Get(routes.auth.subPath.googleRedirect)
     @UseGuards(GoogleOAuthGuard)
-    @Throttle({ short: { ttl: 60_000, limit: 10 } })
+    @Throttle({ default: { ttl: 60_000, limit: 10 } })
     async googleAuthRedirect(@Request() req: ExpressRequest, @Res() res: ExpressResponse) {
         return this.handleOAuthRedirect(req, res)
     }

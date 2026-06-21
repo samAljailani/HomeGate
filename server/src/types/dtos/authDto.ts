@@ -64,7 +64,7 @@ export class OAuthUserProfileDto {
     accessToken: string
 
     @IsString()
-    @IsNotEmpty()
+    @IsOptional()
     refreshToken: string
 
     @IsString()

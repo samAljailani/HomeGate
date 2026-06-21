@@ -4,22 +4,14 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { BaseRepository } from './base.repository'
 import { IServiceRepository } from './IServiceRepository'
 import type { ServiceModel as PrismaService } from '@prisma/generated/models'
-import {
-    CreateServiceModel,
-    ServiceModel,
-    UpdateServiceModel,
-    ServiceFilterOptions,
-} from '@/types/models/service'
+import { CreateServiceModel, ServiceModel, UpdateServiceModel, ServiceFilterOptions } from '@/types/models/service'
 import { ApplicationClientNames } from '@/types/enums'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
 
 @Injectable()
 export class ServiceRepository extends BaseRepository implements IServiceRepository {
-    constructor(
-        @Inject(PrismaProvider) db: PrismaProvider,
-        @Inject(LoggingProvider) logger: LoggingProvider,
-    ) {
+    constructor(@Inject(PrismaProvider) db: PrismaProvider, @Inject(LoggingProvider) logger: LoggingProvider) {
         super(db, logger)
     }
 
@@ -118,10 +110,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async setEnabled(
-        name: ApplicationClientNames,
-        enabled: boolean,
-    ): Promise<ServiceModel | null> {
+    async setEnabled(name: ApplicationClientNames, enabled: boolean): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.update({
                 where: { name },

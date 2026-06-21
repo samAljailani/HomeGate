@@ -4,7 +4,9 @@ export type UserAccountModel = {
     serviceId: number
     username: string
     isActive: boolean
+    autoRenew: boolean
     createdAt: Date
+    expiresAt: Date
 }
 
 export type CreateUserAccountModel = Omit<UserAccountModel, 'createdAt'>

@@ -1,30 +1,32 @@
-import { LoggingProvider } from "@/infrastructure/logger.provider";
-import { ApplicationClientNames } from "@/types/enums";
-import { Inject, Injectable } from "@nestjs/common";
-import { IApplicationClient } from "./IApplicationClient";
-import { IServiceRepository } from "@/data/repositories";
+import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { ApplicationClientNames } from '@/types/enums'
+import { Inject, Injectable } from '@nestjs/common'
+import { IApplicationManager } from './IApplicationManager'
+import { IServiceRepository } from '@/data/repositories'
 
-@Injectable() 
-export class ApplicationClientRegistry{
-    private readonly clients = new Map<ApplicationClientNames, IApplicationClient>()
+@Injectable()
+export class ApplicationClientRegistry {
+    private readonly clients = new Map<ApplicationClientNames, IApplicationManager>()
     constructor(
         @Inject(LoggingProvider) private logger: LoggingProvider,
         @Inject(IServiceRepository) private applicationClientRepository: IServiceRepository
-    ){
+    ) {
         this.logger.setContext(this.constructor.name)
     }
 
-    async register(client: IApplicationClient): Promise<void> {
+    async register(client: IApplicationManager): Promise<void> {
         if (this.clients.has(client.name)) {
-            throw new Error(
-                `Application client "${client.name}" is already registered`,
-            )
+            this.logger.fatal(`Application client "${client.name}" is already registered`)
+            throw new Error(`Application client "${client.name}" is already registered`)
         }
 
         const dbClinet = await this.applicationClientRepository.findByName(client.name)
 
-        if(!dbClinet || dbClinet.name == ""){
-            throw new Error(`Cannot register Application client "${client.name}". The client is not a configured service`,)
+        if (!dbClinet || dbClinet.name == '') {
+            this.logger.fatal(`Cannot register Application client "${client.name}". The client is not a configured service`)
+            throw new Error(
+                `Cannot register Application client "${client.name}". The client is not a configured service`
+            )
         }
 
         this.clients.set(client.name, client)
@@ -34,23 +36,21 @@ export class ApplicationClientRegistry{
         return this.clients.has(name)
     }
 
-    get(name: ApplicationClientNames): IApplicationClient {
+    get(name: ApplicationClientNames): IApplicationManager {
         const client = this.clients.get(name)
 
         if (!client) {
-            throw new Error(
-                `Application client "${name}" was not registered`,
-            )
+            throw new Error(`Application client "${name}" was not registered`)
         }
 
         return client
     }
 
-    getAll(): IApplicationClient[] {
+    getAll(): IApplicationManager[] {
         return [...this.clients.values()]
     }
 
-     async isEnabled(name: ApplicationClientNames): Promise<boolean> {
+    async isEnabled(name: ApplicationClientNames): Promise<boolean> {
         this.get(name)
 
         return this.applicationClientRepository.isEnabled(name)
@@ -82,8 +82,8 @@ export class ApplicationClientRegistry{
         await client.onDisable?.()
     }
 
-    async getEnabled(): Promise<IApplicationClient[]> {
-        const enabledClients: IApplicationClient[] = []
+    async getEnabled(): Promise<IApplicationManager[]> {
+        const enabledClients: IApplicationManager[] = []
 
         for (const client of this.clients.values()) {
             const isEnabled = await this.applicationClientRepository.isEnabled(client.name)
@@ -95,5 +95,4 @@ export class ApplicationClientRegistry{
 
         return enabledClients
     }
-
 }

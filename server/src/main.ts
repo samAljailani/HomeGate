@@ -61,7 +61,7 @@ async function bootstrap() {
             transformOptions: {
                 enableImplicitConversion: true,
             },
-        }),
+        })
     )
 
     const port = env.port
@@ -76,7 +76,7 @@ async function bootstrap() {
 async function configureApplicationClients(app: NestExpressApplication) {
     const applicationClientRegistry = app.get(ApplicationClientRegistry)
 
-    for(let client of clients){
+    for (let client of clients) {
         await applicationClientRegistry.register(app.get(client))
     }
 }
@@ -93,7 +93,7 @@ function configureSwagger(app: NestExpressApplication) {
                 in: 'header',
                 description: 'CSRF token from GET /api/csrf',
             },
-            'csrf-token',
+            'csrf-token'
         )
         .addSecurityRequirements('csrf-token')
         .build()

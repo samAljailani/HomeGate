@@ -26,7 +26,9 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
             serviceId: userAccount.serviceId,
             username: userAccount.username,
             isActive: userAccount.isActive,
+            autoRenew: userAccount.autoRenew,
             createdAt: userAccount.createdAt,
+            expiresAt: userAccount.expiresAt
         }
     }
 

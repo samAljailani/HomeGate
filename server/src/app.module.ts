@@ -31,6 +31,14 @@ const env = configRepository.getEnv()
         ]),
     ],
     controllers: [...controllers],
-    providers: [...repositories, ...providers, ...services, ...strategies, ...middleware, ...clients, ApplicationClientRegistry],
+    providers: [
+        ...repositories,
+        ...providers,
+        ...services,
+        ...strategies,
+        ...middleware,
+        ...clients,
+        ApplicationClientRegistry,
+    ],
 })
 export class AppModule {}

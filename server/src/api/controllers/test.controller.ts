@@ -1,8 +1,11 @@
 import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
-import { IApplicationClient } from '@/core/clients/IApplicationClient'
+import { IApplicationManager } from '@/core/clients/IApplicationManager'
 import { routes } from '@/types/dtos/routes'
 import { ApplicationClientNames } from '@/types/enums'
 import { Public } from '@/decorators'
+import { type FilterApplicationUserParam } from '@/types/params/application.client'
+import { SubscriptionService } from '../services/subscriptions.service'
+import { SubscriptionCreateRequestDto } from '@/types/dtos/subscriptionsDto'
 import {
     BadRequestException,
     Body,
@@ -14,9 +17,10 @@ import {
     Patch,
     Post,
     Put,
+    Query,
     Request,
 } from '@nestjs/common'
-import { ApiBody, ApiOkResponse, ApiParam } from '@nestjs/swagger'
+import { ApiBody, ApiOkResponse, ApiParam, ApiQuery } from '@nestjs/swagger'
 import type { Request as ExpressRequest } from 'express'
 
 @Public()
@@ -25,14 +29,30 @@ export class TestController {
     constructor(
         @Inject(ApplicationClientRegistry)
         private readonly applicationClientRegistry: ApplicationClientRegistry,
+        @Inject(SubscriptionService)
+        private readonly subscriptionService: SubscriptionService
     ) {}
 
-    private getClient(name: string): IApplicationClient {
+    private getClient(name: string): IApplicationManager {
         if (!Object.values(ApplicationClientNames).includes(name as ApplicationClientNames)) {
             throw new BadRequestException(`Invalid application client name: ${name}`)
         }
 
-        return this.applicationClientRegistry.get(name as ApplicationClientNames)
+        const client = this.applicationClientRegistry.get(name as ApplicationClientNames)
+
+        if (!client) {
+            throw new BadRequestException(`Application client not found: ${name}`)
+        }
+
+        return client
+    }
+
+    private validateUserFilter(filter: FilterApplicationUserParam): FilterApplicationUserParam {
+        if (!filter?.username && !filter?.email && !filter?.userServiceAccountId) {
+            throw new BadRequestException('At least one filter is required: username, email, or userServiceAccountId')
+        }
+
+        return filter
     }
 
     @Post()
@@ -40,15 +60,34 @@ export class TestController {
         console.log(req.session.csrfToken)
     }
 
+    @ApiBody({
+        type: SubscriptionCreateRequestDto,
+    })
+    @Post('subscriptions/:userId')
+    async subscribe(@Body() request: SubscriptionCreateRequestDto, @Request() req: ExpressRequest) {
+        let userId = req.session?.userId!
+        return this.subscriptionService.subscribe(request, userId)
+    }
+
     @ApiParam({
         name: 'clientName',
         enum: ApplicationClientNames,
         required: true,
     })
-    @ApiParam({
-        name: 'userAccountId',
+    @ApiQuery({
+        name: 'username',
         type: 'string',
-        required: true,
+        required: false,
+    })
+    @ApiQuery({
+        name: 'email',
+        type: 'string',
+        required: false,
+    })
+    @ApiQuery({
+        name: 'userServiceAccountId',
+        type: 'string',
+        required: false,
     })
     @ApiOkResponse({
         schema: {
@@ -56,18 +95,17 @@ export class TestController {
             properties: {
                 id: { type: 'string' },
                 username: { type: 'string' },
+                email: { type: 'string' },
+                displayName: { type: 'string' },
                 isActive: { type: 'boolean' },
             },
         },
     })
-    @Get(':clientName/user/:userAccountId')
-    async getUser(
-        @Param('clientName') clientName: string,
-        @Param('userAccountId') userAccountId: string,
-    ) {
+    @Get(':clientName/user')
+    async getUser(@Param('clientName') clientName: string, @Query() filter: FilterApplicationUserParam) {
         const client = this.getClient(clientName)
 
-        return client.getUser(userAccountId)
+        return client.getUser(this.validateUserFilter(filter))
     }
 
     @ApiParam({
@@ -113,7 +151,7 @@ export class TestController {
     @Put(':clientName/user/create')
     async createUser(
         @Param('clientName') clientName: string,
-        @Body() request: Parameters<IApplicationClient['createUser']>[0],
+        @Body() request: Parameters<IApplicationManager['createUser']>[0]
     ) {
         const client = this.getClient(clientName)
 
@@ -125,6 +163,22 @@ export class TestController {
         enum: ApplicationClientNames,
         required: true,
     })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                username: {
+                    type: 'string',
+                },
+                email: {
+                    type: 'string',
+                },
+                userServiceAccountId: {
+                    type: 'string',
+                },
+            },
+        },
+    })
     @ApiOkResponse({
         schema: {
             type: 'object',
@@ -133,13 +187,11 @@ export class TestController {
             },
         },
     })
-    @Delete(':clientName/user/:userAccountId')
-    async deleteUser(
-        @Param('clientName') clientName: string,
-        @Param('userAccountId') userAccountId: string,
-    ) {
+    @Delete(':clientName/user')
+    async deleteUser(@Param('clientName') clientName: string, @Body() filter: FilterApplicationUserParam) {
         const client = this.getClient(clientName)
-        const success = await client.deleteUser(userAccountId)
+
+        const success = await client.deleteUser(this.validateUserFilter(filter))
 
         return { success }
     }
@@ -149,6 +201,22 @@ export class TestController {
         enum: ApplicationClientNames,
         required: true,
     })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                username: {
+                    type: 'string',
+                },
+                email: {
+                    type: 'string',
+                },
+                userServiceAccountId: {
+                    type: 'string',
+                },
+            },
+        },
+    })
     @ApiOkResponse({
         schema: {
             type: 'object',
@@ -157,13 +225,11 @@ export class TestController {
             },
         },
     })
-    @Patch(':clientName/user/:userAccountId/disable')
-    async disableUser(
-        @Param('clientName') clientName: string,
-        @Param('userAccountId') userAccountId: string,
-    ) {
+    @Patch(':clientName/user/disable')
+    async disableUser(@Param('clientName') clientName: string, @Body() filter: FilterApplicationUserParam) {
         const client = this.getClient(clientName)
-        const success = await client.disableUser(userAccountId)
+
+        const success = await client.disableUser(this.validateUserFilter(filter))
 
         return { success }
     }
@@ -173,6 +239,22 @@ export class TestController {
         enum: ApplicationClientNames,
         required: true,
     })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                username: {
+                    type: 'string',
+                },
+                email: {
+                    type: 'string',
+                },
+                userServiceAccountId: {
+                    type: 'string',
+                },
+            },
+        },
+    })
     @ApiOkResponse({
         schema: {
             type: 'object',
@@ -181,13 +263,11 @@ export class TestController {
             },
         },
     })
-    @Patch(':clientName/user/:userAccountId/enable')
-    async enableUser(
-        @Param('clientName') clientName: string,
-        @Param('userAccountId') userAccountId: string,
-    ) {
+    @Patch(':clientName/user/enable')
+    async enableUser(@Param('clientName') clientName: string, @Body() filter: FilterApplicationUserParam) {
         const client = this.getClient(clientName)
-        const success = await client.enableUser(userAccountId)
+
+        const success = await client.enableUser(this.validateUserFilter(filter))
 
         return { success }
     }

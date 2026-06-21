@@ -58,6 +58,8 @@ model UserAccount {
   userServiceAccountId String   @map("user_service_account_id")
   serviceId            Int      @map("service_id")
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt            DateTime @map("expires_at") @db.Timestamptz(6)
+  autoRenew            Boolean  @map("auto_renew") @default(false)
   isActive             Boolean  @default(true) @map("is_active")
   username             String   @unique @db.VarChar(64)
   service              Service  @relation("ServiceAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
