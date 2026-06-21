@@ -115,10 +115,7 @@ export class UserService extends BaseService {
     }
 
     // #endregion UserOAuthIdentity Methods
-
-    // #region UserAccounts
-
-    async createAccount() {}
+    
     // #region Mappers
 
     userModelToLoadRequestForAdmin(userModel: UserModel): UserResponseForAdmin {

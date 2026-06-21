@@ -25,10 +25,6 @@ export class GoogleOAuthGuard extends AuthGuard('google') {
         const profile = plainToInstance(OAuthUserProfileDto, user)
         const errors = validateSync(profile)
 
-        for(let error of errors){
-            console.log(error)    
-        }
-
         if (errors.length > 0) {
             throw new UnauthorizedException('Invalid OAuth user profile from Google')
         }

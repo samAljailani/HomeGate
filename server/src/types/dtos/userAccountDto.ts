@@ -28,16 +28,6 @@ export class UserAccountCreateRequestDto {
     @IsString()
     @IsNotEmpty()
     username: string
-
-    @ApiProperty({ type: String })
-    @IsString()
-    @IsNotEmpty()
-    password: string
-
-    @ApiProperty({ type: String })
-    @IsString()
-    @IsNotEmpty()
-    confirmedPassword: string
 }
 
 export class UserAccountUpdateRequestDto {
