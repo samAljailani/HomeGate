@@ -64,7 +64,6 @@ export class SubscriptionService {
             throw new ConflictException('User already subscribed to the service')
         }
 
-        // TODO: if an account is expired or cancelled, then consider enabling rather than creating a new account.
         const client = await this.getServiceClient(service.name)
 
         if (client.requiredInputs.email && request.email?.toLowerCase() !== user.email.toLowerCase()) {
@@ -81,16 +80,14 @@ export class SubscriptionService {
             })
 
             if (previousAccountResult.ok && previousAccountResult.user) {
-                if (!previousAccountResult.user.isActive) {
-                    const enabled = await client.enableUser({
-                        userServiceAccountId: existingUserServiceAccount.userServiceAccountId,
-                        username: existingUserServiceAccount.username,
-                        email: user.email,
-                    })
+                const enabled = await client.enableUser({
+                    userServiceAccountId: existingUserServiceAccount.userServiceAccountId,
+                    username: existingUserServiceAccount.username,
+                    email: user.email,
+                })
 
-                    if (!enabled) {
-                        throw new ServiceUnavailableException('Failed to re-enable existing service account')
-                    }
+                if (!enabled) {
+                    throw new ServiceUnavailableException('Failed to re-enable existing service account')
                 }
 
                 const reactivatedAccount = await this.userAccountRepository.update({
@@ -550,7 +547,7 @@ export class SubscriptionService {
                 stackTrace: error instanceof Error ? error.stack : String(error),
             })
 
-            throw new InternalServerErrorException('An error occurred cleaning up subscriptions')
+            throw error
         }
     }
 
@@ -761,6 +758,7 @@ export class SubscriptionService {
                 this.logger.error(`Failed to clean up stale records for client '${client.name}'`, {
                     stackTrace: error instanceof Error ? error.stack : String(error),
                 })
+                throw error
             }
         }
     }

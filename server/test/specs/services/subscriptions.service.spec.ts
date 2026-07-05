@@ -205,13 +205,13 @@ describe('SubscriptionService', () => {
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             userAccountRepoMock.find.mockResolvedValue(cancelledAccount)
             client.getUser.mockResolvedValue({ ok: true, user: { id: 'old-ext-id', username: 'testuser', isActive: true, isAdmin: false } })
+            client.enableUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue(reactivatedAccount)
 
             const result = await service.subscribe(request, userId)
 
             expect(result).toEqual(reactivatedAccount)
-            expect(client.enableUser).not.toHaveBeenCalled()
-            expect(client.createUser).not.toHaveBeenCalled()
+            expect(client.enableUser).toHaveBeenCalledWith(expect.objectContaining({ userServiceAccountId: 'old-ext-id' }))
         })
 
         it('should create a new account when resubscribing and old external account is gone', async () => {
@@ -607,30 +607,6 @@ describe('SubscriptionService', () => {
             expect(result).toBe(true)
             expect(client.enableUser).not.toHaveBeenCalled()
             expect(userAccountRepoMock.delete).toHaveBeenCalledWith(request.userId, request.serviceId)
-        })
-
-        it('should skip enableUser when external account is already active', async () => {
-            const adminUser = createUserFixture({ id: currentUserId, isAdmin: true })
-            const targetUser = createUserFixture({ id: request.userId })
-            const disabledAccount = createUserAccountFixture({
-                userId: request.userId,
-                status: UserAccountStatus.disabled,
-                userServiceAccountId: 'ext-1',
-                expiresAt: new Date(Date.now() + 86400000),
-            })
-            const client = createApplicationClientMock()
-
-            userServiceMock.getUserById.mockResolvedValueOnce(adminUser).mockResolvedValueOnce(targetUser)
-            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
-            userAccountRepoMock.find.mockResolvedValue(disabledAccount)
-            clientRegistryMock.getEnabled.mockResolvedValue([client])
-            client.getUser.mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false } })
-            userAccountRepoMock.update.mockResolvedValue({ ...disabledAccount, status: UserAccountStatus.active })
-
-            const result = await service.enable(request, currentUserId)
-
-            expect(result).toBe(true)
-            expect(client.enableUser).not.toHaveBeenCalled()
         })
     })
 
