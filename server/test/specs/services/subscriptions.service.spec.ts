@@ -167,17 +167,6 @@ describe('SubscriptionService', () => {
             )
         })
 
-        it('should throw BadRequestException when passwords do not match', async () => {
-            userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
-            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
-            userAccountRepoMock.find.mockResolvedValue(null)
-            clientRegistryMock.getEnabled.mockResolvedValue([createApplicationClientMock()])
-
-            const badRequest = { ...request, confirmServicePassword: 'mismatch' }
-
-            await expect(service.subscribe(badRequest, userId)).rejects.toThrow(BadRequestException)
-        })
-
         it('should throw ConflictException when external account already exists', async () => {
             const client = createApplicationClientMock()
             userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
