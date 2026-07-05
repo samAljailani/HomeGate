@@ -12,6 +12,7 @@ import {
 } from '@/types/models/userAccount'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
+import { UserAccountStatus as UserAccountStatusModel } from '@/types/enums'
 
 @Injectable()
 export class UserAccountRepository extends BaseRepository implements IUserAccountRepository {
@@ -25,10 +26,19 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
             userServiceAccountId: userAccount.userServiceAccountId,
             serviceId: userAccount.serviceId,
             username: userAccount.username,
-            isActive: userAccount.isActive,
+            status: userAccount.status as UserAccountStatusModel,
+
             autoRenew: userAccount.autoRenew,
+            expiresAt: userAccount.expiresAt,
+
             createdAt: userAccount.createdAt,
-            expiresAt: userAccount.expiresAt
+            updatedAt: userAccount.updatedAt,
+
+            provisionedAt: userAccount.provisionedAt,
+            failedAt: userAccount.failedAt,
+            cancelledAt: userAccount.cancelledAt,
+            lastError: userAccount.lastError,
+            retryCount: userAccount.retryCount,
         }
     }
 

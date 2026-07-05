@@ -69,10 +69,9 @@ export class JellyfinClient implements IApplicationManager {
             }
         }
 
-        const user =
-            filters.userServiceAccountId
-                ? await this.getUserById(filters.userServiceAccountId)
-                : await this.getUserByUsername(filters.username!)
+        const user = filters.userServiceAccountId
+            ? await this.getUserById(filters.userServiceAccountId)
+            : await this.getUserByUsername(filters.username!)
 
         if (!user) {
             return {

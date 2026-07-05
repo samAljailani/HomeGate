@@ -115,7 +115,7 @@ export class UserService extends BaseService {
     }
 
     // #endregion UserOAuthIdentity Methods
-    
+
     // #region Mappers
 
     userModelToLoadRequestForAdmin(userModel: UserModel): UserResponseForAdmin {

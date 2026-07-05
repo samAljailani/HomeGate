@@ -1,7 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger'
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { Type } from 'class-transformer'
+import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator'
+import { UserAccountStatus } from '@/types/enums'
 
-export class SubscrptionLoadRequestDto {
+export { UserAccountStatus }
+
+export class SubscriptionLoadRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
     @IsNotEmpty()
@@ -10,8 +14,8 @@ export class SubscrptionLoadRequestDto {
 
 export class SubscriptionCreateRequestDto {
     @ApiProperty({ type: Number })
+    @Type(() => Number)
     @IsInt()
-    @IsNotEmpty()
     @Min(1)
     serviceId: number
 
@@ -20,35 +24,53 @@ export class SubscriptionCreateRequestDto {
     @IsNotEmpty()
     serviceUsername: string
 
-    @ApiProperty({ type: String })
-    @IsString()
-    email: string | undefined
+    @ApiPropertyOptional({ type: String })
+    @IsOptional()
+    @IsEmail()
+    email?: string
 
-    @ApiProperty({ type: String })
+    @ApiProperty({ type: String, writeOnly: true })
     @IsString()
     @IsNotEmpty()
     servicePassword: string
 
-    @ApiProperty({ type: String })
+    @ApiProperty({ type: String, writeOnly: true })
     @IsString()
     @IsNotEmpty()
     confirmServicePassword: string
 
     @ApiProperty({ type: Boolean })
     @IsBoolean()
-    @IsNotEmpty()
     autoRenew: boolean
 }
 
 export class SubscriptionDeleteRequestDto {
+    @ApiProperty({ type: String })
+    @Type(() => String)
+    @IsString()
+    userId: string
+
     @ApiProperty({ type: Number })
+    @Type(() => Number)
     @IsInt()
-    @IsNotEmpty()
     @Min(1)
     serviceId: number
 
-    @ApiProperty({ type: Boolean })
-    @IsBoolean()
+    @ApiPropertyOptional({ type: Boolean })
     @IsOptional()
+    @IsBoolean()
     deleteImmediately?: boolean
+}
+
+export class SubscriptionDisableRequestDto {
+    @ApiProperty({ type: String })
+    @Type(() => String)
+    @IsString()
+    userId: string
+
+    @ApiProperty({ type: Number })
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    serviceId: number
 }

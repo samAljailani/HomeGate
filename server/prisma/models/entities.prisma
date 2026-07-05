@@ -54,18 +54,31 @@ model Service {
 }
 
 model UserAccount {
-  userId               String   @map("user_id") @db.Uuid
-  userServiceAccountId String   @map("user_service_account_id")
-  serviceId            Int      @map("service_id")
-  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  expiresAt            DateTime @map("expires_at") @db.Timestamptz(6)
-  autoRenew            Boolean  @map("auto_renew") @default(false)
-  isActive             Boolean  @default(true) @map("is_active")
-  username             String   @unique @db.VarChar(64)
-  service              Service  @relation("ServiceAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
-  user                 User     @relation("UserAccounts", fields: [userId], references: [id], onDelete: Cascade)
+  userId               String            @map("user_id") @db.Uuid
+  serviceId            Int               @map("service_id")
+  userServiceAccountId String?           @map("user_service_account_id")
+  username             String            @db.VarChar(64)
+
+  status               UserAccountStatus @default(provisioning)
+
+  expiresAt            DateTime?         @map("expires_at") @db.Timestamptz(6)
+  autoRenew            Boolean           @map("auto_renew") @default(false)
+
+  provisionedAt        DateTime?         @map("provisioned_at") @db.Timestamptz(6)
+  failedAt             DateTime?         @map("failed_at") @db.Timestamptz(6)
+  cancelledAt          DateTime?         @map("cancelled_at") @db.Timestamptz(6)
+  lastError            String?           @map("last_error") @db.Text
+  retryCount           Int               @default(0) @map("retry_count")
+
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  service              Service           @relation("ServiceAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
+  user                 User              @relation("UserAccounts", fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, serviceId], map: "user_accounts_pkey")
+  @@unique([serviceId, username])
+  @@unique([serviceId, userServiceAccountId])
   @@map("user_accounts")
 }
 
@@ -121,4 +134,16 @@ enum LogLevel {
   warn
   error
   fatal
+}
+
+enum UserAccountStatus {
+  provisioning
+  active
+  failed
+  cancelling
+  cancelled
+  expired
+  disabling
+  disabled
+  enabling
 }

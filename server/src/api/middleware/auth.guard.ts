@@ -1,4 +1,4 @@
-import { IS_PUBLIC } from '@/decorators'
+import { IS_PUBLIC, IS_ADMIN } from '@/decorators'
 import { IUserRepository } from '@/data/repositories'
 import { Injectable, Inject, CanActivate, ExecutionContext } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
@@ -13,12 +13,7 @@ export class AuthGuard implements CanActivate {
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [
-            context.getHandler(),
-            context.getClass(),
-        ])
-
-        if (isPublic) {
+        if (this.isPublicRoute(context)) {
             return true
         }
 
@@ -36,7 +31,19 @@ export class AuthGuard implements CanActivate {
             return false
         }
 
+        if (this.isAdminRoute(context) && !user.isAdmin) {
+            return false
+        }
+
         // express-session handles expired sessions.
         return true
+    }
+
+    private isPublicRoute(context: ExecutionContext): boolean {
+        return this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [context.getHandler(), context.getClass()]) ?? false
+    }
+
+    private isAdminRoute(context: ExecutionContext): boolean {
+        return this.reflector.getAllAndOverride<boolean>(IS_ADMIN, [context.getHandler(), context.getClass()]) ?? false
     }
 }

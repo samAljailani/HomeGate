@@ -5,14 +5,14 @@ export type ApplicationUserModel = {
 }
 
 export type CreateApplicationUserResult = {
-    user: ApplicationUserModel | null,
+    user: ApplicationUserModel | null
     ok: boolean
-} 
+}
 
 export type GetApplicationUserResult = {
-    user: ApplicationUserModel | null,
+    user: ApplicationUserModel | null
     ok: boolean
-} 
+}
 
 export type FilterApplicationUserParam = {
     username: string | undefined

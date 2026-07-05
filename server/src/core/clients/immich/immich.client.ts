@@ -123,7 +123,9 @@ export class ImmichClient implements IApplicationManager {
 
     async createUser(user: CreateApplicationUserParam): Promise<CreateApplicationUserResult> {
         if (!user.email || !user.password) {
-            this.logger.error('The Immich client received a bad create user request. Email and password are required inputs')
+            this.logger.error(
+                'The Immich client received a bad create user request. Email and password are required inputs'
+            )
 
             return {
                 ok: false,
@@ -240,9 +242,7 @@ export class ImmichClient implements IApplicationManager {
 
             userServiceAccountId = user.id
 
-            const url = `${this.#baseUrl}${immichEndpoints.deleteUser(
-                encodeURIComponent(userServiceAccountId),
-            )}`
+            const url = `${this.#baseUrl}${immichEndpoints.deleteUser(encodeURIComponent(userServiceAccountId))}`
 
             const requestOptions = {
                 method: 'DELETE',
@@ -253,7 +253,7 @@ export class ImmichClient implements IApplicationManager {
 
             if (!response.ok) {
                 this.logger.error(
-                    `Failed to delete Immich user with service account id '${userServiceAccountId}'. Status: ${response.status}`,
+                    `Failed to delete Immich user with service account id '${userServiceAccountId}'. Status: ${response.status}`
                 )
 
                 return false
@@ -265,7 +265,7 @@ export class ImmichClient implements IApplicationManager {
                 `Error deleting Immich user with service account id '${userServiceAccountId ?? 'unknown'}'.`,
                 {
                     stackTrace: error instanceof Error ? error.stack : String(error),
-                },
+                }
             )
 
             return false
@@ -303,9 +303,7 @@ export class ImmichClient implements IApplicationManager {
 
             userServiceAccountId = user.id
 
-            const url = `${this.#baseUrl}${immichEndpoints.restoreUser(
-                encodeURIComponent(userServiceAccountId),
-            )}`
+            const url = `${this.#baseUrl}${immichEndpoints.restoreUser(encodeURIComponent(userServiceAccountId))}`
 
             const requestOptions = {
                 method: 'POST',
@@ -316,7 +314,7 @@ export class ImmichClient implements IApplicationManager {
 
             if (!response.ok) {
                 this.logger.error(
-                    `Failed to restore Immich user with service account id '${userServiceAccountId}'. Status: ${response.status}`,
+                    `Failed to restore Immich user with service account id '${userServiceAccountId}'. Status: ${response.status}`
                 )
 
                 return false
@@ -329,7 +327,7 @@ export class ImmichClient implements IApplicationManager {
                 `Error restoring Immich user with service account id '${userServiceAccountId ?? 'unknown'}'.`,
                 {
                     stackTrace: error instanceof Error ? error.stack : String(error),
-                },
+                }
             )
 
             return false

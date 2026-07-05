@@ -35,6 +35,12 @@ export const routes = {
         signOut: 'signOut',
     }),
     csrf: defineRoutes('/api/csrf', {}),
+    subscriptions: defineRoutes('/api/subscriptions', {
+        subscribe: '',
+        delete: '',
+        disable: 'disable',
+        enable: 'enable',
+    }),
     test: defineRoutes('/api/test', {}),
 } satisfies RoutesConfig
 

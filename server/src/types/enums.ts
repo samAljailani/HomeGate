@@ -39,3 +39,15 @@ export enum ApplicationClientNames {
     Jellyfin = 'jellyfin',
     Immich = 'immich',
 }
+
+export enum UserAccountStatus {
+    provisioning = 'provisioning',
+    active = 'active',
+    failed = 'failed',
+    cancelling = 'cancelling',
+    cancelled = 'cancelled',
+    expired = 'expired',
+    disabling = 'disabling',
+    disabled = 'disabled',
+    enabling = 'enabling',
+}

@@ -23,7 +23,9 @@ export class ApplicationClientRegistry {
         const dbClinet = await this.applicationClientRepository.findByName(client.name)
 
         if (!dbClinet || dbClinet.name == '') {
-            this.logger.fatal(`Cannot register Application client "${client.name}". The client is not a configured service`)
+            this.logger.fatal(
+                `Cannot register Application client "${client.name}". The client is not a configured service`
+            )
             throw new Error(
                 `Cannot register Application client "${client.name}". The client is not a configured service`
             )

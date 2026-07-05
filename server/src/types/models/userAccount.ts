@@ -1,20 +1,63 @@
+import { UserAccountStatus } from '@/types/enums'
+
 export type UserAccountModel = {
     userId: string
-    userServiceAccountId: string
     serviceId: number
+
+    userServiceAccountId: string | null
     username: string
-    isActive: boolean
+
+    status: UserAccountStatus
     autoRenew: boolean
+
     createdAt: Date
-    expiresAt: Date
+    updatedAt: Date
+
+    expiresAt: Date | null
+    provisionedAt: Date | null
+    failedAt: Date | null
+    cancelledAt: Date | null
+
+    lastError: string | null
+    retryCount: number
 }
 
-export type CreateUserAccountModel = Omit<UserAccountModel, 'createdAt'>
+export type CreateUserAccountModel = {
+    userId: string
+    serviceId: number
+    userServiceAccountId: string | null
+    username: string
 
-export type UpdateUserAccountModel = Omit<UserAccountModel, 'createdAt'>
+    expiresAt?: Date | null
+    autoRenew?: boolean
 
-export class UserAccountFilterOptions {
+    status: UserAccountStatus
+}
+
+export type UpdateUserAccountModel = {
+    userId: string
+    serviceId: number
+
+    userServiceAccountId?: string | null
+    username?: string
+    status?: UserAccountStatus
+    autoRenew?: boolean
+
+    expiresAt?: Date | null
+    provisionedAt?: Date | null
+    failedAt?: Date | null
+    cancelledAt?: Date | null
+
+    lastError?: string | null
+    retryCount?: number
+}
+
+export type UserAccountFilterOptions = {
     userId?: string
     serviceId?: number
-    isActive?: boolean
+    username?: string
+    status?: UserAccountStatus
+    statuses?: UserAccountStatus[]
+    expiresBefore?: Date
+    expiresAfter?: Date
 }
