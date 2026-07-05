@@ -36,6 +36,9 @@ export class OpenIDRequestDto {
 
     @IsBoolean()
     state?: boolean
+
+    @IsBoolean()
+    nonce?: boolean
 }
 
 export class OAuthUserProfileDto {

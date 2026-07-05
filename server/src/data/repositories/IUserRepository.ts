@@ -7,6 +7,7 @@ export interface IUserRepository {
     findByEmail(email: string): Promise<UserModel | null>
     findMany(filter: UserFilterOptions, take?: number): Promise<UserModel[]>
     create(request: CreateUserModel): Promise<UserModel | null>
+    createWithOAuthIdentity(request: CreateUserModel, providerId: number, profileId: string): Promise<UserModel>
     update(request: UpdateUserModel): Promise<UserModel | null>
     usernameExists(username: string): Promise<boolean>
     delete(id: string): Promise<void>

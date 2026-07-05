@@ -180,14 +180,19 @@ describe('SubscriptionService', () => {
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             userAccountRepoMock.find.mockResolvedValue(cancelledAccount)
-            client.getUser.mockResolvedValue({ ok: true, user: { id: 'old-ext-id', username: 'testuser', isActive: false, isAdmin: false } })
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'old-ext-id', username: 'testuser', isActive: false, isAdmin: false },
+            })
             client.enableUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue(reactivatedAccount)
 
             const result = await service.subscribe(request, userId)
 
             expect(result).toEqual(reactivatedAccount)
-            expect(client.enableUser).toHaveBeenCalledWith(expect.objectContaining({ userServiceAccountId: 'old-ext-id' }))
+            expect(client.enableUser).toHaveBeenCalledWith(
+                expect.objectContaining({ userServiceAccountId: 'old-ext-id' })
+            )
             expect(client.createUser).not.toHaveBeenCalled()
         })
 
@@ -204,14 +209,19 @@ describe('SubscriptionService', () => {
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             userAccountRepoMock.find.mockResolvedValue(cancelledAccount)
-            client.getUser.mockResolvedValue({ ok: true, user: { id: 'old-ext-id', username: 'testuser', isActive: true, isAdmin: false } })
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'old-ext-id', username: 'testuser', isActive: true, isAdmin: false },
+            })
             client.enableUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue(reactivatedAccount)
 
             const result = await service.subscribe(request, userId)
 
             expect(result).toEqual(reactivatedAccount)
-            expect(client.enableUser).toHaveBeenCalledWith(expect.objectContaining({ userServiceAccountId: 'old-ext-id' }))
+            expect(client.enableUser).toHaveBeenCalledWith(
+                expect.objectContaining({ userServiceAccountId: 'old-ext-id' })
+            )
         })
 
         it('should create a new account when resubscribing and old external account is gone', async () => {
@@ -229,7 +239,9 @@ describe('SubscriptionService', () => {
             userAccountRepoMock.find.mockResolvedValue(cancelledAccount)
             // First getUser call: old external account gone
             // Second getUser call: new username availability check returns not found
-            client.getUser.mockResolvedValueOnce({ ok: false, user: null }).mockResolvedValueOnce({ ok: false, user: null })
+            client.getUser
+                .mockResolvedValueOnce({ ok: false, user: null })
+                .mockResolvedValueOnce({ ok: false, user: null })
             userAccountRepoMock.update.mockResolvedValue(activeAccount)
             client.createUser.mockResolvedValue({
                 ok: true,
@@ -537,7 +549,10 @@ describe('SubscriptionService', () => {
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             userAccountRepoMock.find.mockResolvedValue(disabledAccount)
             clientRegistryMock.getEnabled.mockResolvedValue([client])
-            client.getUser.mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'testuser', isActive: false, isAdmin: false } })
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: false, isAdmin: false },
+            })
             client.enableUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue({ ...disabledAccount, status: UserAccountStatus.active })
 
@@ -578,7 +593,10 @@ describe('SubscriptionService', () => {
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             userAccountRepoMock.find.mockResolvedValue(disabledAccount)
             clientRegistryMock.getEnabled.mockResolvedValue([client])
-            client.getUser.mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'testuser', isActive: false, isAdmin: false } })
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: false, isAdmin: false },
+            })
             client.enableUser.mockResolvedValue(false)
             userAccountRepoMock.update.mockResolvedValue(disabledAccount)
 
@@ -689,7 +707,10 @@ describe('SubscriptionService', () => {
             userAccountRepoMock.find.mockResolvedValue(failedAccount)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.getEnabled.mockResolvedValue([client])
-            client.getUser.mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false } })
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+            })
             client.deleteUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue({ ...failedAccount, status: UserAccountStatus.cancelled })
 
@@ -716,7 +737,10 @@ describe('SubscriptionService', () => {
             userAccountRepoMock.find.mockResolvedValue(failedAccount)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.getEnabled.mockResolvedValue([client])
-            client.getUser.mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'testuser', isActive: false, isAdmin: false } })
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: false, isAdmin: false },
+            })
             userAccountRepoMock.update.mockResolvedValue({ ...failedAccount, status: UserAccountStatus.expired })
 
             const result = await service.retryFailedOperation(request, currentUserId)
@@ -742,7 +766,10 @@ describe('SubscriptionService', () => {
             userAccountRepoMock.find.mockResolvedValue(failedAccount)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.getEnabled.mockResolvedValue([client])
-            client.getUser.mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false } })
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+            })
             client.disableUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue({ ...failedAccount, status: UserAccountStatus.expired })
 
@@ -794,7 +821,10 @@ describe('SubscriptionService', () => {
             userAccountRepoMock.find.mockResolvedValue(failedAccount)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.getEnabled.mockResolvedValue([client])
-            client.getUser.mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false } })
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+            })
             userAccountRepoMock.update.mockResolvedValue({ ...failedAccount, status: UserAccountStatus.active })
 
             const result = await service.retryFailedOperation(request, currentUserId)
@@ -926,7 +956,9 @@ describe('SubscriptionService', () => {
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             serviceRepoMock.findMany.mockResolvedValue([svc])
             userAccountRepoMock.findMany.mockResolvedValue([])
-            client.getAllUsers.mockResolvedValue([{ id: 'orphan-1', username: 'orphan', isActive: true, isAdmin: false }])
+            client.getAllUsers.mockResolvedValue([
+                { id: 'orphan-1', username: 'orphan', isActive: true, isAdmin: false },
+            ])
 
             await service.syncClientAccounts()
 
@@ -961,7 +993,9 @@ describe('SubscriptionService', () => {
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             serviceRepoMock.findMany.mockResolvedValue([svc])
             userAccountRepoMock.findMany.mockResolvedValue([cancelledAccount])
-            client.getAllUsers.mockResolvedValue([{ id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false }])
+            client.getAllUsers.mockResolvedValue([
+                { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+            ])
 
             await service.syncClientAccounts()
 
@@ -979,7 +1013,9 @@ describe('SubscriptionService', () => {
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             serviceRepoMock.findMany.mockResolvedValue([svc])
             userAccountRepoMock.findMany.mockResolvedValue([activeAccount])
-            client.getAllUsers.mockResolvedValue([{ id: 'ext-1', username: 'testuser', isActive: false, isAdmin: false }])
+            client.getAllUsers.mockResolvedValue([
+                { id: 'ext-1', username: 'testuser', isActive: false, isAdmin: false },
+            ])
 
             await service.syncClientAccounts()
 
@@ -1033,7 +1069,9 @@ describe('SubscriptionService', () => {
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             serviceRepoMock.findMany.mockResolvedValue([svc])
             userAccountRepoMock.findMany.mockResolvedValue([activeAccount])
-            client.getAllUsers.mockResolvedValue([{ id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false }])
+            client.getAllUsers.mockResolvedValue([
+                { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+            ])
 
             await service.syncClientAccounts()
 
@@ -1077,7 +1115,9 @@ describe('SubscriptionService', () => {
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             serviceRepoMock.findMany.mockResolvedValue([svc])
             userAccountRepoMock.findMany.mockResolvedValue([cancelledAccount])
-            client.getAllUsers.mockResolvedValue([{ id: 'ext-1', username: 'testuser', isActive: false, isAdmin: false }])
+            client.getAllUsers.mockResolvedValue([
+                { id: 'ext-1', username: 'testuser', isActive: false, isAdmin: false },
+            ])
 
             await service.cleanupStaleLocalAccounts()
 

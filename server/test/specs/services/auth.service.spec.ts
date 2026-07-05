@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { AuthService } from '@/api/services/auth.service'
 import { UserService } from '@/api/services/user.service'
+import { InviteService } from '@/api/services/invite.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { IOAuthProviderRepository } from '@/data/repositories/IOAuthProviderRepository'
 import { createUserFixture } from '../../fixtures/user.stub'
@@ -10,17 +11,20 @@ import { createOAuthIdentityFixture } from '../../fixtures/oauthIdentity.stub'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserServiceMock } from '../../mocks/user.service.mock'
 import { createOAuthProviderRepositoryMock } from '../../mocks/oauthProvider.repository.mock'
+import { createInviteServiceMock } from '../../mocks/invite.service.mock'
 
 describe('AuthService', () => {
     let service: AuthService
     let userServiceMock: ReturnType<typeof createUserServiceMock>
     let loggerMock: ReturnType<typeof createLoggerMock>
     let oauthProviderRepositoryMock: ReturnType<typeof createOAuthProviderRepositoryMock>
+    let inviteServiceMock: ReturnType<typeof createInviteServiceMock>
 
     beforeEach(async () => {
         loggerMock = createLoggerMock()
         userServiceMock = createUserServiceMock()
         oauthProviderRepositoryMock = createOAuthProviderRepositoryMock()
+        inviteServiceMock = createInviteServiceMock()
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -28,6 +32,7 @@ describe('AuthService', () => {
                 { provide: UserService, useValue: userServiceMock },
                 { provide: LoggingProvider, useValue: loggerMock },
                 { provide: IOAuthProviderRepository, useValue: oauthProviderRepositoryMock },
+                { provide: InviteService, useValue: inviteServiceMock },
             ],
         }).compile()
 
@@ -147,18 +152,17 @@ describe('AuthService', () => {
         })
 
         describe('when an unexpected error is thrown', () => {
-            it('returns null without rethrowing', async () => {
-                userServiceMock.getUserByEmail.mockRejectedValue(new Error('DB connection lost'))
+            it('rethrows the error', async () => {
+                const error = new Error('DB connection lost')
+                userServiceMock.getUserByEmail.mockRejectedValue(error)
 
-                const result = await service.authorize(request)
-
-                expect(result).toBeNull()
+                await expect(service.authorize(request)).rejects.toThrow('DB connection lost')
             })
 
             it('logs the error', async () => {
                 userServiceMock.getUserByEmail.mockRejectedValue(new Error('DB connection lost'))
 
-                await service.authorize(request)
+                await service.authorize(request).catch(() => {})
 
                 expect(loggerMock.error).toHaveBeenCalled()
             })

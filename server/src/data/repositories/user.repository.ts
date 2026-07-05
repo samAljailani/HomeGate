@@ -78,6 +78,22 @@ export class UserRepository extends BaseRepository implements IUserRepository {
         }
     }
 
+    async createWithOAuthIdentity(request: CreateUserModel, providerId: number, profileId: string): Promise<UserModel> {
+        try {
+            const user = await this.db.$transaction(async (tx) => {
+                const created = await tx.user.create({ data: request })
+                await tx.userOAuthIdentity.create({ data: { userId: created.id, providerId, profileId } })
+                return created
+            })
+            return this.mapUser(user)
+        } catch (error) {
+            this.logger.error(`createWithOAuthIdentity failed for email: ${request.email}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.user)
+        }
+    }
+
     async usernameExists(username: string): Promise<boolean> {
         try {
             const count = await this.db.user.count({ where: { username } })

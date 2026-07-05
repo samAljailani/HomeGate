@@ -1,5 +1,6 @@
-import { Controller, Post, Get, Request, Inject, Res, UseGuards } from '@nestjs/common'
+import { Controller, Post, Get, Request, Inject, Res, UseGuards, Query } from '@nestjs/common'
 import { AuthService } from '@/api/services/auth.service'
+import { InviteService } from '@/api/services/invite.service'
 import { OAuthUserProfileDto } from '@/types/dtos/authDto'
 import { GoogleOAuthGuard } from '@/api/middleware/google-oauth.guard'
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
@@ -12,6 +13,7 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 export class AuthController {
     constructor(
         @Inject(AuthService) private readonly authService: AuthService,
+        @Inject(InviteService) private readonly inviteService: InviteService,
         @Inject(LoggingProvider) private readonly logger: LoggingProvider
     ) {
         this.logger.setContext(AuthController.name)
@@ -23,6 +25,37 @@ export class AuthController {
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     googleAuth() {
         /*method body never executed due to passport redirect*/
+    }
+
+    @Public()
+    @Get(routes.auth.subPath.join)
+    @Throttle({ default: { ttl: 60_000, limit: 10 } })
+    async join(@Query('token') token: string, @Request() req: ExpressRequest, @Res() res: ExpressResponse) {
+        if (!token) {
+            return res.redirect(`${clientRoutes.signIn}?error=missing_token`)
+        }
+
+        try {
+            const invite = await this.inviteService.validateToken(token)
+
+            await new Promise<void>((resolve, reject) => {
+                req.session.regenerate((err) => {
+                    if (err) return reject(err)
+
+                    req.session.oauthTransaction = {
+                        inviteToken: token,
+                        inviteId: invite.id,
+                        expiresAt: invite.expiresAt,
+                    }
+
+                    req.session.save((err) => (err ? reject(err) : resolve()))
+                })
+            })
+
+            return res.redirect(routes.auth.google)
+        } catch {
+            return res.redirect(`${clientRoutes.signIn}?error=invalid_invite`)
+        }
     }
 
     @Public()
@@ -52,7 +85,19 @@ export class AuthController {
 
     private async handleOAuthRedirect(req: ExpressRequest, res: ExpressResponse) {
         const body = req.user as OAuthUserProfileDto
-        const response = await this.authService.authorize(body)
+        const transaction = req.session.oauthTransaction
+
+        let response
+        try {
+            response = transaction
+                ? await this.authService.signUp(transaction.inviteToken, body)
+                : await this.authService.authorize(body)
+        } catch (error) {
+            this.logger.error('OAuth callback failed', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            return res.redirect(`${clientRoutes.signIn}?error=auth_failed`)
+        }
 
         if (!response || response.id === '' || response.id == null) {
             return res.redirect(`${clientRoutes.signIn}?error=auth_failed`)

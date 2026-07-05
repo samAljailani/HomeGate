@@ -1,6 +1,11 @@
 import { IUserRepository } from '@/data/repositories/IUserRepository'
 import { Injectable, Inject } from '@nestjs/common'
-import { UserCreateRequestDto, UserLoadRequestDto, UserResponseDto, UserResponseForAdmin } from '@/types/dtos/userDto'
+import {
+    UserCreateRequestDto,
+    UserLoadRequestDto,
+    UserResponseDto,
+    UserResponseForAdminDto,
+} from '@/types/dtos/userDto'
 import { UserModel, UserFilterOptions } from '@/types/models/user'
 import { randomInt } from 'crypto'
 import { IUserOAuthIdentityRepository } from '@/data/repositories'
@@ -25,18 +30,28 @@ export class UserService extends BaseService {
 
     // #region User
 
-    async createUser(newUser: UserCreateRequestDto): Promise<UserResponseDto | null> {
-        let response: UserResponseDto = new UserResponseDto()
+    async createUser(newUser: UserCreateRequestDto): Promise<UserResponseForAdminDto | null> {
+        let response: UserResponseForAdminDto = new UserResponseForAdminDto()
 
-        newUser.username = await this.generateUsername(newUser.email)
+        const username = await this.generateUsername(newUser.email)
 
-        const savedUser = await this.userRepository.create(newUser)
+        const savedUser = await this.userRepository.create({ ...newUser, username })
 
         if (savedUser) {
-            response = this.userModelToLoadRequest(savedUser!)
+            response = this.userModelToLoadRequestForAdmin(savedUser!)
         }
 
         return response
+    }
+
+    async createUserWithOAuthIdentity(
+        newUser: UserCreateRequestDto,
+        providerId: number,
+        profileId: string
+    ): Promise<UserResponseForAdminDto> {
+        const username = await this.generateUsername(newUser.email)
+        const user = await this.userRepository.createWithOAuthIdentity({ ...newUser, username }, providerId, profileId)
+        return this.userModelToLoadRequestForAdmin(user)
     }
 
     async getUserById(request: UserLoadRequestDto): Promise<UserResponseDto | null> {
@@ -50,7 +65,7 @@ export class UserService extends BaseService {
     }
 
     //TODO: move this to a different Admin User service.
-    async getUserByEmail(email: string): Promise<UserResponseForAdmin | null> {
+    async getUserByEmail(email: string): Promise<UserResponseForAdminDto | null> {
         const user = await this.userRepository.findByEmail(email)
         if (!user) return null
         return {
@@ -118,8 +133,8 @@ export class UserService extends BaseService {
 
     // #region Mappers
 
-    userModelToLoadRequestForAdmin(userModel: UserModel): UserResponseForAdmin {
-        const dto: UserResponseForAdmin = {
+    userModelToLoadRequestForAdmin(userModel: UserModel): UserResponseForAdminDto {
+        const dto: UserResponseForAdminDto = {
             id: userModel.id,
             email: userModel.email,
             username: userModel.username,

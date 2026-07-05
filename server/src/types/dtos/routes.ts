@@ -30,6 +30,7 @@ function defineRoutes<T extends Record<string, string>>(basePath: string, subRou
 
 export const routes = {
     auth: defineRoutes('/api/auth', {
+        join: 'join',
         google: 'google',
         googleRedirect: 'google/redirect',
         signOut: 'signOut',
@@ -40,6 +41,12 @@ export const routes = {
         delete: '',
         disable: 'disable',
         enable: 'enable',
+    }),
+    invites: defineRoutes('/api/invites', {
+        create: '',
+        list: '',
+        revoke: 'revoke/:id',
+        validate: 'validate/:token',
     }),
     test: defineRoutes('/api/test', {}),
 } satisfies RoutesConfig

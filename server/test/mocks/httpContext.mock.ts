@@ -6,6 +6,7 @@ export function createRequestMock(overrides: Partial<ExpressRequest> = {}): jest
         userId: undefined,
         username: undefined,
         isAdmin: undefined,
+        oauthTransaction: undefined,
         regenerate: jest.fn((cb) => cb(null)),
         save: jest.fn((cb) => cb(null)),
         destroy: jest.fn((cb) => cb()),

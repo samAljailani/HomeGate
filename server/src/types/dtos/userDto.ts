@@ -15,11 +15,6 @@ export class UserLoadRequestDto {
 
 export class UserCreateRequestDto {
     @ApiProperty({ type: String })
-    @IsString()
-    @IsNotEmpty()
-    username: string
-
-    @ApiProperty({ type: String })
     @IsEmail()
     @IsNotEmpty()
     email: string
@@ -92,7 +87,7 @@ export class UserDeleteRequestDto {
     userId: string
 }
 
-export class UserResponseForAdmin extends UserResponseDto {
+export class UserResponseForAdminDto extends UserResponseDto {
     @ApiProperty({ type: Boolean })
     @IsBoolean()
     isDeleted: boolean

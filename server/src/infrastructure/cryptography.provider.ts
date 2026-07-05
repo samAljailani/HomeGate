@@ -1,4 +1,4 @@
-import { createHash, createPublicKey, createVerify, randomUUID } from 'node:crypto'
+import { createHash, createPublicKey, createVerify, randomBytes, randomUUID } from 'node:crypto'
 import { Injectable } from '@nestjs/common'
 
 @Injectable()
@@ -13,6 +13,10 @@ export class CryptographyProvider {
 
     HashSha256(value: string) {
         return createHash('Sha256').update(value).digest()
+    }
+
+    GenerateRandomToken(byteLength: number = 32): string {
+        return randomBytes(byteLength).toString('hex')
     }
 
     verifySha256Signature(value: string, encryptedValue: string, publicKey: string) {

@@ -15,7 +15,7 @@ import { SubscriptionService } from '@/api/services/subscriptions.service'
 import {
     SubscriptionCreateRequestDto,
     SubscriptionDeleteRequestDto,
-    SubscriptionDisableRequestDto,
+    SubscriptionDisableRequestDto as SubscriptionActionRequestDto,
 } from '@/types/dtos/subscriptionsDto'
 import { routes } from '@/types/dtos/routes'
 
@@ -55,11 +55,11 @@ export class SubscriptionController {
     @AdminRoute()
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @ApiOperation({ summary: 'Disable a user subscription (admin only)' })
-    @ApiBody({ type: SubscriptionDisableRequestDto })
+    @ApiBody({ type: SubscriptionActionRequestDto })
     @ApiOkResponse({ description: 'Subscription disabled successfully' })
     @ApiBadRequestResponse({ description: 'Unauthorized or invalid request' })
     @ApiConflictResponse({ description: 'User account is not currently active' })
-    async disable(@Body() request: SubscriptionDisableRequestDto, @Request() req: ExpressRequest) {
+    async disable(@Body() request: SubscriptionActionRequestDto, @Request() req: ExpressRequest) {
         return this.subscriptionService.disable(request, req.session.userId!)
     }
 
@@ -67,11 +67,11 @@ export class SubscriptionController {
     @AdminRoute()
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @ApiOperation({ summary: 'Enable a user subscription (admin only)' })
-    @ApiBody({ type: SubscriptionDisableRequestDto })
+    @ApiBody({ type: SubscriptionActionRequestDto })
     @ApiOkResponse({ description: 'Subscription enabled successfully' })
     @ApiBadRequestResponse({ description: 'Unauthorized or invalid request' })
     @ApiConflictResponse({ description: 'User account is not currently disabled' })
-    async enable(@Body() request: SubscriptionDisableRequestDto, @Request() req: ExpressRequest) {
+    async enable(@Body() request: SubscriptionActionRequestDto, @Request() req: ExpressRequest) {
         return this.subscriptionService.enable(request, req.session.userId!)
     }
 }

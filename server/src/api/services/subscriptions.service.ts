@@ -212,7 +212,12 @@ export class SubscriptionService {
 
             return activeUserAccount
         } catch (error) {
-            await this.markSubscriptionFailed(userId, request.serviceId, this.toSafeErrorMessage(error), FailedOperation.provisioning)
+            await this.markSubscriptionFailed(
+                userId,
+                request.serviceId,
+                this.toSafeErrorMessage(error),
+                FailedOperation.provisioning
+            )
 
             throw error
         }
@@ -307,7 +312,12 @@ export class SubscriptionService {
                 stackTrace: error instanceof Error ? error.stack : String(error),
             })
 
-            await this.markSubscriptionFailed(request.userId, request.serviceId, this.toSafeErrorMessage(error), FailedOperation.cancellation)
+            await this.markSubscriptionFailed(
+                request.userId,
+                request.serviceId,
+                this.toSafeErrorMessage(error),
+                FailedOperation.cancellation
+            )
 
             throw error
         }
@@ -532,8 +542,12 @@ export class SubscriptionService {
                 }
             )
 
-            await this.markSubscriptionFailed(userId, serviceId, this.toSafeErrorMessage(error), FailedOperation.cancellation)
-
+            await this.markSubscriptionFailed(
+                userId,
+                serviceId,
+                this.toSafeErrorMessage(error),
+                FailedOperation.cancellation
+            )
 
             throw error
         }
@@ -859,7 +873,9 @@ export class SubscriptionService {
 
                 this.logger.log(
                     `Retry expiration succeeded for user '${user.id}' on service '${service.id}'` +
-                        (externalIsGone || externalIsInactive ? ' (external account was already disabled or deleted)' : '')
+                        (externalIsGone || externalIsInactive
+                            ? ' (external account was already disabled or deleted)'
+                            : '')
                 )
                 return true
             }

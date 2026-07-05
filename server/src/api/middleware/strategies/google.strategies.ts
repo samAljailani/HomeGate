@@ -22,6 +22,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
             scope: scope,
             pkce: true,
             state: true,
+            nonce: true,
         }
 
         super(dto)
