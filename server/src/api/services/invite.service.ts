@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common'
 import { IInviteRepository } from '@/data/repositories'
 import { InviteModel } from '@/types/models/invite'
-import { CreateInviteRequestDto, CreateInviteResponseDto } from '@/types/dtos/inviteDto'
+import { CreateInviteRequestDto, CreateInviteResponseDto, InviteResponseDto } from '@/types/dtos/inviteDto'
 import { CryptographyProvider } from '@/infrastructure/cryptography.provider'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -27,7 +27,20 @@ export class InviteService extends BaseService {
         return this.cryptography.HashSha256(rawToken).toString('hex')
     }
 
-    async createToken(options: CreateInviteRequestDto): Promise<CreateInviteResponseDto> {
+    private mapInvite(invite: InviteModel): InviteResponseDto {
+        return {
+            id: invite.id,
+            email: invite.email,
+            expiresAt: invite.expiresAt,
+            createdAt: invite.createdAt,
+            usedAt: invite.usedAt,
+            revokedAt: invite.revokedAt,
+            createdByUserId: invite.createdByUserId,
+            usedByUserId: invite.usedByUserId,
+        }
+    }
+
+    async createToken(options: CreateInviteRequestDto, createdByUserId: string): Promise<CreateInviteResponseDto> {
         const rawToken = this.cryptography.GenerateRandomToken()
         const token = this.hashToken(rawToken)
 
@@ -38,12 +51,12 @@ export class InviteService extends BaseService {
             token,
             email: options.email ?? null,
             expiresAt,
-            createdByUserId: options.createdByUserId ?? null,
+            createdByUserId,
         })
 
         this.logger.log(`Invite token created${options.email ? ` for ${options.email}` : ''}`)
 
-        return { rawToken, invite }
+        return { rawToken, invite: this.mapInvite(invite) }
     }
 
     async validateToken(rawToken: string, email?: string): Promise<InviteModel> {
@@ -66,6 +79,11 @@ export class InviteService extends BaseService {
             throw new UnprocessableEntityException('Invite token has expired.')
         }
 
+        console.log("========================================================")
+        console.log(`request: ${email}`)
+        console.log(`invite ${invite.email}`)
+        console.log("========================================================")
+        
         if (email != null && invite.email != null && invite.email !== email) {
             throw new ForbiddenException('Invite token is not valid for this account.')
         }
@@ -95,7 +113,8 @@ export class InviteService extends BaseService {
         return used!
     }
 
-    async listInvites(): Promise<InviteModel[]> {
-        return this.inviteRepository.findAll()
+    async listInvites(): Promise<InviteResponseDto[]> {
+        const invites = await this.inviteRepository.findAll()
+        return invites.map((invite) => this.mapInvite(invite))
     }
 }

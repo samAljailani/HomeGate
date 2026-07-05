@@ -106,6 +106,7 @@ describe('AuthService', () => {
                 userServiceMock.getUserByEmail.mockResolvedValue(user)
                 oauthProviderRepositoryMock.findByName.mockResolvedValue(provider)
                 userServiceMock.getUserOAuthIdentity.mockResolvedValue(null)
+                userServiceMock.hasIdentityForProvider.mockResolvedValue(false)
                 userServiceMock.CreateUserOAuthIdentity.mockResolvedValue(identity)
 
                 await service.authorize(request)
@@ -121,11 +122,36 @@ describe('AuthService', () => {
                 userServiceMock.getUserByEmail.mockResolvedValue(user)
                 oauthProviderRepositoryMock.findByName.mockResolvedValue(provider)
                 userServiceMock.getUserOAuthIdentity.mockResolvedValue(null)
+                userServiceMock.hasIdentityForProvider.mockResolvedValue(false)
                 userServiceMock.CreateUserOAuthIdentity.mockResolvedValue(identity)
 
                 const result = await service.authorize(request)
 
                 expect(result).toEqual(user)
+            })
+        })
+
+        describe('when the user has an identity for the provider with a different profileId', () => {
+            it('does not create a new identity', async () => {
+                userServiceMock.getUserByEmail.mockResolvedValue(user)
+                oauthProviderRepositoryMock.findByName.mockResolvedValue(provider)
+                userServiceMock.getUserOAuthIdentity.mockResolvedValue(null)
+                userServiceMock.hasIdentityForProvider.mockResolvedValue(true)
+
+                await service.authorize(request)
+
+                expect(userServiceMock.CreateUserOAuthIdentity).not.toHaveBeenCalled()
+            })
+
+            it('returns null', async () => {
+                userServiceMock.getUserByEmail.mockResolvedValue(user)
+                oauthProviderRepositoryMock.findByName.mockResolvedValue(provider)
+                userServiceMock.getUserOAuthIdentity.mockResolvedValue(null)
+                userServiceMock.hasIdentityForProvider.mockResolvedValue(true)
+
+                const result = await service.authorize(request)
+
+                expect(result).toBeNull()
             })
         })
 

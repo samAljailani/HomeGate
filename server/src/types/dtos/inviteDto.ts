@@ -1,11 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { Type } from 'class-transformer'
-import { IsEmail, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator'
-import type { InviteModel } from '@/types/models/invite'
+import { Type, Transform } from 'class-transformer'
+import { IsEmail, IsInt, IsOptional, Min } from 'class-validator'
 
 export class CreateInviteRequestDto {
     @ApiPropertyOptional({ type: String })
     @IsOptional()
+    @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
     @IsEmail()
     email?: string
 
@@ -14,20 +14,40 @@ export class CreateInviteRequestDto {
     @IsInt()
     @Min(1)
     expiresInDays: number
+}
+
+export class InviteResponseDto {
+    @ApiProperty({ type: String })
+    id: string
 
     @ApiPropertyOptional({ type: String })
-    @IsOptional()
-    @IsUUID()
-    createdByUserId?: string
+    email: string | null
+
+    @ApiProperty({ type: String })
+    expiresAt: Date
+
+    @ApiProperty({ type: String })
+    createdAt: Date
+
+    @ApiPropertyOptional({ type: String })
+    usedAt: Date | null
+
+    @ApiPropertyOptional({ type: String })
+    revokedAt: Date | null
+
+    @ApiPropertyOptional({ type: String })
+    createdByUserId: string | null
+
+    @ApiPropertyOptional({ type: String })
+    usedByUserId: string | null
 }
 
 export class CreateInviteResponseDto {
     @ApiProperty({ type: String })
-    @IsString()
     rawToken: string
 
-    @ApiProperty()
-    invite: InviteModel
+    @ApiProperty({ type: InviteResponseDto })
+    invite: InviteResponseDto
 }
 
 export class ValidateInviteResponseDto {

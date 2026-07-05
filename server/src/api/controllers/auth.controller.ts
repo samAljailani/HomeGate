@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Request, Inject, Res, UseGuards, Query } from '@nestjs/common'
+import { ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { AuthService } from '@/api/services/auth.service'
 import { InviteService } from '@/api/services/invite.service'
 import { OAuthUserProfileDto } from '@/types/dtos/authDto'
@@ -30,6 +31,8 @@ export class AuthController {
     @Public()
     @Get(routes.auth.subPath.join)
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
+    @ApiOperation({ summary: 'Begin OAuth sign-up flow via invite token' })
+    @ApiQuery({ name: 'token', type: String, required: true, description: 'Raw invite token from the invite link' })
     async join(@Query('token') token: string, @Request() req: ExpressRequest, @Res() res: ExpressResponse) {
         if (!token) {
             return res.redirect(`${clientRoutes.signIn}?error=missing_token`)

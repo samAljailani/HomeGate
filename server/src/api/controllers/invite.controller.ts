@@ -31,10 +31,7 @@ export class InviteController {
     @ApiOkResponse({ description: 'Invite token created successfully' })
     @ApiBadRequestResponse({ description: 'Invalid request' })
     async create(@Body() request: CreateInviteRequestDto, @Request() req: ExpressRequest) {
-        return this.inviteService.createToken({
-            ...request,
-            createdByUserId: req.session.userId!,
-        })
+        return this.inviteService.createToken(request, req.session.userId!)
     }
 
     @Get()

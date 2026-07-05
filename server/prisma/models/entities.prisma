@@ -36,6 +36,7 @@ model UserOAuthIdentity {
   user       User          @relation("UserOAuthIdentities", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([providerId, profileId], map: "user_oauth_identities_provider_id_profile_id_key")
+  @@unique([userId, providerId], map: "user_oauth_identities_user_id_provider_id_key")
   @@map("user_oauth_identities")
 }
 

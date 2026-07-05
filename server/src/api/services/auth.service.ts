@@ -45,7 +45,16 @@ export class AuthService extends BaseService {
 
             const identity = await this.userService.getUserOAuthIdentity(provider.id, request.providerAccountId)
 
-            if (identity == null && provider) {
+            if (identity == null) {
+                const alreadyHasProvider = await this.userService.hasIdentityForProvider(user.id, provider.id)
+
+                if (alreadyHasProvider) {
+                    this.logger.log(
+                        `Login rejected: user ${user.username} already has an identity for provider ${request.provider} with a different profileId`
+                    )
+                    return null
+                }
+
                 // The user is registered, but has logged in with a new identity provider.
                 // Create the identity for this user and provider.
                 await this.userService.CreateUserOAuthIdentity({

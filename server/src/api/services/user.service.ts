@@ -116,6 +116,11 @@ export class UserService extends BaseService {
         }
     }
 
+    async hasIdentityForProvider(userId: string, providerId: number): Promise<boolean> {
+        const identities = await this.userOAuthIdentityRepository.findMany({ userId, providerId }, 1)
+        return identities.length > 0
+    }
+
     async CreateUserOAuthIdentity(request: OAuthIdentityCreateRequestDto): Promise<OAuthIdentityResponseDto | null> {
         const identity = await this.userOAuthIdentityRepository.create(request)
         if (!identity) return null
