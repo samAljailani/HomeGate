@@ -8,6 +8,7 @@ export interface ImmichUserResponse {
     id: string
     email?: string
     name?: string
+    isAdmin?: boolean
     deletedAt?: string | null
 }
 

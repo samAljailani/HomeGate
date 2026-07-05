@@ -116,6 +116,7 @@ export class JellyfinClient implements IApplicationManager {
                     id: user.Id,
                     username: user.Name,
                     isActive: !user.Policy?.IsDisabled,
+                    isAdmin: user.Policy?.IsAdministrator === true,
                 })
             }
         } catch (error) {
@@ -203,6 +204,7 @@ export class JellyfinClient implements IApplicationManager {
                     id: data.Id,
                     username: data.Name,
                     isActive: data.Policy?.IsDisabled !== true,
+                    isAdmin: data.Policy?.IsAdministrator === true,
                 },
             }
         } catch (error) {
@@ -382,6 +384,7 @@ export class JellyfinClient implements IApplicationManager {
                 id: data.Id,
                 username: data.Name,
                 isActive: !data.Policy?.IsDisabled,
+                isAdmin: data.Policy?.IsAdministrator === true,
             }
         } catch (error) {
             this.logger.error(
@@ -424,6 +427,7 @@ export class JellyfinClient implements IApplicationManager {
                         id: user.Id,
                         username: user.Name,
                         isActive: !user.Policy?.IsDisabled,
+                        isAdmin: user.Policy?.IsAdministrator === true,
                     }
                 }
             }

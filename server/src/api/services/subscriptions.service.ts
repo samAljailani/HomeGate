@@ -67,6 +67,13 @@ export class SubscriptionService {
         // TODO: if an account is expired or cancelled, then consider enabling rather than creating a new account.
         const client = await this.getServiceClient(service.name)
 
+        if (
+            client.requiredInputs.password &&
+            (!request.servicePassword || request.servicePassword !== request.confirmServicePassword)
+        ) {
+            throw new BadRequestException('Passwords do not match')
+        }
+
         if (client.requiredInputs.email && request.email?.toLowerCase() !== user.email.toLowerCase()) {
             throw new BadRequestException("Email address must match the user's HomeGate account email address")
         }
@@ -571,6 +578,10 @@ export class SubscriptionService {
             const localAccount = localByExternalId.get(clientUser.id)
 
             if (!localAccount) {
+                if (clientUser.isAdmin) {
+                    continue
+                }
+
                 await client.disableUser({
                     userServiceAccountId: clientUser.id,
                     username: clientUser.username,

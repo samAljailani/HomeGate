@@ -2,6 +2,7 @@ export type ApplicationUserModel = {
     id: string // external service user id
     username: string
     isActive: boolean
+    isAdmin: boolean
 }
 
 export type CreateApplicationUserResult = {

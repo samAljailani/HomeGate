@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator'
-import { Match } from '@/types/validators/match.validator'
 import { UserAccountStatus } from '@/types/enums'
 
 export { UserAccountStatus }
@@ -38,7 +37,6 @@ export class SubscriptionCreateRequestDto {
     @ApiProperty({ type: String, writeOnly: true })
     @IsString()
     @IsNotEmpty()
-    @Match('servicePassword', { message: 'Passwords do not match' })
     confirmServicePassword: string
 
     @ApiProperty({ type: Boolean })

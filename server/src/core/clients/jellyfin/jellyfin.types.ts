@@ -7,6 +7,7 @@ export interface JellyfinUserResponse {
     Id: string
     Name: string
     Policy?: {
+        IsAdministrator?: boolean
         IsDisabled?: boolean
     }
 }

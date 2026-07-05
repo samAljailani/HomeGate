@@ -108,6 +108,7 @@ export class ImmichClient implements IApplicationManager {
                     id: user.id,
                     username: user.email ?? user.name!,
                     isActive: !user.deletedAt,
+                    isAdmin: user.isAdmin === true,
                 })
             }
         } catch (error) {
@@ -200,6 +201,7 @@ export class ImmichClient implements IApplicationManager {
                     id: data.id,
                     username: data.email ?? data.name!,
                     isActive: !data.deletedAt,
+                    isAdmin: data.isAdmin === true,
                 },
             }
         } catch (error) {
@@ -366,6 +368,7 @@ export class ImmichClient implements IApplicationManager {
                 id: data.id,
                 username: data.email ?? data.name!,
                 isActive: !data.deletedAt,
+                isAdmin: data.isAdmin === true,
             }
         } catch (error) {
             this.logger.error(
@@ -408,6 +411,7 @@ export class ImmichClient implements IApplicationManager {
                         id: user.id,
                         username: user.email ?? user.name!,
                         isActive: !user.deletedAt,
+                        isAdmin: user.isAdmin === true,
                     }
                 }
             }
