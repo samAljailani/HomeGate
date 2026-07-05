@@ -167,12 +167,13 @@ describe('SubscriptionService', () => {
             )
         })
 
-        it('should throw ConflictException when resubscribing but old external account still exists', async () => {
+        it('should reactivate existing external account when resubscribing and account is disabled', async () => {
             const cancelledAccount = createUserAccountFixture({
                 userId,
                 status: UserAccountStatus.cancelled,
                 userServiceAccountId: 'old-ext-id',
             })
+            const reactivatedAccount = createUserAccountFixture({ userId, status: UserAccountStatus.active })
             const client = createApplicationClientMock()
 
             userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
@@ -180,9 +181,65 @@ describe('SubscriptionService', () => {
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             userAccountRepoMock.find.mockResolvedValue(cancelledAccount)
             client.getUser.mockResolvedValue({ ok: true, user: { id: 'old-ext-id', username: 'testuser', isActive: false, isAdmin: false } })
+            client.enableUser.mockResolvedValue(true)
+            userAccountRepoMock.update.mockResolvedValue(reactivatedAccount)
 
-            await expect(service.subscribe(request, userId)).rejects.toThrow(ConflictException)
+            const result = await service.subscribe(request, userId)
+
+            expect(result).toEqual(reactivatedAccount)
+            expect(client.enableUser).toHaveBeenCalledWith(expect.objectContaining({ userServiceAccountId: 'old-ext-id' }))
             expect(client.createUser).not.toHaveBeenCalled()
+        })
+
+        it('should reactivate existing external account when resubscribing and account is already active', async () => {
+            const cancelledAccount = createUserAccountFixture({
+                userId,
+                status: UserAccountStatus.cancelled,
+                userServiceAccountId: 'old-ext-id',
+            })
+            const reactivatedAccount = createUserAccountFixture({ userId, status: UserAccountStatus.active })
+            const client = createApplicationClientMock()
+
+            userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
+            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            clientRegistryMock.getEnabled.mockResolvedValue([client])
+            userAccountRepoMock.find.mockResolvedValue(cancelledAccount)
+            client.getUser.mockResolvedValue({ ok: true, user: { id: 'old-ext-id', username: 'testuser', isActive: true, isAdmin: false } })
+            userAccountRepoMock.update.mockResolvedValue(reactivatedAccount)
+
+            const result = await service.subscribe(request, userId)
+
+            expect(result).toEqual(reactivatedAccount)
+            expect(client.enableUser).not.toHaveBeenCalled()
+            expect(client.createUser).not.toHaveBeenCalled()
+        })
+
+        it('should create a new account when resubscribing and old external account is gone', async () => {
+            const cancelledAccount = createUserAccountFixture({
+                userId,
+                status: UserAccountStatus.cancelled,
+                userServiceAccountId: 'old-ext-id',
+            })
+            const activeAccount = createUserAccountFixture({ userId, status: UserAccountStatus.active })
+            const client = createApplicationClientMock()
+
+            userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
+            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            clientRegistryMock.getEnabled.mockResolvedValue([client])
+            userAccountRepoMock.find.mockResolvedValue(cancelledAccount)
+            // First getUser call: old external account gone
+            // Second getUser call: new username availability check returns not found
+            client.getUser.mockResolvedValueOnce({ ok: false, user: null }).mockResolvedValueOnce({ ok: false, user: null })
+            userAccountRepoMock.update.mockResolvedValue(activeAccount)
+            client.createUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'new-ext-id', username: request.serviceUsername, isActive: true, isAdmin: false },
+            })
+
+            const result = await service.subscribe(request, userId)
+
+            expect(result).toEqual(activeAccount)
+            expect(client.createUser).toHaveBeenCalled()
         })
 
         it('should allow resubscribe when previous failure was during provisioning', async () => {
@@ -550,6 +607,30 @@ describe('SubscriptionService', () => {
             expect(result).toBe(true)
             expect(client.enableUser).not.toHaveBeenCalled()
             expect(userAccountRepoMock.delete).toHaveBeenCalledWith(request.userId, request.serviceId)
+        })
+
+        it('should skip enableUser when external account is already active', async () => {
+            const adminUser = createUserFixture({ id: currentUserId, isAdmin: true })
+            const targetUser = createUserFixture({ id: request.userId })
+            const disabledAccount = createUserAccountFixture({
+                userId: request.userId,
+                status: UserAccountStatus.disabled,
+                userServiceAccountId: 'ext-1',
+                expiresAt: new Date(Date.now() + 86400000),
+            })
+            const client = createApplicationClientMock()
+
+            userServiceMock.getUserById.mockResolvedValueOnce(adminUser).mockResolvedValueOnce(targetUser)
+            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            userAccountRepoMock.find.mockResolvedValue(disabledAccount)
+            clientRegistryMock.getEnabled.mockResolvedValue([client])
+            client.getUser.mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false } })
+            userAccountRepoMock.update.mockResolvedValue({ ...disabledAccount, status: UserAccountStatus.active })
+
+            const result = await service.enable(request, currentUserId)
+
+            expect(result).toBe(true)
+            expect(client.enableUser).not.toHaveBeenCalled()
         })
     })
 

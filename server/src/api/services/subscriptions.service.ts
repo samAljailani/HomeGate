@@ -71,7 +71,8 @@ export class SubscriptionService {
             throw new BadRequestException("Email address must match the user's HomeGate account email address")
         }
 
-        // When resubscribing from a previous record, verify the old external account is truly gone.
+        // When resubscribing from a previous record, check if the old external account still exists.
+        // If it does, re-enable it and reactivate the local record rather than creating a new one.
         if (existingUserServiceAccount?.userServiceAccountId) {
             const previousAccountResult = await client.getUser({
                 userServiceAccountId: existingUserServiceAccount.userServiceAccountId,
@@ -79,11 +80,42 @@ export class SubscriptionService {
                 email: undefined,
             })
 
-            if (previousAccountResult.ok || previousAccountResult.user) {
-                throw new ConflictException(
-                    `A previous external account still exists on service '${service.name}'. It must be removed before resubscribing.`
-                )
+            if (previousAccountResult.ok && previousAccountResult.user) {
+                if (!previousAccountResult.user.isActive) {
+                    const enabled = await client.enableUser({
+                        userServiceAccountId: existingUserServiceAccount.userServiceAccountId,
+                        username: existingUserServiceAccount.username,
+                        email: user.email,
+                    })
+
+                    if (!enabled) {
+                        throw new ServiceUnavailableException('Failed to re-enable existing service account')
+                    }
+                }
+
+                const reactivatedAccount = await this.userAccountRepository.update({
+                    userId,
+                    serviceId: request.serviceId,
+                    username: previousAccountResult.user.username,
+                    userServiceAccountId: previousAccountResult.user.id,
+                    status: UserAccountStatus.active,
+                    autoRenew: request.autoRenew,
+                    expiresAt: this.getDefaultExpirationDate(),
+                    lastError: null,
+                    failedAt: null,
+                    cancelledAt: null,
+                })
+
+                if (!reactivatedAccount) {
+                    throw new InternalServerErrorException('Failed to reactivate subscription')
+                }
+
+                this.logger.log(`User '${userId}' reactivated existing account on service '${service.id}'`)
+
+                return reactivatedAccount
             }
+
+            // External account is gone — fall through to create a new one.
         }
 
         try {
@@ -356,6 +388,7 @@ export class SubscriptionService {
 
     private isResubscribeAllowed(userAccount: UserAccountModel | null): boolean {
         if (userAccount === null) return false
+        if (userAccount.status === UserAccountStatus.active) return false
         if (userAccount.status === UserAccountStatus.failed) {
             return userAccount.failedOperation === FailedOperation.provisioning
         }
@@ -471,14 +504,16 @@ export class SubscriptionService {
                     return true
                 }
 
-                const enabled = await client.enableUser({
-                    userServiceAccountId: existingUserServiceAccount.userServiceAccountId ?? undefined,
-                    username: existingUserServiceAccount.username,
-                    email: user.email,
-                })
+                if (!externalUserResult.user.isActive) {
+                    const enabled = await client.enableUser({
+                        userServiceAccountId: existingUserServiceAccount.userServiceAccountId ?? undefined,
+                        username: existingUserServiceAccount.username,
+                        email: user.email,
+                    })
 
-                if (!enabled) {
-                    throw new InternalServerErrorException('Failed to enable external service account')
+                    if (!enabled) {
+                        throw new InternalServerErrorException('Failed to enable external service account')
+                    }
                 }
             }
 
