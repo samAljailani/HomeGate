@@ -67,6 +67,7 @@ model UserAccount {
   provisionedAt        DateTime?         @map("provisioned_at") @db.Timestamptz(6)
   failedAt             DateTime?         @map("failed_at") @db.Timestamptz(6)
   cancelledAt          DateTime?         @map("cancelled_at") @db.Timestamptz(6)
+  failedOperation      FailedOperation?  @map("failed_operation")
   lastError            String?           @map("last_error") @db.Text
   retryCount           Int               @default(0) @map("retry_count")
 
@@ -146,4 +147,11 @@ enum UserAccountStatus {
   disabling
   disabled
   enabling
+}
+
+enum FailedOperation {
+  provisioning
+  cancellation
+  expiration
+  sync
 }

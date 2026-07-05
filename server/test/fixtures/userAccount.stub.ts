@@ -1,5 +1,5 @@
 import { UserAccountModel } from '@/types/models/userAccount'
-import { UserAccountStatus } from '@/types/enums'
+import { FailedOperation, UserAccountStatus } from '@/types/enums'
 
 export function createUserAccountFixture(overrides: Partial<UserAccountModel> = {}): UserAccountModel {
     const now = new Date('2026-07-01T00:00:00Z')
@@ -18,6 +18,7 @@ export function createUserAccountFixture(overrides: Partial<UserAccountModel> = 
         provisionedAt: now,
         failedAt: null,
         cancelledAt: null,
+        failedOperation: null,
         lastError: null,
         retryCount: 0,
         ...overrides,

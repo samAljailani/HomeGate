@@ -14,7 +14,7 @@ import {
     SubscriptionDisableRequestDto,
 } from '@/types/dtos/subscriptionsDto'
 import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
-import { ApplicationClientNames, UserAccountStatus } from '@/types/enums'
+import { ApplicationClientNames, FailedOperation, UserAccountStatus } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { UserAccountModel } from '@/types/models/userAccount'
 import { IApplicationManager } from '@/core/clients/IApplicationManager'
@@ -67,15 +67,23 @@ export class SubscriptionService {
         // TODO: if an account is expired or cancelled, then consider enabling rather than creating a new account.
         const client = await this.getServiceClient(service.name)
 
-        if (
-            client.requiredInputs.password &&
-            (!request.servicePassword || request.servicePassword !== request.confirmServicePassword)
-        ) {
-            throw new BadRequestException('Passwords do not match')
-        }
-
         if (client.requiredInputs.email && request.email?.toLowerCase() !== user.email.toLowerCase()) {
             throw new BadRequestException("Email address must match the user's HomeGate account email address")
+        }
+
+        // When resubscribing from a previous record, verify the old external account is truly gone.
+        if (existingUserServiceAccount?.userServiceAccountId) {
+            const previousAccountResult = await client.getUser({
+                userServiceAccountId: existingUserServiceAccount.userServiceAccountId,
+                username: existingUserServiceAccount.username,
+                email: undefined,
+            })
+
+            if (previousAccountResult.ok || previousAccountResult.user) {
+                throw new ConflictException(
+                    `A previous external account still exists on service '${service.name}'. It must be removed before resubscribing.`
+                )
+            }
         }
 
         try {
@@ -175,7 +183,7 @@ export class SubscriptionService {
 
             return activeUserAccount
         } catch (error) {
-            await this.markSubscriptionFailed(userId, request.serviceId, this.toSafeErrorMessage(error))
+            await this.markSubscriptionFailed(userId, request.serviceId, this.toSafeErrorMessage(error), FailedOperation.provisioning)
 
             throw error
         }
@@ -270,7 +278,7 @@ export class SubscriptionService {
                 stackTrace: error instanceof Error ? error.stack : String(error),
             })
 
-            await this.markSubscriptionFailed(request.userId, request.serviceId, this.toSafeErrorMessage(error))
+            await this.markSubscriptionFailed(request.userId, request.serviceId, this.toSafeErrorMessage(error), FailedOperation.cancellation)
 
             throw error
         }
@@ -296,6 +304,149 @@ export class SubscriptionService {
         return this.updateUserDisabledStatus(request.userId, request.serviceId, UserAccountStatus.active)
     }
 
+    async retryFailedOperation(request: SubscriptionDisableRequestDto, currentUserId: string): Promise<boolean> {
+        const currentUser = await this.userService.getUserById({ userId: currentUserId })
+
+        if (!currentUser?.isAdmin) {
+            throw new BadRequestException('Unauthorized: admin access required to retry a failed operation')
+        }
+
+        const existingAccount = await this.userAccountRepository.find(request.userId, request.serviceId)
+
+        if (!existingAccount || existingAccount.status !== UserAccountStatus.failed) {
+            throw new ConflictException('Account is not in a failed state')
+        }
+
+        if (!existingAccount.failedOperation || existingAccount.failedOperation === FailedOperation.provisioning) {
+            throw new BadRequestException('Use subscribe() to retry failed provisioning')
+        }
+
+        const user = await this.userService.getUserById({ userId: request.userId })
+
+        if (!user) {
+            throw new BadRequestException('User does not exist')
+        }
+
+        const service = await this.serviceRepository.findById(request.serviceId)
+
+        if (!service) {
+            throw new BadRequestException('Service does not exist')
+        }
+
+        const client = await this.getServiceClient(service.name)
+        const { failedOperation } = existingAccount
+
+        try {
+            const externalUserResult = await client.getUser({
+                userServiceAccountId: existingAccount.userServiceAccountId ?? undefined,
+                username: existingAccount.username,
+                email: user.email,
+            })
+
+            const externalIsGone = !externalUserResult.ok || !externalUserResult.user
+            const externalIsInactive = !externalIsGone && !externalUserResult.user!.isActive
+
+            if (failedOperation === FailedOperation.cancellation) {
+                if (!externalIsGone) {
+                    const deleted = await client.deleteUser({
+                        userServiceAccountId: existingAccount.userServiceAccountId ?? undefined,
+                        username: existingAccount.username,
+                        email: user.email,
+                    })
+
+                    if (!deleted) {
+                        throw new ServiceUnavailableException('Failed to delete external service account')
+                    }
+                }
+
+                await this.userAccountRepository.update({
+                    userId: request.userId,
+                    serviceId: request.serviceId,
+                    status: UserAccountStatus.cancelled,
+                    cancelledAt: new Date(),
+                    lastError: null,
+                    failedAt: null,
+                    failedOperation: null,
+                })
+
+                this.logger.log(
+                    `Retry cancellation succeeded for user '${user.id}' on service '${service.id}'` +
+                        (externalIsGone ? ' (external account was already deleted)' : '')
+                )
+                return true
+            }
+
+            if (failedOperation === FailedOperation.expiration) {
+                if (!externalIsGone && !externalIsInactive) {
+                    const disabled = await client.disableUser({
+                        userServiceAccountId: existingAccount.userServiceAccountId ?? undefined,
+                        username: existingAccount.username,
+                        email: user.email,
+                    })
+
+                    if (!disabled) {
+                        throw new ServiceUnavailableException('Failed to disable external service account')
+                    }
+                }
+
+                await this.userAccountRepository.update({
+                    userId: request.userId,
+                    serviceId: request.serviceId,
+                    status: UserAccountStatus.expired,
+                    lastError: null,
+                    failedAt: null,
+                    failedOperation: null,
+                })
+
+                this.logger.log(
+                    `Retry expiration succeeded for user '${user.id}' on service '${service.id}'` +
+                        (externalIsGone || externalIsInactive ? ' (external account was already disabled or deleted)' : '')
+                )
+                return true
+            }
+
+            // FailedOperation.sync — external account was not found during sync
+            if (externalIsGone) {
+                await this.userAccountRepository.update({
+                    userId: request.userId,
+                    serviceId: request.serviceId,
+                    status: UserAccountStatus.cancelled,
+                    cancelledAt: new Date(),
+                    lastError: null,
+                    failedAt: null,
+                    failedOperation: null,
+                })
+
+                this.logger.log(
+                    `Retry sync for user '${user.id}' on service '${service.id}': external account confirmed gone, marked as cancelled`
+                )
+            } else {
+                await this.userAccountRepository.update({
+                    userId: request.userId,
+                    serviceId: request.serviceId,
+                    status: UserAccountStatus.active,
+                    lastError: null,
+                    failedAt: null,
+                    failedOperation: null,
+                })
+
+                this.logger.log(
+                    `Retry sync for user '${user.id}' on service '${service.id}': external account found, restored to active`
+                )
+            }
+
+            return true
+        } catch (error) {
+            this.logger.error(
+                `Failed to retry operation '${failedOperation}' for user '${user.id}' on service '${service.id}'`,
+                {
+                    stackTrace: error instanceof Error ? error.stack : String(error),
+                }
+            )
+            throw error
+        }
+    }
+
     private async getServiceClient(serviceName: string) {
         const enabledServices = await this.applicationClientRegistry.getEnabled()
 
@@ -308,12 +459,18 @@ export class SubscriptionService {
         return client
     }
 
-    private async markSubscriptionFailed(userId: string, serviceId: number, lastError: string): Promise<void> {
+    private async markSubscriptionFailed(
+        userId: string,
+        serviceId: number,
+        lastError: string,
+        failedOperation: FailedOperation
+    ): Promise<void> {
         await this.userAccountRepository.update({
             userId,
             serviceId,
             status: UserAccountStatus.failed,
             failedAt: new Date(),
+            failedOperation,
             lastError,
         })
     }
@@ -341,12 +498,11 @@ export class SubscriptionService {
     }
 
     private isResubscribeAllowed(userAccount: UserAccountModel | null): boolean {
-        return (
-            userAccount !== null &&
-            [UserAccountStatus.failed, UserAccountStatus.cancelled, UserAccountStatus.expired].includes(
-                userAccount.status
-            )
-        )
+        if (userAccount === null) return false
+        if (userAccount.status === UserAccountStatus.failed) {
+            return userAccount.failedOperation === FailedOperation.provisioning
+        }
+        return [UserAccountStatus.cancelled, UserAccountStatus.expired].includes(userAccount.status)
     }
 
     private async disableUserAccount(
@@ -458,6 +614,23 @@ export class SubscriptionService {
                 const cachedUsers: Map<string, UserResponseDto> = new Map([[user.id, user]])
                 await this.disableUserAccount(existingUserServiceAccount, cachedClients, cachedUsers)
             } else {
+                const externalUserResult = await client.getUser({
+                    userServiceAccountId: existingUserServiceAccount.userServiceAccountId ?? undefined,
+                    username: existingUserServiceAccount.username,
+                    email: user.email,
+                })
+
+                if (!externalUserResult.ok || !externalUserResult.user) {
+                    await this.userAccountRepository.delete(userId, serviceId)
+
+                    this.logger.warn(
+                        `External account for user '${user.id}' on service '${service.id}' no longer exists. ` +
+                            `Stale local record deleted.`
+                    )
+
+                    return true
+                }
+
                 const enabled = await client.enableUser({
                     userServiceAccountId: existingUserServiceAccount.userServiceAccountId ?? undefined,
                     username: existingUserServiceAccount.username,
@@ -650,13 +823,68 @@ export class SubscriptionService {
                 await this.markSubscriptionFailed(
                     localAccount.userId,
                     localAccount.serviceId,
-                    `External account not found on service '${client.name}' during sync`
+                    `External account not found on service '${client.name}' during sync`,
+                    FailedOperation.sync
                 )
 
                 this.logger.warn(
                     `Active local record for user '${localAccount.userId}' on service '${client.name}' ` +
                         `has no matching external account — marked as failed`
                 )
+            }
+        }
+    }
+
+    /**
+     * Deletes stale local records for non-active accounts whose external counterpart
+     * no longer exists (e.g. cleaned up by the external application).
+     * Intended to be scheduled at a lower frequency than syncClientAccounts.
+     */
+    public async cleanupStaleLocalAccounts(): Promise<void> {
+        const clients = await this.applicationClientRegistry.getEnabled()
+        const allServices = await this.serviceRepository.findMany({})
+        const allLocalAccounts = await this.userAccountRepository.findMany({})
+        const serviceByName = new Map(allServices.map((s) => [s.name, s]))
+
+        for (const client of clients) {
+            try {
+                const service = serviceByName.get(client.name)
+
+                if (!service) {
+                    continue
+                }
+
+                const clientUsers = await client.getAllUsers()
+
+                if (!clientUsers) {
+                    continue
+                }
+
+                const clientUserById = new Map(clientUsers.map((u) => [u.id, u]))
+                const localAccounts = allLocalAccounts.filter((a) => a.serviceId === service.id)
+
+                for (const localAccount of localAccounts) {
+                    if (localAccount.status === UserAccountStatus.active) {
+                        continue
+                    }
+
+                    if (!localAccount.userServiceAccountId) {
+                        continue
+                    }
+
+                    if (!clientUserById.has(localAccount.userServiceAccountId)) {
+                        await this.userAccountRepository.delete(localAccount.userId, localAccount.serviceId)
+
+                        this.logger.log(
+                            `Deleted stale local record for user '${localAccount.userId}' on service '${localAccount.serviceId}': ` +
+                                `external account (id: '${localAccount.userServiceAccountId}') no longer exists`
+                        )
+                    }
+                }
+            } catch (error) {
+                this.logger.error(`Failed to clean up stale records for client '${client.name}'`, {
+                    stackTrace: error instanceof Error ? error.stack : String(error),
+                })
             }
         }
     }
@@ -737,6 +965,7 @@ export class SubscriptionService {
                     status: UserAccountStatus.failed,
                     lastError: this.toSafeErrorMessage(error),
                     failedAt: new Date(),
+                    failedOperation: FailedOperation.expiration,
                 })
             }
         }

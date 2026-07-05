@@ -51,3 +51,10 @@ export enum UserAccountStatus {
     disabled = 'disabled',
     enabling = 'enabling',
 }
+
+export enum FailedOperation {
+    provisioning = 'provisioning',
+    cancellation = 'cancellation',
+    expiration = 'expiration',
+    sync = 'sync',
+}

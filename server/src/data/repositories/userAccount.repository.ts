@@ -12,7 +12,7 @@ import {
 } from '@/types/models/userAccount'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
-import { UserAccountStatus as UserAccountStatusModel } from '@/types/enums'
+import { UserAccountStatus as UserAccountStatusModel, FailedOperation } from '@/types/enums'
 
 @Injectable()
 export class UserAccountRepository extends BaseRepository implements IUserAccountRepository {
@@ -37,6 +37,7 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
             provisionedAt: userAccount.provisionedAt,
             failedAt: userAccount.failedAt,
             cancelledAt: userAccount.cancelledAt,
+            failedOperation: (userAccount.failedOperation as FailedOperation) ?? null,
             lastError: userAccount.lastError,
             retryCount: userAccount.retryCount,
         }

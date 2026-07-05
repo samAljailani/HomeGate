@@ -1,4 +1,4 @@
-import { UserAccountStatus } from '@/types/enums'
+import { FailedOperation, UserAccountStatus } from '@/types/enums'
 
 export type UserAccountModel = {
     userId: string
@@ -19,6 +19,7 @@ export type UserAccountModel = {
     cancelledAt: Date | null
 
     lastError: string | null
+    failedOperation: FailedOperation | null
     retryCount: number
 }
 
@@ -49,6 +50,7 @@ export type UpdateUserAccountModel = {
     cancelledAt?: Date | null
 
     lastError?: string | null
+    failedOperation?: FailedOperation | null
     retryCount?: number
 }
 
