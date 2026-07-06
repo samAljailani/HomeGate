@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsInt, IsNotEmpty, IsString } from 'class-validator'
 
 export class ServiceLoadRequestDto {
@@ -55,6 +55,9 @@ export class ServiceResponseDto {
 
     @ApiProperty({ type: Boolean })
     enabled: boolean
+
+    @ApiPropertyOptional({ type: String, nullable: true })
+    url: string | null
 }
 
 export class ServiceActionRequestDto {

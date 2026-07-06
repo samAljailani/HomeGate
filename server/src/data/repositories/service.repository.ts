@@ -24,6 +24,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
             id: service.id,
             name: service.name as ApplicationClientNames,
             enabled: service.enabled,
+            url: service.url ?? null,
         }
     }
 

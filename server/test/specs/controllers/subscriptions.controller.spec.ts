@@ -132,4 +132,43 @@ describe('SubscriptionController — renew / setAutoRenew / listAll / listByUser
     })
 
     // #endregion listByUser
+
+    // #region listMine
+
+    describe('listMine', () => {        
+        const userId = 'session-user-uuid'
+
+        it('calls listByUser with the session userId', async () => {
+            const req = createRequestMock()
+            req.session.userId = userId
+            subscriptionServiceMock.listByUser.mockResolvedValue([])
+
+            await controller.listMine(req, {})
+
+            expect(subscriptionServiceMock.listByUser).toHaveBeenCalledWith(userId, undefined, undefined)
+        })
+
+        it('returns the accounts for the session user', async () => {
+            const req = createRequestMock()
+            req.session.userId = userId
+            const accounts = [createUserAccountFixture({ userId }), createUserAccountFixture({ userId, serviceId: 2 })]
+            subscriptionServiceMock.listByUser.mockResolvedValue(accounts)
+
+            const result = await controller.listMine(req, {})
+
+            expect(result).toHaveLength(2)
+        })
+
+        it('forwards take and skip to the service', async () => {
+            const req = createRequestMock()
+            req.session.userId = userId
+            subscriptionServiceMock.listByUser.mockResolvedValue([])
+
+            await controller.listMine(req, { take: 10, skip: 5 })
+
+            expect(subscriptionServiceMock.listByUser).toHaveBeenCalledWith(userId, 10, 5)
+        })
+    })
+
+    // #endregion listMine
 })

@@ -45,6 +45,7 @@ export const routes = {
         autoRenew: 'auto-renew',
         list: '',
         listByUser: 'user/:userId',
+        me: 'me',
     }),
     invites: defineRoutes('/api/invites', {
         create: '',

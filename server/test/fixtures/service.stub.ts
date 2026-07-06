@@ -5,6 +5,7 @@ export function createServiceFixture(overrides: Partial<ServiceModel> = {}): Ser
         id: 1,
         name: 'jellyfin',
         enabled: true,
+        url: null,
         ...overrides,
     }
 }

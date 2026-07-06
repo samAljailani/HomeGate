@@ -98,6 +98,13 @@ export class SubscriptionController {
         return this.subscriptionService.setAutoRenew(request.userId, request.serviceId, request.autoRenew)
     }
 
+    @Get(routes.subscriptions.subPath.me)
+    @ApiOperation({ summary: 'List subscriptions for the current user' })
+    @ApiOkResponse({ description: 'List of subscriptions for the authenticated user' })
+    async listMine(@Request() req: ExpressRequest, @Query() pagination: PaginationRequestDto) {
+        return this.subscriptionService.listByUser(req.session.userId!, pagination.take, pagination.skip)
+    }
+
     @Get(routes.subscriptions.subPath.list)
     @AdminRoute()
     @ApiOperation({ summary: 'List all subscriptions (admin only)' })

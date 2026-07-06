@@ -18,7 +18,7 @@ export class ServiceController {
     @ApiOkResponse({ type: [ServiceResponseDto] })
     async list(@Query() pagination: PaginationRequestDto): Promise<ServiceResponseDto[]> {
         const services = await this.serviceManagementService.list(pagination.take, pagination.skip)
-        return services.map((s) => ({ id: s.id, name: s.name, enabled: s.enabled }))
+        return services.map((s) => ({ id: s.id, name: s.name, enabled: s.enabled, url: s.url }))
     }
 
     @Put(routes.services.subPath.enable)
@@ -28,7 +28,7 @@ export class ServiceController {
     @ApiOkResponse({ type: ServiceResponseDto })
     async enable(@Body() request: ServiceActionRequestDto): Promise<ServiceResponseDto> {
         const service = await this.serviceManagementService.enable(request.name as ApplicationClientNames)
-        return { id: service.id, name: service.name, enabled: service.enabled }
+        return { id: service.id, name: service.name, enabled: service.enabled, url: service.url }
     }
 
     @Put(routes.services.subPath.disable)
@@ -38,6 +38,6 @@ export class ServiceController {
     @ApiOkResponse({ type: ServiceResponseDto })
     async disable(@Body() request: ServiceActionRequestDto): Promise<ServiceResponseDto> {
         const service = await this.serviceManagementService.disable(request.name as ApplicationClientNames)
-        return { id: service.id, name: service.name, enabled: service.enabled }
+        return { id: service.id, name: service.name, enabled: service.enabled, url: service.url }
     }
 }

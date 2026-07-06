@@ -45,8 +45,8 @@ describe('ServiceController', () => {
 
             expect(serviceManagementMock.list).toHaveBeenCalled()
             expect(result).toHaveLength(2)
-            expect(result[0]).toEqual({ id: 1, name: services[0].name, enabled: true })
-            expect(result[1]).toEqual({ id: 2, name: services[1].name, enabled: false })
+            expect(result[0]).toEqual({ id: 1, name: services[0]!.name, enabled: true, url: null })
+            expect(result[1]).toEqual({ id: 2, name: services[1]!.name, enabled: false, url: null })
         })
     })
 
@@ -72,7 +72,7 @@ describe('ServiceController', () => {
 
             const result = await controller.enable(request)
 
-            expect(result).toEqual({ id: 1, name: svc.name, enabled: true })
+            expect(result).toEqual({ id: 1, name: svc.name, enabled: true, url: null })
         })
     })
 
@@ -98,7 +98,7 @@ describe('ServiceController', () => {
 
             const result = await controller.disable(request)
 
-            expect(result).toEqual({ id: 1, name: svc.name, enabled: false })
+            expect(result).toEqual({ id: 1, name: svc.name, enabled: false, url: null })
         })
     })
 

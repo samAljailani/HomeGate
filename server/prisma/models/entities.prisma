@@ -53,6 +53,7 @@ model Service {
   id           Int           @id @default(autoincrement())
   name         String        @unique @db.VarChar(64)
   enabled      Boolean
+  url          String?       @db.VarChar(512)
   userAccounts UserAccount[] @relation("ServiceAccounts")
 
   @@map("services")
