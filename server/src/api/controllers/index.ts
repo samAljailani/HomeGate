@@ -5,11 +5,9 @@ import { LogController } from './log.controller'
 import { OAuthProviderController } from './oauthProvider.controller'
 import { ServiceController } from './service.controller'
 import { SubscriptionController } from './subscriptions.controller'
-import { TestController } from './test.controller'
 import { UserController } from './user.controller'
 
 export const controllers = [
-    TestController,
     AuthController,
     CsrfController,
     SubscriptionController,
