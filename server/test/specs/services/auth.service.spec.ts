@@ -127,7 +127,12 @@ describe('AuthService', () => {
 
                 const result = await service.authorize(request)
 
-                expect(result).toEqual({ id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: provider.id })
+                expect(result).toEqual({
+                    id: user.id,
+                    username: user.username,
+                    isAdmin: user.isAdmin,
+                    providerId: provider.id,
+                })
             })
         })
 
@@ -173,7 +178,12 @@ describe('AuthService', () => {
 
                 const result = await service.authorize(request)
 
-                expect(result).toEqual({ id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: provider.id })
+                expect(result).toEqual({
+                    id: user.id,
+                    username: user.username,
+                    isAdmin: user.isAdmin,
+                    providerId: provider.id,
+                })
             })
         })
 

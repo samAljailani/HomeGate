@@ -121,9 +121,7 @@ describe('AuthController', () => {
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
                 expect(expressRequestMock.session.regenerate).not.toHaveBeenCalled()
-                expect(expressResponseMock.redirect).toHaveBeenCalledWith(
-                    expect.stringContaining('error=auth_failed')
-                )
+                expect(expressResponseMock.redirect).toHaveBeenCalledWith(expect.stringContaining('error=auth_failed'))
             })
 
             it('does not set session data', async () => {
@@ -143,9 +141,7 @@ describe('AuthController', () => {
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
-                expect(expressResponseMock.redirect).toHaveBeenCalledWith(
-                    expect.stringContaining('error=auth_failed')
-                )
+                expect(expressResponseMock.redirect).toHaveBeenCalledWith(expect.stringContaining('error=auth_failed'))
             })
         })
 
@@ -195,9 +191,7 @@ describe('AuthController', () => {
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
-                expect(expressResponseMock.redirect).toHaveBeenCalledWith(
-                    expect.stringContaining('error=auth_failed')
-                )
+                expect(expressResponseMock.redirect).toHaveBeenCalledWith(expect.stringContaining('error=auth_failed'))
             })
         })
 
@@ -207,9 +201,7 @@ describe('AuthController', () => {
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
-                expect(expressResponseMock.redirect).toHaveBeenCalledWith(
-                    expect.stringContaining('error=auth_failed')
-                )
+                expect(expressResponseMock.redirect).toHaveBeenCalledWith(expect.stringContaining('error=auth_failed'))
             })
 
             it('does not call authorize', async () => {
@@ -289,4 +281,3 @@ describe('AuthController', () => {
 
     // #endregion
 })
-

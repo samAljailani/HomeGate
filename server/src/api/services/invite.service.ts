@@ -79,11 +79,11 @@ export class InviteService extends BaseService {
             throw new UnprocessableEntityException('Invite token has expired.')
         }
 
-        console.log("========================================================")
+        console.log('========================================================')
         console.log(`request: ${email}`)
         console.log(`invite ${invite.email}`)
-        console.log("========================================================")
-        
+        console.log('========================================================')
+
         if (email != null && invite.email != null && invite.email !== email) {
             throw new ForbiddenException('Invite token is not valid for this account.')
         }

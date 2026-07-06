@@ -25,7 +25,9 @@ function createSessionRepositoryMock(): jest.Mocked<Pick<ISessionRepository, 'de
     }
 }
 
-function createOAuthIdentityRepositoryMock(): jest.Mocked<Pick<IUserOAuthIdentityRepository, 'find' | 'findMany' | 'create'>> {
+function createOAuthIdentityRepositoryMock(): jest.Mocked<
+    Pick<IUserOAuthIdentityRepository, 'find' | 'findMany' | 'create'>
+> {
     return {
         find: jest.fn(),
         findMany: jest.fn(),
@@ -101,9 +103,15 @@ describe('UserService', () => {
 
         it('disables subscriptions before cleaning sessions', async () => {
             const order: string[] = []
-            subscriptionServiceMock.disableAllForUser.mockImplementation(async () => { order.push('subscriptions') })
-            sessionRepositoryMock.deleteByUserId.mockImplementation(async () => { order.push('sessions') })
-            userRepositoryMock.softDelete.mockImplementation(async () => { order.push('softDelete') })
+            subscriptionServiceMock.disableAllForUser.mockImplementation(async () => {
+                order.push('subscriptions')
+            })
+            sessionRepositoryMock.deleteByUserId.mockImplementation(async () => {
+                order.push('sessions')
+            })
+            userRepositoryMock.softDelete.mockImplementation(async () => {
+                order.push('softDelete')
+            })
 
             await service.softDeleteUser(userId)
 

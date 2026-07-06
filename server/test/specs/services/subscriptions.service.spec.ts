@@ -1152,7 +1152,9 @@ describe('SubscriptionService', () => {
 
             it('continues and still updates the DB record when the external call fails', async () => {
                 const account = createUserAccountFixture({ userId, status: UserAccountStatus.active })
-                const client = createApplicationClientMock({ disableUser: jest.fn().mockRejectedValue(new Error('timeout')) })
+                const client = createApplicationClientMock({
+                    disableUser: jest.fn().mockRejectedValue(new Error('timeout')),
+                })
                 userAccountRepoMock.findMany.mockResolvedValue([account])
                 userServiceMock.getUserById.mockResolvedValue(user)
                 clientRegistryMock.getEnabled.mockResolvedValue([client])

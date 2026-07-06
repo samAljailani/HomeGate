@@ -52,4 +52,3 @@ export class LoggingRepository implements ILoggingRepository {
         }))
     }
 }
-

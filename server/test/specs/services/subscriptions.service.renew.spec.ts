@@ -9,9 +9,7 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserAccountFixture } from '../../fixtures/userAccount.stub'
 
-function createUserAccountRepositoryMock(): jest.Mocked<
-    Pick<IUserAccountRepository, 'find' | 'findMany' | 'update'>
-> {
+function createUserAccountRepositoryMock(): jest.Mocked<Pick<IUserAccountRepository, 'find' | 'findMany' | 'update'>> {
     return {
         find: jest.fn(),
         findMany: jest.fn(),

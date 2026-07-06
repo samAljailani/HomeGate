@@ -1,7 +1,16 @@
 import { UserService } from '@/api/services/user.service'
 
 export function createUserServiceMock(): jest.Mocked<
-    Pick<UserService, 'getUserById' | 'getUserByEmail' | 'getUserOAuthIdentity' | 'hasIdentityForProvider' | 'CreateUserOAuthIdentity' | 'softDeleteUser' | 'hardDeleteUser'>
+    Pick<
+        UserService,
+        | 'getUserById'
+        | 'getUserByEmail'
+        | 'getUserOAuthIdentity'
+        | 'hasIdentityForProvider'
+        | 'CreateUserOAuthIdentity'
+        | 'softDeleteUser'
+        | 'hardDeleteUser'
+    >
 > {
     return {
         getUserById: jest.fn(),

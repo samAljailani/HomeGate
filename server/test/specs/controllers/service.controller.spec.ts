@@ -38,7 +38,10 @@ describe('ServiceController', () => {
 
     describe('list', () => {
         it('returns mapped service DTOs', async () => {
-            const services = [createServiceFixture({ id: 1, enabled: true }), createServiceFixture({ id: 2, enabled: false })]
+            const services = [
+                createServiceFixture({ id: 1, enabled: true }),
+                createServiceFixture({ id: 2, enabled: false }),
+            ]
             serviceManagementMock.list.mockResolvedValue(services)
 
             const result = await controller.list({})

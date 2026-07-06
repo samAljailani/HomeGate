@@ -33,10 +33,7 @@ describe('LogService', () => {
         loggingRepositoryMock = createLoggingRepositoryMock()
 
         const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                LogService,
-                { provide: ILoggingRepository, useValue: loggingRepositoryMock },
-            ],
+            providers: [LogService, { provide: ILoggingRepository, useValue: loggingRepositoryMock }],
         }).compile()
 
         service = module.get<LogService>(LogService)

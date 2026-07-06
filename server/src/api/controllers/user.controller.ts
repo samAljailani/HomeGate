@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, ForbiddenException, Get, Inject, NotFoundException, Param, Put, Query, Request } from '@nestjs/common'
+import {
+    Body,
+    Controller,
+    Delete,
+    ForbiddenException,
+    Get,
+    Inject,
+    NotFoundException,
+    Param,
+    Put,
+    Query,
+    Request,
+} from '@nestjs/common'
 import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import type { Request as ExpressRequest } from 'express'
@@ -80,4 +92,3 @@ export class UserController {
         }
     }
 }
-

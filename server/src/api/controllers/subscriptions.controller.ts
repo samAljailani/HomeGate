@@ -121,4 +121,3 @@ export class SubscriptionController {
         return this.subscriptionService.listByUser(userId, pagination.take, pagination.skip)
     }
 }
-

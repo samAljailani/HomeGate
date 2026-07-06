@@ -52,7 +52,11 @@ export class OAuthProviderRepository extends BaseRepository implements IOAuthPro
         }
     }
 
-    async findMany(filter: OAuthProviderFilterOptions, take: number = 50, skip: number = 0): Promise<OAuthProviderModel[]> {
+    async findMany(
+        filter: OAuthProviderFilterOptions,
+        take: number = 50,
+        skip: number = 0
+    ): Promise<OAuthProviderModel[]> {
         try {
             const providers = await this.db.oAuthProvider.findMany({ where: { ...filter }, take, skip })
             return providers.map((provider) => this.mapOAuthProvider(provider))

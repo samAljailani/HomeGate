@@ -6,9 +6,7 @@ import { ISessionRepository } from '@/data/repositories/ISessionRepository'
 import { createOAuthProviderFixture } from '../../fixtures/oauthProvider.stub'
 import { OAuthProviderName } from '@prisma/generated'
 
-function createOAuthProviderRepositoryMock(): jest.Mocked<
-    Pick<IOAuthProviderRepository, 'findMany' | 'setEnabled'>
-> {
+function createOAuthProviderRepositoryMock(): jest.Mocked<Pick<IOAuthProviderRepository, 'findMany' | 'setEnabled'>> {
     return {
         findMany: jest.fn(),
         setEnabled: jest.fn(),
@@ -126,8 +124,13 @@ describe('OAuthProviderManagementService', () => {
         it('revokes sessions after disabling the provider', async () => {
             const order: string[] = []
             const provider = createOAuthProviderFixture({ name, enabled: false })
-            providerRepositoryMock.setEnabled.mockImplementation(async () => { order.push('disable'); return provider })
-            sessionRepositoryMock.deleteByProviderId.mockImplementation(async () => { order.push('revoke') })
+            providerRepositoryMock.setEnabled.mockImplementation(async () => {
+                order.push('disable')
+                return provider
+            })
+            sessionRepositoryMock.deleteByProviderId.mockImplementation(async () => {
+                order.push('revoke')
+            })
 
             await service.disable(name)
 

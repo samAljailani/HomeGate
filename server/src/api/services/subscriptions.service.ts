@@ -340,7 +340,9 @@ export class SubscriptionService {
             try {
                 await this.disableUserAccount(account, cachedClients, cachedUsers)
             } catch {
-                this.logger.warn(`Failed to disable external account for user ${userId}, serviceId ${account.serviceId}`)
+                this.logger.warn(
+                    `Failed to disable external account for user ${userId}, serviceId ${account.serviceId}`
+                )
             }
 
             await this.userAccountRepository.update({
@@ -372,13 +374,20 @@ export class SubscriptionService {
         const baseDate = account.expiresAt && account.expiresAt.getTime() > Date.now() ? account.expiresAt : new Date()
         const newExpiresAt = this.getDefaultExpirationDate(baseDate)
 
-        const updated = await this.userAccountRepository.update({ userId, serviceId, expiresAt: newExpiresAt, lastError: null })
+        const updated = await this.userAccountRepository.update({
+            userId,
+            serviceId,
+            expiresAt: newExpiresAt,
+            lastError: null,
+        })
 
         if (!updated) {
             throw new BadRequestException('Failed to renew subscription')
         }
 
-        this.logger.log(`Admin renewed subscription for user '${userId}' on service '${serviceId}'. New expiry: ${newExpiresAt.toISOString()}`)
+        this.logger.log(
+            `Admin renewed subscription for user '${userId}' on service '${serviceId}'. New expiry: ${newExpiresAt.toISOString()}`
+        )
 
         return updated
     }

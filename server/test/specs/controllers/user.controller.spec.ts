@@ -7,7 +7,10 @@ import { createRequestMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 
 function createUserServiceMock(): jest.Mocked<
-    Pick<UserService, 'softDeleteUser' | 'hardDeleteUser' | 'disableUser' | 'enableUser' | 'listUsers' | 'getUserByIdForAdmin'>
+    Pick<
+        UserService,
+        'softDeleteUser' | 'hardDeleteUser' | 'disableUser' | 'enableUser' | 'listUsers' | 'getUserByIdForAdmin'
+    >
 > {
     return {
         softDeleteUser: jest.fn(),

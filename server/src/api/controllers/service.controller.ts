@@ -10,7 +10,9 @@ import { ApplicationClientNames } from '@/types/enums'
 @ApiTags('Services')
 @Controller(routes.services.basePath)
 export class ServiceController {
-    constructor(@Inject(ServiceManagementService) private readonly serviceManagementService: ServiceManagementService) {}
+    constructor(
+        @Inject(ServiceManagementService) private readonly serviceManagementService: ServiceManagementService
+    ) {}
 
     @Get(routes.services.subPath.list)
     @AdminRoute()

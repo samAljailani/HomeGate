@@ -6,7 +6,10 @@ import { createRequestMock } from '../../mocks/httpContext.mock'
 import { createUserAccountFixture } from '../../fixtures/userAccount.stub'
 
 function createSubscriptionServiceMock(): jest.Mocked<
-    Pick<SubscriptionService, 'subscribe' | 'delete' | 'disable' | 'enable' | 'renew' | 'setAutoRenew' | 'listAll' | 'listByUser'>
+    Pick<
+        SubscriptionService,
+        'subscribe' | 'delete' | 'disable' | 'enable' | 'renew' | 'setAutoRenew' | 'listAll' | 'listByUser'
+    >
 > {
     return {
         subscribe: jest.fn(),
@@ -135,7 +138,7 @@ describe('SubscriptionController — renew / setAutoRenew / listAll / listByUser
 
     // #region listMine
 
-    describe('listMine', () => {        
+    describe('listMine', () => {
         const userId = 'session-user-uuid'
 
         it('calls listByUser with the session userId', async () => {
