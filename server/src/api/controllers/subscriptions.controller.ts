@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Inject, Post, Put, Request } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Inject, Param, Post, Put, Query, Request } from '@nestjs/common'
 import {
     ApiBadRequestResponse,
     ApiBody,
@@ -13,10 +13,13 @@ import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import {
+    SubscriptionAutoRenewRequestDto,
     SubscriptionCreateRequestDto,
     SubscriptionDeleteRequestDto,
     SubscriptionDisableRequestDto as SubscriptionActionRequestDto,
+    SubscriptionRenewRequestDto,
 } from '@/types/dtos/subscriptionsDto'
+import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
 @ApiTags('Subscriptions')
@@ -59,8 +62,8 @@ export class SubscriptionController {
     @ApiOkResponse({ description: 'Subscription disabled successfully' })
     @ApiBadRequestResponse({ description: 'Unauthorized or invalid request' })
     @ApiConflictResponse({ description: 'User account is not currently active' })
-    async disable(@Body() request: SubscriptionActionRequestDto, @Request() req: ExpressRequest) {
-        return this.subscriptionService.disable(request, req.session.userId!)
+    async disable(@Body() request: SubscriptionActionRequestDto) {
+        return this.subscriptionService.disable(request)
     }
 
     @Put(routes.subscriptions.subPath.enable)
@@ -71,7 +74,44 @@ export class SubscriptionController {
     @ApiOkResponse({ description: 'Subscription enabled successfully' })
     @ApiBadRequestResponse({ description: 'Unauthorized or invalid request' })
     @ApiConflictResponse({ description: 'User account is not currently disabled' })
-    async enable(@Body() request: SubscriptionActionRequestDto, @Request() req: ExpressRequest) {
-        return this.subscriptionService.enable(request, req.session.userId!)
+    async enable(@Body() request: SubscriptionActionRequestDto) {
+        return this.subscriptionService.enable(request)
+    }
+
+    @Put(routes.subscriptions.subPath.renew)
+    @AdminRoute()
+    @ApiOperation({ summary: 'Renew a subscription by 30 days (admin only)' })
+    @ApiBody({ type: SubscriptionRenewRequestDto })
+    @ApiOkResponse({ description: 'Subscription renewed successfully' })
+    @ApiBadRequestResponse({ description: 'Subscription not found' })
+    async renew(@Body() request: SubscriptionRenewRequestDto) {
+        return this.subscriptionService.renew(request.userId, request.serviceId)
+    }
+
+    @Put(routes.subscriptions.subPath.autoRenew)
+    @AdminRoute()
+    @ApiOperation({ summary: 'Set auto-renew on a subscription (admin only)' })
+    @ApiBody({ type: SubscriptionAutoRenewRequestDto })
+    @ApiOkResponse({ description: 'Auto-renew updated successfully' })
+    @ApiBadRequestResponse({ description: 'Subscription not found' })
+    async setAutoRenew(@Body() request: SubscriptionAutoRenewRequestDto) {
+        return this.subscriptionService.setAutoRenew(request.userId, request.serviceId, request.autoRenew)
+    }
+
+    @Get(routes.subscriptions.subPath.list)
+    @AdminRoute()
+    @ApiOperation({ summary: 'List all subscriptions (admin only)' })
+    @ApiOkResponse({ description: 'List of all subscriptions' })
+    async listAll(@Query() pagination: PaginationRequestDto) {
+        return this.subscriptionService.listAll(pagination.take, pagination.skip)
+    }
+
+    @Get(routes.subscriptions.subPath.listByUser)
+    @AdminRoute()
+    @ApiOperation({ summary: 'List subscriptions for a specific user (admin only)' })
+    @ApiOkResponse({ description: 'List of subscriptions for the user' })
+    async listByUser(@Param('userId') userId: string, @Query() pagination: PaginationRequestDto) {
+        return this.subscriptionService.listByUser(userId, pagination.take, pagination.skip)
     }
 }
+

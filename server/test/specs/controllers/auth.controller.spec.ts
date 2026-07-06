@@ -12,6 +12,12 @@ import { createUserFixture } from '../../fixtures/user.stub'
 import { createInviteFixture } from '../../fixtures/invite.stub'
 import { clientRoutes, routes } from '@/types/dtos/routes'
 import { NotFoundException } from '@nestjs/common'
+import { OAuthAuthModel } from '@/types/models/oauthAuth'
+
+function createOAuthAuthResultFixture(overrides: Partial<OAuthAuthModel> = {}): OAuthAuthModel {
+    const user = createUserFixture()
+    return { id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: 1, ...overrides }
+}
 
 describe('AuthController', () => {
     let controller: AuthController
@@ -146,21 +152,22 @@ describe('AuthController', () => {
         describe('when authorize succeeds', () => {
             it('regenerates session and sets user data', async () => {
                 expressRequestMock.user = createOAuthUserProfileFixture()
-                const user = createUserFixture()
-                authServiceMock.authorize.mockResolvedValue(user)
+                const result = createOAuthAuthResultFixture()
+                authServiceMock.authorize.mockResolvedValue(result)
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
                 expect(expressRequestMock.session.regenerate).toHaveBeenCalled()
                 expect(expressRequestMock.session.save).toHaveBeenCalled()
-                expect(expressRequestMock.session.userId).toBe(user.id)
-                expect(expressRequestMock.session.username).toBe(user.username)
-                expect(expressRequestMock.session.isAdmin).toBe(user.isAdmin)
+                expect(expressRequestMock.session.userId).toBe(result.id)
+                expect(expressRequestMock.session.username).toBe(result.username)
+                expect(expressRequestMock.session.isAdmin).toBe(result.isAdmin)
+                expect(expressRequestMock.session.authProviderId).toBe(result.providerId)
             })
 
             it('redirects to home', async () => {
                 expressRequestMock.user = createOAuthUserProfileFixture()
-                authServiceMock.authorize.mockResolvedValue(createUserFixture())
+                authServiceMock.authorize.mockResolvedValue(createOAuthAuthResultFixture())
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
@@ -217,8 +224,7 @@ describe('AuthController', () => {
         describe('when signUp succeeds', () => {
             it('calls signUp with the invite token from the session', async () => {
                 expressRequestMock.user = createOAuthUserProfileFixture()
-                const user = createUserFixture()
-                authServiceMock.signUp.mockResolvedValue(user)
+                authServiceMock.signUp.mockResolvedValue(createOAuthAuthResultFixture())
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
@@ -226,7 +232,7 @@ describe('AuthController', () => {
             })
 
             it('does not call authorize', async () => {
-                authServiceMock.signUp.mockResolvedValue(createUserFixture())
+                authServiceMock.signUp.mockResolvedValue(createOAuthAuthResultFixture())
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
@@ -235,20 +241,21 @@ describe('AuthController', () => {
 
             it('regenerates session and sets user data', async () => {
                 expressRequestMock.user = createOAuthUserProfileFixture()
-                const user = createUserFixture()
-                authServiceMock.signUp.mockResolvedValue(user)
+                const result = createOAuthAuthResultFixture()
+                authServiceMock.signUp.mockResolvedValue(result)
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
                 expect(expressRequestMock.session.regenerate).toHaveBeenCalled()
                 expect(expressRequestMock.session.save).toHaveBeenCalled()
-                expect(expressRequestMock.session.userId).toBe(user.id)
-                expect(expressRequestMock.session.username).toBe(user.username)
-                expect(expressRequestMock.session.isAdmin).toBe(user.isAdmin)
+                expect(expressRequestMock.session.userId).toBe(result.id)
+                expect(expressRequestMock.session.username).toBe(result.username)
+                expect(expressRequestMock.session.isAdmin).toBe(result.isAdmin)
+                expect(expressRequestMock.session.authProviderId).toBe(result.providerId)
             })
 
             it('redirects to home', async () => {
-                authServiceMock.signUp.mockResolvedValue(createUserFixture())
+                authServiceMock.signUp.mockResolvedValue(createOAuthAuthResultFixture())
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 

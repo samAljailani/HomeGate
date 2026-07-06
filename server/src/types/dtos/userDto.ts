@@ -85,12 +85,20 @@ export class UserDeleteRequestDto {
     @IsUUID()
     @IsNotEmpty()
     userId: string
+
+    @ApiProperty({ type: Boolean })
+    @IsBoolean()
+    softDelete: boolean
 }
 
 export class UserResponseForAdminDto extends UserResponseDto {
     @ApiProperty({ type: Boolean })
     @IsBoolean()
     isDeleted: boolean
+
+    @ApiProperty({ type: Boolean })
+    @IsBoolean()
+    isEnabled: boolean
 
     @ApiProperty({ type: Date })
     @IsDate()

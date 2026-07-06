@@ -12,6 +12,7 @@ declare module 'express-session' {
         username?: string
         isAdmin?: boolean
         csrfToken?: string
+        authProviderId?: number
         oauthTransaction?: OAuthTransaction
     }
 }

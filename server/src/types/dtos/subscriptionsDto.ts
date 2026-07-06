@@ -76,3 +76,33 @@ export class SubscriptionDisableRequestDto {
     @Min(1)
     serviceId: number
 }
+
+export class SubscriptionRenewRequestDto {
+    @ApiProperty({ type: String })
+    @IsUUID()
+    @IsNotEmpty()
+    userId: string
+
+    @ApiProperty({ type: Number })
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    serviceId: number
+}
+
+export class SubscriptionAutoRenewRequestDto {
+    @ApiProperty({ type: String })
+    @IsUUID()
+    @IsNotEmpty()
+    userId: string
+
+    @ApiProperty({ type: Number })
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    serviceId: number
+
+    @ApiProperty({ type: Boolean })
+    @IsBoolean()
+    autoRenew: boolean
+}

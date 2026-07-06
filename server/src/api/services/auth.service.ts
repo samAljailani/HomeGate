@@ -1,8 +1,8 @@
 import { OAuthUserProfileDto } from '@/types/dtos/authDto'
+import { OAuthAuthModel } from '@/types/models/oauthAuth'
 import { Injectable, Inject, forwardRef, BadRequestException, InternalServerErrorException } from '@nestjs/common'
 import { UserService } from './user.service'
 import { IOAuthProviderRepository } from '@/data/repositories'
-import { UserResponseDto } from '@/types/dtos/userDto'
 import { OAuthProviderModel } from '@/types/models/oauthProvider'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -19,7 +19,7 @@ export class AuthService extends BaseService {
         super(logger)
     }
 
-    async authorize(request: OAuthUserProfileDto): Promise<UserResponseDto | null> {
+    async authorize(request: OAuthUserProfileDto): Promise<OAuthAuthModel | null> {
         try {
             const user = await this.userService.getUserByEmail(request.email)
 
@@ -31,7 +31,7 @@ export class AuthService extends BaseService {
                 return null
             }
 
-            if (user.isDeleted) {
+            if (user.isDeleted || !user.isEnabled) {
                 this.logger.log(`Attempted login for user with email: ${request.email}, provider: ${request.provider}`)
 
                 return null
@@ -66,7 +66,7 @@ export class AuthService extends BaseService {
 
             this.logger.log(`user ${user.username} successfully logged in`)
 
-            return user
+            return { id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: provider.id }
         } catch (error: unknown) {
             const stackTrace = error instanceof Error ? error.stack : undefined
             this.logger.error(
@@ -78,7 +78,7 @@ export class AuthService extends BaseService {
         }
     }
 
-    async signUp(token: string, request: OAuthUserProfileDto): Promise<UserResponseDto> {
+    async signUp(token: string, request: OAuthUserProfileDto): Promise<OAuthAuthModel> {
         const invite = await this.inviteService.validateToken(token, request.email)
 
         const existing = await this.userService.getUserByEmail(request.email)
@@ -104,7 +104,7 @@ export class AuthService extends BaseService {
 
         this.logger.log(`User ${user.username} registered via invite ${invite.id}`)
 
-        return user
+        return { id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: oauthProvider.id }
     }
 
     async signOut(userId: string | undefined, username?: string | undefined): Promise<void> {

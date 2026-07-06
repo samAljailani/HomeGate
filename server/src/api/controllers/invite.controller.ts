@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, Put, Request } from '@nestjs/common'
+import { Body, Controller, Get, Inject, Param, Post, Put, Query, Request } from '@nestjs/common'
 import {
     ApiBadRequestResponse,
     ApiBody,
@@ -16,6 +16,7 @@ import type { Request as ExpressRequest } from 'express'
 import { AdminRoute, Public } from '@/decorators'
 import { InviteService } from '@/api/services/invite.service'
 import { CreateInviteRequestDto, ValidateInviteResponseDto } from '@/types/dtos/inviteDto'
+import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
 @ApiTags('Invites')
@@ -38,8 +39,8 @@ export class InviteController {
     @AdminRoute()
     @ApiOperation({ summary: 'List all invites (admin only)' })
     @ApiOkResponse({ description: 'List of all invites' })
-    async list() {
-        return this.inviteService.listInvites()
+    async list(@Query() pagination: PaginationRequestDto) {
+        return this.inviteService.listInvites(pagination.take, pagination.skip)
     }
 
     @Put(routes.invites.subPath.revoke)

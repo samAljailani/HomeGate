@@ -57,9 +57,9 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
         }
     }
 
-    async findMany(filter: UserAccountFilterOptions): Promise<UserAccountModel[]> {
+    async findMany(filter: UserAccountFilterOptions, take: number = 50, skip: number = 0): Promise<UserAccountModel[]> {
         try {
-            const userAccounts = await this.db.userAccount.findMany({ where: { ...filter } })
+            const userAccounts = await this.db.userAccount.findMany({ where: { ...filter }, take, skip })
             return userAccounts.map((userAccount) => this.mapUserAccount(userAccount))
         } catch (error) {
             this.logger.error('findMany failed', {

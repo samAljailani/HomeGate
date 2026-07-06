@@ -6,12 +6,13 @@ export type UserModel = {
     lastName: string
     isAdmin: boolean
     isDeleted: boolean
+    isEnabled: boolean
     createdAt: Date
 }
 
-export type CreateUserModel = Omit<UserModel, 'id' | 'isAdmin' | 'isDeleted' | 'createdAt'>
+export type CreateUserModel = Omit<UserModel, 'id' | 'isAdmin' | 'isDeleted' | 'isEnabled' | 'createdAt'>
 
-export type UpdateUserModel = Omit<UserModel, 'isAdmin' | 'isDeleted' | 'createdAt' | 'email'>
+export type UpdateUserModel = Omit<UserModel, 'isAdmin' | 'isDeleted' | 'isEnabled' | 'createdAt' | 'email'>
 
 export class UserFilterOptions {
     id?: string
@@ -21,4 +22,5 @@ export class UserFilterOptions {
     lastName?: string
     isAdmin?: boolean
     isDeleted?: boolean
+    isEnabled?: boolean
 }

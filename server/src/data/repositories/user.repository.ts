@@ -23,6 +23,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             lastName: user.lastName,
             isAdmin: user.isAdmin,
             isDeleted: user.isDeleted,
+            isEnabled: user.isEnabled,
             createdAt: user.createdAt,
         }
     }
@@ -51,11 +52,12 @@ export class UserRepository extends BaseRepository implements IUserRepository {
         }
     }
 
-    async findMany(filter: UserFilterOptions, take?: number): Promise<UserModel[]> {
+    async findMany(filter: UserFilterOptions, take: number = 50, skip: number = 0): Promise<UserModel[]> {
         try {
             const users = await this.db.user.findMany({
                 where: { ...filter },
-                ...(take !== undefined && { take }),
+                take,
+                skip,
             })
             return users.map((user) => this.mapUser(user))
         } catch (error) {
@@ -119,11 +121,33 @@ export class UserRepository extends BaseRepository implements IUserRepository {
         }
     }
 
-    async delete(id: string): Promise<void> {
+    async softDelete(id: string): Promise<void> {
+        try {
+            await this.db.user.update({ where: { id }, data: { isDeleted: true, isEnabled: false } })
+        } catch (error) {
+            this.logger.error(`softDelete failed for id: ${id}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.user)
+        }
+    }
+
+    async hardDelete(id: string): Promise<void> {
         try {
             await this.db.user.delete({ where: { id } })
         } catch (error) {
-            this.logger.error(`delete failed for id: ${id}`, {
+            this.logger.error(`hardDelete failed for id: ${id}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.user)
+        }
+    }
+
+    async setEnabled(id: string, enabled: boolean): Promise<void> {
+        try {
+            await this.db.user.update({ where: { id }, data: { isEnabled: enabled } })
+        } catch (error) {
+            this.logger.error(`setEnabled failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.user)

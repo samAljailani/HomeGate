@@ -24,3 +24,10 @@ export class OAuthProviderResponseDto {
     @IsBoolean()
     enabled: boolean
 }
+
+export class OAuthProviderActionRequestDto {
+    @ApiProperty({ enum: OAuthProviderName })
+    @IsEnum(OAuthProviderName)
+    @IsNotEmpty()
+    name: OAuthProviderName
+}

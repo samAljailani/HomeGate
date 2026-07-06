@@ -52,12 +52,24 @@ export class OAuthProviderRepository extends BaseRepository implements IOAuthPro
         }
     }
 
-    async findMany(filter: OAuthProviderFilterOptions): Promise<OAuthProviderModel[]> {
+    async findMany(filter: OAuthProviderFilterOptions, take: number = 50, skip: number = 0): Promise<OAuthProviderModel[]> {
         try {
-            const providers = await this.db.oAuthProvider.findMany({ where: { ...filter } })
+            const providers = await this.db.oAuthProvider.findMany({ where: { ...filter }, take, skip })
             return providers.map((provider) => this.mapOAuthProvider(provider))
         } catch (error) {
             this.logger.error('findMany failed', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.oauthProvider)
+        }
+    }
+
+    async setEnabled(name: OAuthProviderName, enabled: boolean): Promise<OAuthProviderModel | null> {
+        try {
+            const provider = await this.db.oAuthProvider.update({ where: { name }, data: { enabled } })
+            return this.mapOAuthProvider(provider)
+        } catch (error) {
+            this.logger.error(`setEnabled failed for name: ${name}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.oauthProvider)

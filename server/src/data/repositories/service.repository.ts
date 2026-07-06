@@ -59,10 +59,12 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async findMany(filter: ServiceFilterOptions): Promise<ServiceModel[]> {
+    async findMany(filter: ServiceFilterOptions, take: number = 50, skip: number = 0): Promise<ServiceModel[]> {
         try {
             const services = await this.db.service.findMany({
                 where: { ...filter },
+                take,
+                skip,
             })
 
             return services.map((service) => this.mapService(service))

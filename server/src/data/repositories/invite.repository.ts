@@ -94,9 +94,9 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
         }
     }
 
-    async findAll(): Promise<InviteModel[]> {
+    async findAll(take: number = 50, skip: number = 0): Promise<InviteModel[]> {
         try {
-            const invites = await this.db.invite.findMany({ orderBy: { createdAt: 'desc' } })
+            const invites = await this.db.invite.findMany({ orderBy: { createdAt: 'desc' }, take, skip })
             return invites.map((invite) => this.mapInvite(invite))
         } catch (error) {
             this.logger.error('findAll failed', {

@@ -5,7 +5,7 @@ import { IUserRepository } from '@/data/repositories'
 import { createRequestMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 
-function createMockExecutionContext(req: ReturnType<typeof createRequestMock>, isPublic?: boolean): ExecutionContext {
+function createMockExecutionContext(req: ReturnType<typeof createRequestMock>, _isPublic?: boolean): ExecutionContext {
     return {
         getHandler: jest.fn(),
         getClass: jest.fn(),
@@ -73,6 +73,21 @@ describe('AuthGuard', () => {
         describe('when user is soft-deleted', () => {
             it('destroys session and returns false', async () => {
                 const user = createUserFixture({ isDeleted: true })
+                const req = createRequestMock()
+                req.session.userId = user.id
+                const ctx = createMockExecutionContext(req)
+                userRepository.findById.mockResolvedValue(user)
+
+                const result = await guard.canActivate(ctx)
+
+                expect(req.session.destroy).toHaveBeenCalled()
+                expect(result).toBe(false)
+            })
+        })
+
+        describe('when user is disabled', () => {
+            it('destroys session and returns false', async () => {
+                const user = createUserFixture({ isEnabled: false })
                 const req = createRequestMock()
                 req.session.userId = user.id
                 const ctx = createMockExecutionContext(req)

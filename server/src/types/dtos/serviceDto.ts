@@ -53,8 +53,13 @@ export class ServiceResponseDto {
     @IsNotEmpty()
     name: string
 
-    @ApiProperty({ type: Number })
-    @IsInt()
+    @ApiProperty({ type: Boolean })
+    enabled: boolean
+}
+
+export class ServiceActionRequestDto {
+    @ApiProperty({ type: String })
+    @IsString()
     @IsNotEmpty()
-    authSchemeId: number
+    name: string
 }

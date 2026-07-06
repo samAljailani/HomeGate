@@ -467,27 +467,12 @@ describe('SubscriptionService', () => {
     // #region disable / enable
 
     describe('disable', () => {
-        const currentUserId = 'admin-uuid-1'
         const request: SubscriptionDisableRequestDto = {
             userId: 'user-uuid-1',
             serviceId: 1,
         }
 
-        it('should throw BadRequestException when caller is not admin', async () => {
-            userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: currentUserId, isAdmin: false }))
-
-            await expect(service.disable(request, currentUserId)).rejects.toThrow(BadRequestException)
-            await expect(service.disable(request, currentUserId)).rejects.toThrow('admin access required')
-        })
-
-        it('should throw BadRequestException when caller does not exist', async () => {
-            userServiceMock.getUserById.mockResolvedValue(null)
-
-            await expect(service.disable(request, currentUserId)).rejects.toThrow(BadRequestException)
-        })
-
         it('should disable an active subscription', async () => {
-            const adminUser = createUserFixture({ id: currentUserId, isAdmin: true })
             const targetUser = createUserFixture({ id: request.userId })
             const activeAccount = createUserAccountFixture({
                 userId: request.userId,
@@ -496,47 +481,38 @@ describe('SubscriptionService', () => {
             })
             const client = createApplicationClientMock()
 
-            userServiceMock.getUserById.mockResolvedValueOnce(adminUser).mockResolvedValueOnce(targetUser)
+            userServiceMock.getUserById.mockResolvedValue(targetUser)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             userAccountRepoMock.find.mockResolvedValue(activeAccount)
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             client.disableUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue({ ...activeAccount, status: UserAccountStatus.disabled })
 
-            const result = await service.disable(request, currentUserId)
+            const result = await service.disable(request)
 
             expect(result).toBe(true)
         })
 
         it('should throw ConflictException when account is not active', async () => {
-            const adminUser = createUserFixture({ id: currentUserId, isAdmin: true })
             const targetUser = createUserFixture({ id: request.userId })
 
-            userServiceMock.getUserById.mockResolvedValueOnce(adminUser).mockResolvedValueOnce(targetUser)
+            userServiceMock.getUserById.mockResolvedValue(targetUser)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             userAccountRepoMock.find.mockResolvedValue(
                 createUserAccountFixture({ userId: request.userId, status: UserAccountStatus.disabled })
             )
 
-            await expect(service.disable(request, currentUserId)).rejects.toThrow(ConflictException)
+            await expect(service.disable(request)).rejects.toThrow(ConflictException)
         })
     })
 
     describe('enable', () => {
-        const currentUserId = 'admin-uuid-1'
         const request: SubscriptionDisableRequestDto = {
             userId: 'user-uuid-1',
             serviceId: 1,
         }
 
-        it('should throw BadRequestException when caller is not admin', async () => {
-            userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: currentUserId, isAdmin: false }))
-
-            await expect(service.enable(request, currentUserId)).rejects.toThrow(BadRequestException)
-        })
-
         it('should enable a disabled subscription', async () => {
-            const adminUser = createUserFixture({ id: currentUserId, isAdmin: true })
             const targetUser = createUserFixture({ id: request.userId })
             const disabledAccount = createUserAccountFixture({
                 userId: request.userId,
@@ -545,7 +521,7 @@ describe('SubscriptionService', () => {
             })
             const client = createApplicationClientMock()
 
-            userServiceMock.getUserById.mockResolvedValueOnce(adminUser).mockResolvedValueOnce(targetUser)
+            userServiceMock.getUserById.mockResolvedValue(targetUser)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             userAccountRepoMock.find.mockResolvedValue(disabledAccount)
             clientRegistryMock.getEnabled.mockResolvedValue([client])
@@ -556,17 +532,16 @@ describe('SubscriptionService', () => {
             client.enableUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue({ ...disabledAccount, status: UserAccountStatus.active })
 
-            const result = await service.enable(request, currentUserId)
+            const result = await service.enable(request)
 
             expect(result).toBe(true)
             expect(client.enableUser).toHaveBeenCalled()
         })
 
         it('should throw ConflictException when account is not disabled', async () => {
-            const adminUser = createUserFixture({ id: currentUserId, isAdmin: true })
             const targetUser = createUserFixture({ id: request.userId })
 
-            userServiceMock.getUserById.mockResolvedValueOnce(adminUser).mockResolvedValueOnce(targetUser)
+            userServiceMock.getUserById.mockResolvedValue(targetUser)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             userAccountRepoMock.find.mockResolvedValue(
                 createUserAccountFixture({
@@ -576,11 +551,10 @@ describe('SubscriptionService', () => {
                 })
             )
 
-            await expect(service.enable(request, currentUserId)).rejects.toThrow(ConflictException)
+            await expect(service.enable(request)).rejects.toThrow(ConflictException)
         })
 
         it('should mark as failed when enableUser returns false', async () => {
-            const adminUser = createUserFixture({ id: currentUserId, isAdmin: true })
             const targetUser = createUserFixture({ id: request.userId })
             const disabledAccount = createUserAccountFixture({
                 userId: request.userId,
@@ -589,7 +563,7 @@ describe('SubscriptionService', () => {
             })
             const client = createApplicationClientMock()
 
-            userServiceMock.getUserById.mockResolvedValueOnce(adminUser).mockResolvedValueOnce(targetUser)
+            userServiceMock.getUserById.mockResolvedValue(targetUser)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             userAccountRepoMock.find.mockResolvedValue(disabledAccount)
             clientRegistryMock.getEnabled.mockResolvedValue([client])
@@ -600,11 +574,10 @@ describe('SubscriptionService', () => {
             client.enableUser.mockResolvedValue(false)
             userAccountRepoMock.update.mockResolvedValue(disabledAccount)
 
-            await expect(service.enable(request, currentUserId)).rejects.toThrow(InternalServerErrorException)
+            await expect(service.enable(request)).rejects.toThrow(InternalServerErrorException)
         })
 
         it('should delete stale local record and return when enabling but external account no longer exists', async () => {
-            const adminUser = createUserFixture({ id: currentUserId, isAdmin: true })
             const targetUser = createUserFixture({ id: request.userId })
             const disabledAccount = createUserAccountFixture({
                 userId: request.userId,
@@ -614,13 +587,13 @@ describe('SubscriptionService', () => {
             })
             const client = createApplicationClientMock()
 
-            userServiceMock.getUserById.mockResolvedValueOnce(adminUser).mockResolvedValueOnce(targetUser)
+            userServiceMock.getUserById.mockResolvedValue(targetUser)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             userAccountRepoMock.find.mockResolvedValue(disabledAccount)
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             client.getUser.mockResolvedValue({ ok: false, user: null })
 
-            const result = await service.enable(request, currentUserId)
+            const result = await service.enable(request)
 
             expect(result).toBe(true)
             expect(client.enableUser).not.toHaveBeenCalled()
@@ -1126,4 +1099,82 @@ describe('SubscriptionService', () => {
     })
 
     // #endregion cleanupStaleLocalAccounts
+
+    // #region disableAllForUser
+
+    describe('disableAllForUser', () => {
+        const userId = 'user-uuid-1'
+        const user = createUserFixture({ id: userId })
+
+        describe('when user has no active subscriptions', () => {
+            it('does nothing', async () => {
+                userAccountRepoMock.findMany.mockResolvedValue([])
+
+                await service.disableAllForUser(userId)
+
+                expect(userAccountRepoMock.update).not.toHaveBeenCalled()
+            })
+        })
+
+        describe('when user has active subscriptions', () => {
+            it('disables each external account', async () => {
+                const account = createUserAccountFixture({ userId, status: UserAccountStatus.active })
+                const client = createApplicationClientMock({ disableUser: jest.fn().mockResolvedValue(true) })
+                userAccountRepoMock.findMany.mockResolvedValue([account])
+                userServiceMock.getUserById.mockResolvedValue(user)
+                clientRegistryMock.getEnabled.mockResolvedValue([client])
+                serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+
+                await service.disableAllForUser(userId)
+
+                expect(client.disableUser).toHaveBeenCalled()
+            })
+
+            it('sets status to disabled and autoRenew to false', async () => {
+                const account = createUserAccountFixture({ userId, status: UserAccountStatus.active })
+                const client = createApplicationClientMock({ disableUser: jest.fn().mockResolvedValue(true) })
+                userAccountRepoMock.findMany.mockResolvedValue([account])
+                userServiceMock.getUserById.mockResolvedValue(user)
+                clientRegistryMock.getEnabled.mockResolvedValue([client])
+                serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+
+                await service.disableAllForUser(userId)
+
+                expect(userAccountRepoMock.update).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        userId,
+                        serviceId: account.serviceId,
+                        status: UserAccountStatus.disabled,
+                        autoRenew: false,
+                    })
+                )
+            })
+
+            it('continues and still updates the DB record when the external call fails', async () => {
+                const account = createUserAccountFixture({ userId, status: UserAccountStatus.active })
+                const client = createApplicationClientMock({ disableUser: jest.fn().mockRejectedValue(new Error('timeout')) })
+                userAccountRepoMock.findMany.mockResolvedValue([account])
+                userServiceMock.getUserById.mockResolvedValue(user)
+                clientRegistryMock.getEnabled.mockResolvedValue([client])
+                serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+
+                await expect(service.disableAllForUser(userId)).resolves.not.toThrow()
+
+                expect(userAccountRepoMock.update).toHaveBeenCalledWith(
+                    expect.objectContaining({ status: UserAccountStatus.disabled, autoRenew: false })
+                )
+            })
+
+            it('skips non-active subscriptions', async () => {
+                const cancelled = createUserAccountFixture({ userId, status: UserAccountStatus.cancelled })
+                userAccountRepoMock.findMany.mockResolvedValue([cancelled])
+
+                await service.disableAllForUser(userId)
+
+                expect(userAccountRepoMock.update).not.toHaveBeenCalled()
+            })
+        })
+    })
+
+    // #endregion disableAllForUser
 })

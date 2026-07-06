@@ -9,5 +9,7 @@ export interface ISessionRepository {
     create(request: CreateSessionModel): Promise<SessionModel | null>
     update(request: UpdateSessionModel): Promise<SessionModel | null>
     delete(sid: string): Promise<void>
+    deleteByUserId(userId: string): Promise<void>
+    deleteByProviderId(providerId: number): Promise<void>
     touch(sid: string, expiresAt: Date): Promise<SessionModel | null>
 }

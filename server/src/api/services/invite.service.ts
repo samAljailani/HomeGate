@@ -113,8 +113,8 @@ export class InviteService extends BaseService {
         return used!
     }
 
-    async listInvites(): Promise<InviteResponseDto[]> {
-        const invites = await this.inviteRepository.findAll()
+    async listInvites(take?: number, skip?: number): Promise<InviteResponseDto[]> {
+        const invites = await this.inviteRepository.findAll(take, skip)
         return invites.map((invite) => this.mapInvite(invite))
     }
 }

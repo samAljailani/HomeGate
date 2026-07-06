@@ -1,5 +1,6 @@
 import { IUserRepository } from '@/data/repositories/IUserRepository'
-import { Injectable, Inject } from '@nestjs/common'
+import { ISessionRepository } from '@/data/repositories/ISessionRepository'
+import { Injectable, Inject, forwardRef } from '@nestjs/common'
 import {
     UserCreateRequestDto,
     UserLoadRequestDto,
@@ -12,6 +13,7 @@ import { IUserOAuthIdentityRepository } from '@/data/repositories'
 import { OAuthIdentityCreateRequestDto, OAuthIdentityResponseDto } from '@/types/dtos/userOAuthIdentityDto'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { SubscriptionService } from './subscriptions.service'
 
 @Injectable()
 export class UserService extends BaseService {
@@ -21,7 +23,9 @@ export class UserService extends BaseService {
     constructor(
         @Inject(IUserRepository) userRepository: IUserRepository,
         @Inject(LoggingProvider) logger: LoggingProvider,
-        @Inject(IUserOAuthIdentityRepository) userOAuthIdentityRepository: IUserOAuthIdentityRepository
+        @Inject(IUserOAuthIdentityRepository) userOAuthIdentityRepository: IUserOAuthIdentityRepository,
+        @Inject(forwardRef(() => SubscriptionService)) private readonly subscriptionService: SubscriptionService,
+        @Inject(ISessionRepository) private readonly sessionRepository: ISessionRepository
     ) {
         super(logger)
         this.userRepository = userRepository
@@ -76,6 +80,7 @@ export class UserService extends BaseService {
             lastName: user.lastName,
             isAdmin: user.isAdmin,
             isDeleted: user.isDeleted,
+            isEnabled: user.isEnabled,
             createdAt: user.createdAt,
         }
     }
@@ -100,6 +105,48 @@ export class UserService extends BaseService {
     }
 
     // #endregion User Methods
+
+    // #region Delete Methods
+
+    async softDeleteUser(userId: string): Promise<void> {
+        await this.subscriptionService.disableAllForUser(userId)
+        await this.cleanupUserSessions(userId)
+        await this.userRepository.softDelete(userId)
+        this.logger.log(`User ${userId} soft deleted`)
+    }
+
+    async hardDeleteUser(userId: string): Promise<void> {
+        // Cascade in schema handles related records
+        await this.userRepository.hardDelete(userId)
+        this.logger.log(`User ${userId} hard deleted`)
+    }
+
+    async disableUser(userId: string): Promise<void> {
+        await this.userRepository.setEnabled(userId, false)
+        this.logger.log(`User ${userId} disabled`)
+    }
+
+    async enableUser(userId: string): Promise<void> {
+        await this.userRepository.setEnabled(userId, true)
+        this.logger.log(`User ${userId} enabled`)
+    }
+
+    async listUsers(take?: number, skip?: number): Promise<UserResponseForAdminDto[]> {
+        const users = await this.userRepository.findMany({}, take, skip)
+        return users.map((u) => this.userModelToLoadRequestForAdmin(u))
+    }
+
+    async getUserByIdForAdmin(userId: string): Promise<UserResponseForAdminDto | null> {
+        const user = await this.userRepository.findById(userId)
+        if (!user) return null
+        return this.userModelToLoadRequestForAdmin(user)
+    }
+
+    private async cleanupUserSessions(userId: string): Promise<void> {
+        await this.sessionRepository.deleteByUserId(userId)
+    }
+
+    // #endregion Delete Methods
 
     // #region UserOAuthIdentity Methods
 
@@ -147,6 +194,7 @@ export class UserService extends BaseService {
             lastName: userModel.lastName,
             isAdmin: userModel.isAdmin,
             isDeleted: userModel.isDeleted,
+            isEnabled: userModel.isEnabled,
             createdAt: userModel.createdAt,
         }
 

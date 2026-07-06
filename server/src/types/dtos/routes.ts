@@ -41,12 +41,36 @@ export const routes = {
         delete: '',
         disable: 'disable',
         enable: 'enable',
+        renew: 'renew',
+        autoRenew: 'auto-renew',
+        list: '',
+        listByUser: 'user/:userId',
     }),
     invites: defineRoutes('/api/invites', {
         create: '',
         list: '',
         revoke: 'revoke/:id',
         validate: 'validate/:token',
+    }),
+    users: defineRoutes('/api/users', {
+        delete: '',
+        disable: 'disable',
+        enable: 'enable',
+        list: '',
+        get: ':id',
+    }),
+    services: defineRoutes('/api/services', {
+        list: '',
+        enable: 'enable',
+        disable: 'disable',
+    }),
+    oauthProviders: defineRoutes('/api/oauth-providers', {
+        list: '',
+        enable: 'enable',
+        disable: 'disable',
+    }),
+    logs: defineRoutes('/api/logs', {
+        list: '',
     }),
     test: defineRoutes('/api/test', {}),
 } satisfies RoutesConfig

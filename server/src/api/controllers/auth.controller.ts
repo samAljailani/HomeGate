@@ -114,6 +114,7 @@ export class AuthController {
                     req.session.userId = response.id
                     req.session.username = response.username
                     req.session.isAdmin = response.isAdmin
+                    req.session.authProviderId = response.providerId
 
                     req.session.save((err) => {
                         if (err) return reject(err)

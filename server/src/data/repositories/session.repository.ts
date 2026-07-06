@@ -110,4 +110,26 @@ export class SessionRepository extends BaseRepository implements ISessionReposit
             mapPrismaError(error, repositoryErrorMessages.session)
         }
     }
+
+    async deleteByUserId(userId: string): Promise<void> {
+        try {
+            await this.db.session.deleteMany({ where: { userId } })
+        } catch (error) {
+            this.logger.error(`deleteByUserId failed for userId: ${userId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.session)
+        }
+    }
+
+    async deleteByProviderId(providerId: number): Promise<void> {
+        try {
+            await this.db.session.deleteMany({ where: { authProviderId: providerId } })
+        } catch (error) {
+            this.logger.error(`deleteByProviderId failed for providerId: ${providerId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.session)
+        }
+    }
 }

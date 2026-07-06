@@ -1,7 +1,7 @@
 import { PrismaProvider } from '@/infrastructure/prisma.provider'
-import { CreateLogModel } from '@/types/models/logs'
+import { CreateLogModel, LogModel } from '@/types/models/logs'
 import { Injectable, Inject } from '@nestjs/common'
-import { ILoggingRepository } from './ILoggingRepository'
+import { ILoggingRepository, LogFilterOptions } from './ILoggingRepository'
 import { LogLevel } from '@prisma/generated'
 
 @Injectable()
@@ -28,4 +28,28 @@ export class LoggingRepository implements ILoggingRepository {
 
         return true
     }
+
+    public async findMany(filter: LogFilterOptions, take: number = 50, skip: number = 0): Promise<LogModel[]> {
+        const logs = await this.db.log.findMany({
+            where: {
+                ...(filter.userId !== undefined ? { userId: filter.userId } : {}),
+                ...(filter.logLevel !== undefined ? { logLevel: filter.logLevel as LogLevel } : {}),
+            },
+            orderBy: { createdAt: 'desc' },
+            take,
+            skip,
+        })
+        return logs.map((log) => ({
+            id: log.id,
+            userId: log.userId,
+            sessionId: log.sessionId,
+            correlationId: log.correlationId,
+            logLevel: log.logLevel,
+            context: log.context,
+            message: log.message,
+            stackTrace: log.stackTrace,
+            createdAt: log.createdAt,
+        }))
+    }
 }
+

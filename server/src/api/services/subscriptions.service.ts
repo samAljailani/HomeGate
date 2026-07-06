@@ -5,6 +5,7 @@ import {
     Injectable,
     InternalServerErrorException,
     ServiceUnavailableException,
+    forwardRef,
 } from '@nestjs/common'
 import { UserService } from './user.service'
 import { IServiceRepository, IUserAccountRepository } from '@/data/repositories'
@@ -23,7 +24,7 @@ import { UserResponseDto } from '@/types/dtos/userDto'
 @Injectable()
 export class SubscriptionService {
     constructor(
-        @Inject(UserService)
+        @Inject(forwardRef(() => UserService))
         private readonly userService: UserService,
 
         @Inject(IServiceRepository)
@@ -323,24 +324,89 @@ export class SubscriptionService {
         }
     }
 
-    async disable(request: SubscriptionDisableRequestDto, currentUserId: string): Promise<boolean> {
-        const currentUser = await this.userService.getUserById({ userId: currentUserId })
+    async disableAllForUser(userId: string): Promise<void> {
+        const accounts = await this.userAccountRepository.findMany({ userId })
+        const accountsToDisable = accounts.filter((a) => a.status === UserAccountStatus.active)
 
-        if (!currentUser || !currentUser.isAdmin) {
-            throw new BadRequestException('Unauthorized: admin access required to disable a subscription')
+        if (accountsToDisable.length === 0) return
+
+        const user = await this.userService.getUserById({ userId })
+        if (!user) return
+
+        const cachedClients = new Map<number, IApplicationManager>()
+        const cachedUsers = new Map([[userId, user]])
+
+        for (const account of accountsToDisable) {
+            try {
+                await this.disableUserAccount(account, cachedClients, cachedUsers)
+            } catch {
+                this.logger.warn(`Failed to disable external account for user ${userId}, serviceId ${account.serviceId}`)
+            }
+
+            await this.userAccountRepository.update({
+                userId: account.userId,
+                serviceId: account.serviceId,
+                status: UserAccountStatus.disabled,
+                autoRenew: false,
+            })
         }
 
+        this.logger.log(`Disabled ${accountsToDisable.length} subscription(s) for user ${userId}`)
+    }
+
+    async disable(request: SubscriptionDisableRequestDto): Promise<boolean> {
         return this.updateUserDisabledStatus(request.userId, request.serviceId, UserAccountStatus.disabled)
     }
 
-    async enable(request: SubscriptionDisableRequestDto, currentUserId: string): Promise<boolean> {
-        const currentUser = await this.userService.getUserById({ userId: currentUserId })
+    async enable(request: SubscriptionDisableRequestDto): Promise<boolean> {
+        return this.updateUserDisabledStatus(request.userId, request.serviceId, UserAccountStatus.active)
+    }
 
-        if (!currentUser || !currentUser.isAdmin) {
-            throw new BadRequestException('Unauthorized: admin access required to enable a subscription')
+    async renew(userId: string, serviceId: number): Promise<UserAccountModel> {
+        const account = await this.userAccountRepository.find(userId, serviceId)
+
+        if (!account) {
+            throw new BadRequestException('Subscription not found')
         }
 
-        return this.updateUserDisabledStatus(request.userId, request.serviceId, UserAccountStatus.active)
+        const baseDate = account.expiresAt && account.expiresAt.getTime() > Date.now() ? account.expiresAt : new Date()
+        const newExpiresAt = this.getDefaultExpirationDate(baseDate)
+
+        const updated = await this.userAccountRepository.update({ userId, serviceId, expiresAt: newExpiresAt, lastError: null })
+
+        if (!updated) {
+            throw new BadRequestException('Failed to renew subscription')
+        }
+
+        this.logger.log(`Admin renewed subscription for user '${userId}' on service '${serviceId}'. New expiry: ${newExpiresAt.toISOString()}`)
+
+        return updated
+    }
+
+    async setAutoRenew(userId: string, serviceId: number, autoRenew: boolean): Promise<UserAccountModel> {
+        const account = await this.userAccountRepository.find(userId, serviceId)
+
+        if (!account) {
+            throw new BadRequestException('Subscription not found')
+        }
+
+        const updated = await this.userAccountRepository.update({ userId, serviceId, autoRenew })
+
+        if (!updated) {
+            throw new BadRequestException('Failed to update auto-renew')
+        }
+
+        this.logger.log(`Admin set autoRenew=${autoRenew} for user '${userId}' on service '${serviceId}'`)
+
+        return updated
+    }
+
+    async listAll(take?: number, skip?: number): Promise<UserAccountModel[]> {
+        return this.userAccountRepository.findMany({}, take, skip)
+    }
+
+    async listByUser(userId: string, take?: number, skip?: number): Promise<UserAccountModel[]> {
+        return this.userAccountRepository.findMany({ userId }, take, skip)
     }
 
     private async getServiceClient(serviceName: string) {
