@@ -58,3 +58,9 @@ export enum FailedOperation {
     expiration = 'expiration',
     sync = 'sync',
 }
+
+export enum ScheduledTasks {
+    PROCESS_SUBSCRIPTIONS = 'process_subscriptions',
+    CLEANUP_STALE_LOCAL_ACCOUNTS = 'cleanup_stale_local_accounts',
+    SYNC_CLIENT_ACCOUNTS = 'sync_client_accounts',
+}

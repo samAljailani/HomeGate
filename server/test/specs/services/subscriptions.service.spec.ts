@@ -811,9 +811,9 @@ describe('SubscriptionService', () => {
 
     // #endregion retryFailedOperation
 
-    // #region cleanUpSubscriptions
+    // #region processSubscriptions
 
-    describe('cleanUpSubscriptions', () => {
+    describe('processSubscriptions', () => {
         it('should auto-renew expired subscriptions with autoRenew enabled', async () => {
             const expired = createUserAccountFixture({
                 status: UserAccountStatus.active,
@@ -823,7 +823,7 @@ describe('SubscriptionService', () => {
 
             userAccountRepoMock.findMany.mockResolvedValue([expired])
 
-            await service.cleanUpSubscriptions()
+            await service.processSubscriptions()
 
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -849,7 +849,7 @@ describe('SubscriptionService', () => {
             client.disableUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue(expired)
 
-            await service.cleanUpSubscriptions()
+            await service.processSubscriptions()
 
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ status: UserAccountStatus.expired })
@@ -870,7 +870,7 @@ describe('SubscriptionService', () => {
             client.disableUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue(noExpiry)
 
-            await service.cleanUpSubscriptions()
+            await service.processSubscriptions()
 
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ status: UserAccountStatus.disabled })
@@ -886,7 +886,7 @@ describe('SubscriptionService', () => {
 
             userAccountRepoMock.findMany.mockResolvedValue([stillActive])
 
-            await service.cleanUpSubscriptions()
+            await service.processSubscriptions()
 
             expect(userAccountRepoMock.update).not.toHaveBeenCalled()
         })
@@ -906,7 +906,7 @@ describe('SubscriptionService', () => {
             client.disableUser.mockResolvedValue(false)
             userAccountRepoMock.update.mockResolvedValue(expired)
 
-            await service.cleanUpSubscriptions()
+            await service.processSubscriptions()
 
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -917,7 +917,7 @@ describe('SubscriptionService', () => {
         })
     })
 
-    // #endregion cleanUpSubscriptions
+    // #endregion processSubscriptions
 
     // #region syncClientAccounts
 

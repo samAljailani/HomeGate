@@ -21,6 +21,8 @@ import { clients } from './core/clients'
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule)
 
+    app.enableShutdownHooks()
+
     const sessionStore = app.get(PrismaSessionStore)
     const configRepository = app.get(ConfigRepository)
 

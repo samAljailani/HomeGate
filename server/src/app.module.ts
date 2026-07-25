@@ -12,12 +12,16 @@ import { providers } from '@/infrastructure'
 import { clients } from './core/clients'
 import { ClsModule } from 'nestjs-cls'
 import { ApplicationClientRegistry } from './core/clients/applicationClientRegistry'
+import { ScheduleModule } from '@nestjs/schedule'
+import { DiscoveryModule } from '@nestjs/core'
 
 const configRepository: ConfigRepository = new ConfigRepository()
 const env = configRepository.getEnv()
 
 @Module({
     imports: [
+        ScheduleModule.forRoot(),
+        DiscoveryModule,
         ServeStaticModule.forRoot({
             rootPath: resolve(process.cwd(), env.client.buildPath),
         }),

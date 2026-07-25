@@ -628,71 +628,6 @@ export class SubscriptionService {
         }
     }
     // #region subscription processing
-    public async cleanUpSubscriptions(): Promise<void> {
-        try {
-            await this.updateActiveSubscriptions()
-        } catch (error) {
-            this.logger.error('An error occurred cleaning up subscriptions', {
-                stackTrace: error instanceof Error ? error.stack : String(error),
-            })
-
-            throw error
-        }
-    }
-
-    /**
-     * Reconciles all external service accounts against local records.
-     * The local database is the source of truth. Two passes are performed per client:
-     *
-     * Pass 1 — External → Local:
-     *   For every account that exists on the external service, find the matching
-     *   local record by userServiceAccountId. If no record exists the account
-     *   is orphaned and will be disabled. If the active state differs between
-     *   the local record and the external service, the external service is corrected.
-     *
-     * Pass 2 — Local → External:
-     *   For every active local record, verify the external account still exists.
-     *   If it has been deleted externally (bypassing this application), the local record is
-     *   marked as failed so it surfaces for investigation and retry.
-     */
-    public async syncClientAccounts(): Promise<void> {
-        const clients = await this.applicationClientRegistry.getEnabled()
-
-        // Fetch all services and all local accounts once before the loop.
-        const allServices = await this.serviceRepository.findMany({})
-        const allLocalAccounts = await this.userAccountRepository.findMany({})
-        const serviceByName = new Map(allServices.map((s) => [s.name, s]))
-
-        for (const client of clients) {
-            try {
-                const service = serviceByName.get(client.name)
-
-                if (!service) {
-                    this.logger.warn(
-                        `Skipping account sync for client '${client.name}': no matching service record found`
-                    )
-                    continue
-                }
-
-                const clientUsers = await client.getAllUsers()
-
-                if (!clientUsers) {
-                    this.logger.warn(`Skipping account sync for client '${client.name}': getAllUsers() returned null`)
-                    continue
-                }
-
-                const localAccounts = allLocalAccounts.filter((a) => a.serviceId === service.id)
-
-                await this.syncExternalToLocal(client, clientUsers, localAccounts)
-                await this.syncLocalToExternal(client, clientUsers, localAccounts)
-            } catch (error) {
-                // Log and continue — a failure on one client should not prevent syncing the others.
-                this.logger.error(`Failed to sync accounts for client '${client.name}'`, {
-                    stackTrace: error instanceof Error ? error.stack : String(error),
-                })
-            }
-        }
-    }
 
     /**
      * Pass 1: for each account on the external service, enforce local state.
@@ -798,60 +733,20 @@ export class SubscriptionService {
     }
 
     /**
-     * Deletes stale local records for non-active accounts whose external counterpart
-     * no longer exists (e.g. cleaned up by the external application).
-     * Intended to be scheduled at a lower frequency than syncClientAccounts.
+     * Retries a previously failed subscription operation on behalf of an admin.
+     * Only accounts in the `failed` state are eligible; failed provisioning must
+     * be retried via `subscribe()` instead.
+     *
+     * Behaviour by `failedOperation`:
+     * - `cancellation` → deletes the external account (if it still exists) and marks local as cancelled
+     * - `expiration`   → disables the external account (if still active) and marks local as expired
+     * - `sync`         → checks whether the external account still exists:
+     *                    gone → marks local as cancelled; present → restores local to active
+     *
+     * @throws BadRequestException  if the caller is not an admin, or if the failed operation
+     *                              is provisioning (use `subscribe()` instead)
+     * @throws ConflictException    if the account is not in a failed state
      */
-    public async cleanupStaleLocalAccounts(): Promise<void> {
-        const clients = await this.applicationClientRegistry.getEnabled()
-        const allServices = await this.serviceRepository.findMany({})
-        const allLocalAccounts = await this.userAccountRepository.findMany({})
-        const serviceByName = new Map(allServices.map((s) => [s.name, s]))
-
-        for (const client of clients) {
-            try {
-                const service = serviceByName.get(client.name)
-
-                if (!service) {
-                    continue
-                }
-
-                const clientUsers = await client.getAllUsers()
-
-                if (!clientUsers) {
-                    continue
-                }
-
-                const clientUserById = new Map(clientUsers.map((u) => [u.id, u]))
-                const localAccounts = allLocalAccounts.filter((a) => a.serviceId === service.id)
-
-                for (const localAccount of localAccounts) {
-                    if (localAccount.status === UserAccountStatus.active) {
-                        continue
-                    }
-
-                    if (!localAccount.userServiceAccountId) {
-                        continue
-                    }
-
-                    if (!clientUserById.has(localAccount.userServiceAccountId)) {
-                        await this.userAccountRepository.delete(localAccount.userId, localAccount.serviceId)
-
-                        this.logger.log(
-                            `Deleted stale local record for user '${localAccount.userId}' on service '${localAccount.serviceId}': ` +
-                                `external account (id: '${localAccount.userServiceAccountId}') no longer exists`
-                        )
-                    }
-                }
-            } catch (error) {
-                this.logger.error(`Failed to clean up stale records for client '${client.name}'`, {
-                    stackTrace: error instanceof Error ? error.stack : String(error),
-                })
-                throw error
-            }
-        }
-    }
-
     async retryFailedOperation(request: SubscriptionDisableRequestDto, currentUserId: string): Promise<boolean> {
         const currentUser = await this.userService.getUserById({ userId: currentUserId })
 
@@ -997,7 +892,81 @@ export class SubscriptionService {
         }
     }
 
-    private async updateActiveSubscriptions(): Promise<void> {
+    // #endregion subscription processing
+
+    // #region Scheduled Tasks
+
+    /**
+     * Reconciles all external service accounts against local records.
+     * The local database is the source of truth. Two passes are performed per client:
+     *
+     * Pass 1 — External → Local:
+     *   For every account that exists on the external service, find the matching
+     *   local record by userServiceAccountId. If no record exists the account
+     *   is orphaned and will be disabled. If the active state differs between
+     *   the local record and the external service, the external service is corrected.
+     *
+     * Pass 2 — Local → External:
+     *   For every active local record, verify the external account still exists.
+     *   If it has been deleted externally (bypassing this application), the local record is
+     *   marked as failed so it surfaces for investigation and retry.
+     */
+    public async syncClientAccounts(): Promise<boolean> {
+        let success = true
+        const clients = await this.applicationClientRegistry.getEnabled()
+
+        // Fetch all services and all local accounts once before the loop.
+        const allServices = await this.serviceRepository.findMany({})
+        const allLocalAccounts = await this.userAccountRepository.findMany({})
+        const serviceByName = new Map(allServices.map((s) => [s.name, s]))
+
+        for (const client of clients) {
+            try {
+                const service = serviceByName.get(client.name)
+
+                if (!service) {
+                    this.logger.warn(
+                        `Skipping account sync for client '${client.name}': no matching service record found`
+                    )
+                    continue
+                }
+
+                const clientUsers = await client.getAllUsers()
+
+                if (!clientUsers) {
+                    this.logger.warn(`Skipping account sync for client '${client.name}': getAllUsers() returned null`)
+                    continue
+                }
+
+                const localAccounts = allLocalAccounts.filter((a) => a.serviceId === service.id)
+
+                await this.syncExternalToLocal(client, clientUsers, localAccounts)
+                await this.syncLocalToExternal(client, clientUsers, localAccounts)
+            } catch (error) {
+                // Log and continue — a failure on one client should not prevent syncing the others.
+                this.logger.error(`Failed to sync accounts for client '${client.name}'`, {
+                    stackTrace: error instanceof Error ? error.stack : String(error),
+                })
+                success = false
+            }
+        }
+
+        return success
+    }
+
+    /**
+     * Processes all active subscriptions and enforces expiration policy.
+     *
+     * For each active subscription:
+     * - No expiration date → disable the external account and mark as disabled
+     * - Not yet expired → skip
+     * - Expired with auto-renew → extend expiry by 30 days
+     * - Expired without auto-renew → disable the external account and mark as expired
+     *
+     * Failures per subscription are caught individually so one error does not
+     * prevent the remaining subscriptions from being processed.
+     */
+    public async processSubscriptions(): Promise<boolean> {
         const subscriptions = await this.userAccountRepository.findMany({
             statuses: [UserAccountStatus.active],
         })
@@ -1005,6 +974,7 @@ export class SubscriptionService {
         const cachedClients: Map<number, IApplicationManager> = new Map()
         const cachedUsers: Map<string, UserResponseDto> = new Map()
         const now = Date.now()
+        let success = true
 
         for (const sub of subscriptions) {
             try {
@@ -1075,9 +1045,69 @@ export class SubscriptionService {
                     failedAt: new Date(),
                     failedOperation: FailedOperation.expiration,
                 })
+                success = false
             }
         }
+
+        return success
     }
 
-    // #endregion subscription processing
+    /**
+     * Deletes stale local records for non-active accounts whose external counterpart
+     * no longer exists (e.g. cleaned up by the external application).
+     * Intended to be scheduled at a lower frequency than syncClientAccounts.
+     */
+    public async cleanupStaleLocalAccounts(): Promise<boolean> {
+        let success = true
+        const clients = await this.applicationClientRegistry.getEnabled()
+        const allServices = await this.serviceRepository.findMany({})
+        const allLocalAccounts = await this.userAccountRepository.findMany({})
+        const serviceByName = new Map(allServices.map((s) => [s.name, s]))
+
+        for (const client of clients) {
+            try {
+                const service = serviceByName.get(client.name)
+
+                if (!service) {
+                    continue
+                }
+
+                const clientUsers = await client.getAllUsers()
+
+                if (!clientUsers) {
+                    continue
+                }
+
+                const clientUserById = new Map(clientUsers.map((u) => [u.id, u]))
+                const localAccounts = allLocalAccounts.filter((a) => a.serviceId === service.id)
+
+                for (const localAccount of localAccounts) {
+                    if (localAccount.status === UserAccountStatus.active) {
+                        continue
+                    }
+
+                    if (!localAccount.userServiceAccountId) {
+                        continue
+                    }
+
+                    if (!clientUserById.has(localAccount.userServiceAccountId)) {
+                        await this.userAccountRepository.delete(localAccount.userId, localAccount.serviceId)
+
+                        this.logger.log(
+                            `Deleted stale local record for user '${localAccount.userId}' on service '${localAccount.serviceId}': ` +
+                                `external account (id: '${localAccount.userServiceAccountId}') no longer exists`
+                        )
+                    }
+                }
+            } catch (error) {
+                this.logger.error(`Failed to clean up stale records for client '${client.name}'`, {
+                    stackTrace: error instanceof Error ? error.stack : String(error),
+                })
+                success = false
+            }
+        }
+
+        return success
+    }
+    //#endregion Scheduled Tasks
 }
