@@ -5,6 +5,7 @@ import { BaseRepository } from './base.repository'
 import { ISystemMetadataRepository } from './ISystemMetadataRepository'
 import { SystemConfigKey, SystemConfigMap } from '@/types/models/SystemConfig'
 import { systemDefaults } from '@/data/config.defaults'
+import { mapPrismaError } from './util'
 
 @Injectable()
 export class SystemMetadataRepository extends BaseRepository implements ISystemMetadataRepository {
@@ -13,24 +14,38 @@ export class SystemMetadataRepository extends BaseRepository implements ISystemM
     }
 
     async get<K extends SystemConfigKey>(key: K): Promise<SystemConfigMap[K]> {
-        const row = await this.db.systemMetadata.findUnique({ where: { key } })
+        try {
+            const row = await this.db.systemMetadata.findUnique({ where: { key } })
 
-        const defaults = systemDefaults[key]
+            const defaults = systemDefaults[key]
 
-        if (!row) {
-            return structuredClone(defaults) as SystemConfigMap[K]
+            if (!row) {
+                return structuredClone(defaults) as SystemConfigMap[K]
+            }
+
+            // Deep merge: DB values override defaults per-property
+            return this.deepMerge(defaults, row.value as Partial<SystemConfigMap[K]>) as SystemConfigMap[K]
+        } catch (error) {
+            this.logger.error(`get failed for key: ${key}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error)
         }
-
-        // Deep merge: DB values override defaults per-property
-        return this.deepMerge(defaults, row.value as Partial<SystemConfigMap[K]>) as SystemConfigMap[K]
     }
 
     async set<K extends SystemConfigKey>(key: K, value: SystemConfigMap[K]): Promise<void> {
-        await this.db.systemMetadata.upsert({
-            where: { key },
-            create: { key, value: value as object },
-            update: { value: value as object },
-        })
+        try {
+            await this.db.systemMetadata.upsert({
+                where: { key },
+                create: { key, value: value as object },
+                update: { value: value as object },
+            })
+        } catch (error) {
+            this.logger.error(`set failed for key: ${key}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error)
+        }
     }
 
     private deepMerge<T extends Record<string, unknown>>(defaults: T, overrides: Partial<T>): T {

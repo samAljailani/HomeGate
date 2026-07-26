@@ -4,7 +4,6 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { ScheduledTasks } from '@/types/enums'
 import { Task } from '@/decorators'
 import { SubscriptionService } from './subscriptions.service'
-import { CronExpression } from '@nestjs/schedule'
 
 @Injectable()
 export class TaskService extends BaseService {
@@ -15,23 +14,17 @@ export class TaskService extends BaseService {
         super(logger)
     }
 
-    @Task({ name: ScheduledTasks.PROCESS_SUBSCRIPTIONS, cronExpression: CronExpression.EVERY_HOUR })
+    @Task(ScheduledTasks.PROCESS_SUBSCRIPTIONS)
     async processSubscriptionsHandler(): Promise<boolean> {
         return this.runTask(ScheduledTasks.PROCESS_SUBSCRIPTIONS, () => this.subscriptionService.processSubscriptions())
     }
 
-    @Task({
-        name: ScheduledTasks.SYNC_CLIENT_ACCOUNTS,
-        cronExpression: CronExpression.EVERY_12_HOURS,
-    })
+    @Task(ScheduledTasks.SYNC_CLIENT_ACCOUNTS)
     async syncClientAccountsHandler(): Promise<boolean> {
         return this.runTask(ScheduledTasks.SYNC_CLIENT_ACCOUNTS, () => this.subscriptionService.syncClientAccounts())
     }
 
-    @Task({
-        name: ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS,
-        cronExpression: CronExpression.EVERY_12_HOURS,
-    })
+    @Task(ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS)
     async cleanupStaleLocalAccountsHandler(): Promise<boolean> {
         return this.runTask(ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS, () =>
             this.subscriptionService.cleanupStaleLocalAccounts()

@@ -1,6 +1,6 @@
 # Scheduled Tasks
 
-The scheduler discovers and runs background tasks on cron schedules. Tasks are defined in `TaskService` using the `@Task` decorator and executed by `SchedulerService` at application bootstrap.
+The scheduler discovers and runs background tasks on cron schedules. Tasks are defined in `TaskService` using the `@Task` decorator; runtime configuration (enabled, runOnStartup, cronExpression) is stored in the `system_metadata` table and served by `SystemMetadataRepository`.
 
 ## Architecture
 
@@ -16,7 +16,8 @@ flowchart LR
         H3["Task Handler:<br/>cleanupStaleLocalAccounts"]
     end
 
-    CONFIG[("Task Metadata<br/>enabled / runOnStartup flags")] --> SCHED
+    SMETA[("system_metadata<br/>key='tasks'<br/>{enabled, runOnStartup, cronExpression}")] --> SCHED
+    DEFAULTS["config.defaults.ts<br/>(frozen code defaults)"] --> SMETA
     DISC -->|"DiscoveredTask[]"| SCHED
     SCHED --> REG
     REG --> H1 & H2 & H3
@@ -24,7 +25,28 @@ flowchart LR
     SVC --> DB[("PostgreSQL")]
     SVC --> EXT["External APIs<br/>(Jellyfin, Immich)"]
     SCHED --> OBS["LoggingProvider"]
+    ADMIN["Admin API<br/>PUT /api/tasks/:name"] -->|hot-reload| SCHED
+    ADMIN -->|persist| SMETA
 ```
+
+### Configuration Resolution
+
+```
+@Task decorator          systemDefaults            system_metadata (DB)
+(discovery only)         (code fallback)           (runtime override)
+
+name: X ──────────►  { enabled: true,      ◄──── { enabled: false,
+                       runOnStartup: false,        cronExpression: 6h }
+                       cronExpression: 12h }
+
+                              │ merge: DB wins over defaults │
+                              ▼
+                    Effective: enabled=false, runOnStartup=false, cron=6h
+```
+
+- No DB row → defaults returned as-is (fresh install works with zero seeding)
+- DB field null/missing → default kept
+- DB field has value → overrides
 
 ### Scheduler Lifecycle
 
@@ -33,18 +55,24 @@ sequenceDiagram
     participant App as App Bootstrap
     participant S as SchedulerService
     participant D as Discovery
+    participant SM as SystemMetadataRepository
     participant C as Cron Engine
     participant T as Task Handler
 
     App->>S: onApplicationBootstrap()
     S->>D: scan TaskService providers for @Task metadata
     D-->>S: DiscoveredTask[] (handler bound to instance)
+    S->>SM: get(TASKS)
+    SM-->>S: merged config (defaults + DB overrides)
+    opt new tasks discovered
+        S->>SM: set(TASKS, config with seeded defaults)
+    end
     loop each task
-        alt enabled === false
+        alt config.enabled === false
             S->>S: skip, log
         else
             S->>C: create job (waitForCompletion, errorHandler)
-            opt runOnStartup
+            opt config.runOnStartup
                 S->>T: fireOnTick()
                 T-->>S: Promise<boolean> (success/failure)
             end
@@ -76,50 +104,84 @@ sequenceDiagram
 - **No-overlap**: `waitForCompletion: true` ensures a tick finishes before the next fires.
 - **Failure isolation**: each tick is wrapped with an `errorHandler` — one failing task never crashes the process or blocks siblings.
 - **Graceful shutdown**: `stopAll()` awaits in-flight executions before the process exits.
+- **Auto-seed**: first boot or newly-added tasks are automatically seeded with code defaults to the DB.
+- **Hot-reload**: admin API changes take effect immediately without restart.
 
 ## Adding a New Task
 
 1. Add an enum value to `ScheduledTasks` in `src/types/enums.ts`.
-2. Add a method to `TaskService`, routing the work through `runTask()` for consistent logging:
+2. Add defaults to `src/data/config.defaults.ts`:
 
 ```typescript
-@Task({
-    name: ScheduledTasks.MY_NEW_TASK,
-    cronExpression: CronExpression.EVERY_DAY_AT_MIDNIGHT,
+[ScheduledTasks.MY_NEW_TASK]: {
+    enabled: true,
     runOnStartup: false,
-})
+    cronExpression: CronExpression.EVERY_DAY_AT_MIDNIGHT,
+},
+```
+
+3. Add a method to `TaskService`, routing the work through `runTask()`:
+
+```typescript
+@Task(ScheduledTasks.MY_NEW_TASK)
 async myNewTaskHandler(): Promise<boolean> {
     return this.runTask(ScheduledTasks.MY_NEW_TASK, () => this.someService.doWork())
 }
 ```
 
-3. That's it — the scheduler discovers it automatically at bootstrap, and `runTask()` handles start/success/failure logging and timing.
+4. That's it — the scheduler discovers it automatically at bootstrap, seeds the DB with defaults, and `runTask()` handles start/success/failure logging and timing.
 
 ## Task Configuration
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `name` | `ScheduledTasks` | required | Unique identifier for the task |
-| `cronExpression` | `CronExpression \| string` | required | Standard cron expression or `@nestjs/schedule` preset |
+The `@Task(ScheduledTasks.X)` decorator marks a method for discovery — it carries only the task name. All runtime behavior is controlled via `system_metadata` (key = `tasks`) and code defaults in `config.defaults.ts`:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
 | `enabled` | `boolean` | `true` | Set `false` to skip scheduling entirely |
-| `runOnStartup` | `boolean` | `false` | Fire the handler immediately on app boot |
+| `runOnStartup` | `boolean` | varies | Fire the handler immediately on app boot |
+| `cronExpression` | `string` | from `config.defaults.ts` | Effective cron schedule |
+
+## Admin API
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/tasks` | Admin | List all task configs + running status |
+| `PUT` | `/api/tasks/:name` | Admin | Partial update → persist + hot-reload |
+
+### GET /api/tasks
+
+Returns an array of task configs with their current active state:
+
+```json
+[
+  {
+    "name": "process_subscriptions",
+    "enabled": true,
+    "runOnStartup": true,
+    "cronExpression": "0 0 * * * *",
+    "isActive": true
+  }
+]
+```
+
+### PUT /api/tasks/:name
+
+Accepts a partial update body. Validates the cron expression and applies changes immediately:
+
+```json
+{
+  "enabled": false,
+  "cronExpression": "0 */6 * * *"
+}
+```
 
 ## Current Tasks
 
-| Task | Schedule | Startup | Description |
-|------|----------|---------|-------------|
+| Task | Default Schedule | Default Startup | Description |
+|------|-----------------|-----------------|-------------|
 | `process_subscriptions` | Every hour | Yes | Processes expired/active subscriptions and updates user access |
-| `sync_client_accounts` | Every 12 hours | Yes | Syncs external service accounts (Jellyfin/Immich) with local records |
+| `sync_client_accounts` | Every 12 hours | **No** | Syncs external service accounts (Jellyfin/Immich) with local records |
 | `cleanup_stale_local_accounts` | Every 12 hours | Yes | Removes local account records that no longer have an external counterpart |
-
-## Runtime Control
-
-`SchedulerService` exposes `start(metadata)` and `stop(metadata)` for runtime enable/disable (e.g. from an admin endpoint):
-
-```typescript
-schedulerService.stop({ name: ScheduledTasks.SYNC_CLIENT_ACCOUNTS, cronExpression: '...' })
-schedulerService.start({ name: ScheduledTasks.SYNC_CLIENT_ACCOUNTS, cronExpression: '...' })
-```
 
 ## Operational Notes
 
@@ -127,7 +189,7 @@ schedulerService.start({ name: ScheduledTasks.SYNC_CLIENT_ACCOUNTS, cronExpressi
   - `debug`: `Task '<name>' started`
   - `debug`: `Task '<name>' finished in <ms>ms with success=<true|false>`
   - `error` (on throw): `Task '<name>' failed after <ms>ms` with the stack trace attached
-- **Dangerous tasks**: `sync_client_accounts` disables external users flagged as orphans (no local record). If the local DB is empty or incomplete, this will mass-disable legitimate users. Disable `runOnStartup` or the task itself in new environments until local records are seeded.
+- **Dangerous tasks**: `sync_client_accounts` defaults to `runOnStartup: false` because it disables external users flagged as orphans (no local record). If the local DB is empty or incomplete, this will mass-disable legitimate users.
 - **Recovery script**: `scripts/enable-jellyfin-users.ts` re-enables disabled Jellyfin users. Run with `--apply` to execute (dry-run by default).
 
 ## Failure Modes
@@ -157,8 +219,14 @@ Option 2 (Postgres advisory locks keyed on task name) is the recommended first s
 
 | Decision | Rationale |
 |----------|-----------|
-| Custom scheduler over `@nestjs/schedule` `@Cron()` | `@Cron` options are compile-time constants; we need runtime/config-driven `enabled` |
+| `system_metadata` key-value table | One table forever — no migrations for new config categories |
+| `EnvRepository` separate from `SystemMetadataRepository` | Env = infrastructure (pre-DB); system_metadata = application behavior (post-DB) |
+| Custom scheduler over `@nestjs/schedule` `@Cron()` | `@Cron` options are compile-time constants; we need runtime/config-driven behavior |
 | Discovery restricted to `TaskService` | Prevents accidental scheduling from unrelated services; single place to audit |
 | `Promise<boolean>` return type | Forces explicit success/failure signal for future run-history tracking |
 | Zero-arg handlers | Keeps reflection-based discovery safe; dependencies come from the injected service |
 | `waitForCompletion` | Prevents overlapping runs on a single node without distributed locking |
+| Decorator carries only the task name | All config lives in one place (DB + code defaults); no stale compile-time values |
+| `sync_client_accounts` defaults to `runOnStartup: false` | Prevents the orphan-disable incident on fresh/incomplete environments |
+| Auto-seed on discovery | Admin UI always shows all tasks without manual DB inserts |
+| Hot-reload via direct method call | Simple; add event bus later when multiple services need to react |

@@ -1,16 +1,17 @@
 import { LoggingProvider } from '@/infrastructure/logger.provider'
-import { Inject, Injectable, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common'
+import { BadRequestException, Inject, Injectable, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common'
 import { SchedulerRegistry } from '@nestjs/schedule'
 import { BaseService } from './base.service'
 import { DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core'
 import { TASK } from '@/decorators'
-import { DiscoveredTask, TaskHandler, TaskMetadata } from '@/types/models/tasks'
-import { CronJob, CronTime } from 'cron'
+import { DiscoveredTask, TaskHandler } from '@/types/models/tasks'
+import { CronJob, CronTime, validateCronExpression } from 'cron'
 import { TaskService } from './tasks.service'
 import { ISystemMetadataRepository } from '@/data/repositories/ISystemMetadataRepository'
-import { SystemConfigKey, TaskConfig, TasksSystemConfig } from '@/types/models/SystemConfig'
+import { SystemConfigKey, TaskConfig } from '@/types/models/SystemConfig'
 import { systemDefaults } from '@/data/config.defaults'
 import { ScheduledTasks } from '@/types/enums'
+import { TaskConfigResponseDto, UpdateTaskConfigDto } from '@/types/dtos/taskDto'
 
 @Injectable()
 export class SchedulerService extends BaseService implements OnApplicationBootstrap, OnModuleDestroy {
@@ -25,6 +26,8 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
         super(logger)
     }
 
+    // #region Lifecycle
+
     async onApplicationBootstrap(): Promise<void> {
         await this.startAll()
     }
@@ -38,7 +41,7 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
         const taskConfig = await this.systemMetadataRepository.get(SystemConfigKey.TASKS)
 
         // Auto-seed: if any discovered task is missing from the DB config, add its defaults and persist
-        const discoveredNames = tasks.map((t) => t.metadata.name)
+        const discoveredNames = tasks.map((t) => t.name)
         let seeded = false
 
         for (const name of discoveredNames) {
@@ -59,27 +62,21 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
         this.logger.log(`Discovered ${tasks.length} scheduled task(s)`)
 
         for (const task of tasks) {
-            const config = taskConfig[task.metadata.name]
+            const config = taskConfig[task.name]
 
             if (!config || config.enabled === false) {
-                this.logger.log(`Skipping disabled task '${task.metadata.name}'`)
+                this.logger.log(`Skipping disabled task '${task.name}'`)
                 continue
             }
 
-            // Use cronExpression from DB config (may differ from decorator default)
-            const effectiveMetadata: TaskMetadata = {
-                ...task.metadata,
-                cronExpression: config.cronExpression,
-            }
-
-            const job = this.create(effectiveMetadata, task.handler)
+            const job = this.create(task.name, config.cronExpression, task.handler)
 
             if (job && config.runOnStartup) {
-                this.logger.log(`Running task '${task.metadata.name}' immediately on startup`)
+                this.logger.log(`Running task '${task.name}' immediately on startup`)
                 try {
                     await job.fireOnTick()
                 } catch (error) {
-                    this.logger.error(`Startup execution of task '${task.metadata.name}' failed`, {
+                    this.logger.error(`Startup execution of task '${task.name}' failed`, {
                         stackTrace: error instanceof Error ? error.stack : String(error),
                     })
                 }
@@ -103,34 +100,67 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
         }
     }
 
-    start(taskMetadata: TaskMetadata): void {
-        if (!this.schedulerRegistry.doesExist('cron', taskMetadata.name)) {
-            this.logger.warn(`Cannot start cron job '${taskMetadata.name}': job is not registered`)
-            return
-        }
-        const task = this.schedulerRegistry.getCronJob(taskMetadata.name)
+    // #endregion Lifecycle
 
-        if (!task.isActive) {
-            task.start()
-            this.logger.log(`Started cron job '${taskMetadata.name}'`)
+    // #region Task Configuration
+
+    async getTaskConfigs(): Promise<TaskConfigResponseDto[]> {
+        const taskConfig = await this.systemMetadataRepository.get(SystemConfigKey.TASKS)
+
+        return Object.values(ScheduledTasks).map((name) => {
+            const config = taskConfig[name]
+            const isActive = this.schedulerRegistry.doesExist('cron', name)
+                ? this.schedulerRegistry.getCronJob(name).isActive
+                : false
+
+            return {
+                name,
+                enabled: config.enabled,
+                runOnStartup: config.runOnStartup,
+                cronExpression: config.cronExpression,
+                isActive,
+            }
+        })
+    }
+
+    async updateTask(taskName: ScheduledTasks, dto: UpdateTaskConfigDto): Promise<TaskConfigResponseDto> {
+        if (dto.cronExpression !== undefined) {
+            const validation = validateCronExpression(dto.cronExpression)
+            if (!validation.valid) {
+                throw new BadRequestException(
+                    `Invalid cron expression: ${validation.error?.message ?? 'unknown error'}`
+                )
+            }
+        }
+
+        const taskConfig = await this.systemMetadataRepository.get(SystemConfigKey.TASKS)
+        const current = taskConfig[taskName]
+
+        const updated: TaskConfig = {
+            enabled: dto.enabled ?? current.enabled,
+            runOnStartup: dto.runOnStartup ?? current.runOnStartup,
+            cronExpression: dto.cronExpression ?? current.cronExpression,
+        }
+
+        taskConfig[taskName] = updated
+        await this.systemMetadataRepository.set(SystemConfigKey.TASKS, taskConfig)
+
+        this.applyTaskConfig(taskName, updated)
+
+        const isActive = this.schedulerRegistry.doesExist('cron', taskName)
+            ? this.schedulerRegistry.getCronJob(taskName).isActive
+            : false
+
+        return {
+            name: taskName,
+            enabled: updated.enabled,
+            runOnStartup: updated.runOnStartup,
+            cronExpression: updated.cronExpression,
+            isActive,
         }
     }
 
-    stop(taskMetadata: TaskMetadata): void {
-        if (!this.schedulerRegistry.doesExist('cron', taskMetadata.name)) {
-            this.logger.warn(`Cannot stop cron job '${taskMetadata.name}': job is not registered`)
-            return
-        }
-
-        const task = this.schedulerRegistry.getCronJob(taskMetadata.name)
-
-        if (task.isActive) {
-            task.stop()
-            this.logger.log(`Stopped cron job '${taskMetadata.name}'`)
-        }
-    }
-
-    updateTaskConfig(taskName: ScheduledTasks, config: TaskConfig): void {
+    private applyTaskConfig(taskName: ScheduledTasks, config: TaskConfig): void {
         if (!this.schedulerRegistry.doesExist('cron', taskName)) {
             this.logger.warn(`Cannot update task '${taskName}': job is not registered`)
             return
@@ -155,19 +185,50 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
         this.logger.log(`Updated task '${taskName}' — cron='${config.cronExpression}', enabled=${config.enabled}`)
     }
 
-    create(taskMetadata: TaskMetadata, handler: TaskHandler): CronJob | undefined {
-        if (this.schedulerRegistry.doesExist('cron', taskMetadata.name)) {
-            this.logger.warn(`Cron job '${taskMetadata.name}' is already registered — skipping duplicate`)
+    // #endregion Task Configuration
+
+    // #region Job Management
+
+    start(taskName: ScheduledTasks): void {
+        if (!this.schedulerRegistry.doesExist('cron', taskName)) {
+            this.logger.warn(`Cannot start cron job '${taskName}': job is not registered`)
+            return
+        }
+        const task = this.schedulerRegistry.getCronJob(taskName)
+
+        if (!task.isActive) {
+            task.start()
+            this.logger.log(`Started cron job '${taskName}'`)
+        }
+    }
+
+    stop(taskName: ScheduledTasks): void {
+        if (!this.schedulerRegistry.doesExist('cron', taskName)) {
+            this.logger.warn(`Cannot stop cron job '${taskName}': job is not registered`)
+            return
+        }
+
+        const task = this.schedulerRegistry.getCronJob(taskName)
+
+        if (task.isActive) {
+            task.stop()
+            this.logger.log(`Stopped cron job '${taskName}'`)
+        }
+    }
+
+    create(taskName: ScheduledTasks, cronExpression: string, handler: TaskHandler): CronJob | undefined {
+        if (this.schedulerRegistry.doesExist('cron', taskName)) {
+            this.logger.warn(`Cron job '${taskName}' is already registered — skipping duplicate`)
             return undefined
         }
 
         const job = CronJob.from({
-            cronTime: taskMetadata.cronExpression,
+            cronTime: cronExpression,
             onTick: async () => {
                 await handler()
             },
             errorHandler: (error) => {
-                this.logger.error(`Execution of task '${taskMetadata.name}' failed`, {
+                this.logger.error(`Execution of task '${taskName}' failed`, {
                     stackTrace: error instanceof Error ? error.stack : String(error),
                 })
             },
@@ -175,12 +236,16 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
             waitForCompletion: true,
             timeZone: 'UTC',
         })
-        this.schedulerRegistry.addCronJob(taskMetadata.name, job)
+        this.schedulerRegistry.addCronJob(taskName, job)
 
-        this.logger.log(`Registered cron job '${taskMetadata.name}' with expression '${taskMetadata.cronExpression}'`)
+        this.logger.log(`Registered cron job '${taskName}' with expression '${cronExpression}'`)
 
         return job
     }
+
+    // #endregion Job Management
+
+    // #region Discovery
 
     private discoverTasks(): DiscoveredTask[] {
         const tasks: DiscoveredTask[] = []
@@ -200,15 +265,15 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
                     continue
                 }
 
-                const metadata = this.reflector.get<TaskMetadata>(TASK, method)
+                const taskName = this.reflector.get<ScheduledTasks>(TASK, method)
 
-                if (!metadata) {
+                if (!taskName) {
                     continue
                 }
 
                 if (method.length !== 0) {
                     this.logger.warn(
-                        `Task '${metadata.name}' on '${providerName}.${methodName}' expects ` +
+                        `Task '${taskName}' on '${providerName}.${methodName}' expects ` +
                             `${method.length} argument(s) and will be skipped — task handlers must accept no arguments`
                     )
                     continue
@@ -216,11 +281,13 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
 
                 tasks.push({
                     handler: (method as TaskHandler).bind(instance),
-                    metadata,
+                    name: taskName,
                 })
             }
         }
 
         return tasks
     }
+
+    // #endregion Discovery
 }

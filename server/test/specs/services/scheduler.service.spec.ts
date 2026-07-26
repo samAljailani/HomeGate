@@ -4,13 +4,12 @@ import { SchedulerRegistry } from '@nestjs/schedule'
 import { SchedulerService } from '@/api/services/scheduler.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { TASK } from '@/decorators'
-import { TaskMetadata } from '@/types/models/tasks'
 import { ScheduledTasks } from '@/types/enums'
 import { CronJob } from 'cron'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { TaskService } from '@/api/services/tasks.service'
 import { ISystemMetadataRepository } from '@/data/repositories/ISystemMetadataRepository'
-import { SystemConfigKey, TasksSystemConfig } from '@/types/models/SystemConfig'
+import { TasksSystemConfig } from '@/types/models/SystemConfig'
 
 // Replace TaskService with a bare class so fake providers can extend it (satisfying the
 // scheduler's instanceof filter) without pulling in the real decorated handlers or
@@ -18,14 +17,6 @@ import { SystemConfigKey, TasksSystemConfig } from '@/types/models/SystemConfig'
 jest.mock('@/api/services/tasks.service', () => ({
     TaskService: class TaskService {},
 }))
-
-function createTaskMetadata(overrides: Partial<TaskMetadata> = {}): TaskMetadata {
-    return {
-        name: ScheduledTasks.PROCESS_SUBSCRIPTIONS,
-        cronExpression: '0 0 * * * *',
-        ...overrides,
-    }
-}
 
 const defaultTaskConfig: TasksSystemConfig = {
     [ScheduledTasks.PROCESS_SUBSCRIPTIONS]: { enabled: true, runOnStartup: false, cronExpression: '0 0 * * * *' },
@@ -138,7 +129,7 @@ describe('SchedulerService', () => {
     describe('startAll', () => {
         it('registers a cron job for each decorated method', async () => {
             const handler = jest.fn()
-            Reflect.defineMetadata(TASK, createTaskMetadata(), handler)
+            Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, handler)
             discoveryServiceMock.getProviders.mockReturnValue([createProviderWrapper({ handler })])
 
             await service.startAll()
@@ -169,7 +160,7 @@ describe('SchedulerService', () => {
 
         it('ignores decorated methods on providers that are not the task service', async () => {
             const handler = jest.fn()
-            Reflect.defineMetadata(TASK, createTaskMetadata(), handler)
+            Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, handler)
 
             class NotTaskService {}
             Object.defineProperty(NotTaskService.prototype, 'handler', {
@@ -186,7 +177,7 @@ describe('SchedulerService', () => {
 
         it('skips handlers that declare required arguments', async () => {
             const handler = (_arg: string) => undefined
-            Reflect.defineMetadata(TASK, createTaskMetadata(), handler)
+            Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, handler)
             discoveryServiceMock.getProviders.mockReturnValue([createProviderWrapper({ handler })])
 
             await service.startAll()
@@ -196,9 +187,8 @@ describe('SchedulerService', () => {
 
         it('does not run handler at startup when runOnStartup is false in config', async () => {
             const handler = jest.fn()
-            Reflect.defineMetadata(TASK, createTaskMetadata(), handler)
+            Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, handler)
             discoveryServiceMock.getProviders.mockReturnValue([createProviderWrapper({ handler })])
-            // Default config has runOnStartup: false
 
             await service.startAll()
 
@@ -207,7 +197,7 @@ describe('SchedulerService', () => {
 
         it('does not register a task when enabled is false in config', async () => {
             const handler = jest.fn()
-            Reflect.defineMetadata(TASK, createTaskMetadata(), handler)
+            Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, handler)
             discoveryServiceMock.getProviders.mockReturnValue([createProviderWrapper({ handler })])
             systemMetadataRepositoryMock.get.mockResolvedValue({
                 ...defaultTaskConfig,
@@ -226,7 +216,7 @@ describe('SchedulerService', () => {
 
         it('registers a task when enabled is true in config', async () => {
             const handler = jest.fn()
-            Reflect.defineMetadata(TASK, createTaskMetadata(), handler)
+            Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, handler)
             discoveryServiceMock.getProviders.mockReturnValue([createProviderWrapper({ handler })])
 
             await service.startAll()
@@ -236,7 +226,7 @@ describe('SchedulerService', () => {
 
         it('runs handler immediately at startup when runOnStartup is true in config', async () => {
             const handler = jest.fn().mockResolvedValue(true)
-            Reflect.defineMetadata(TASK, createTaskMetadata(), handler)
+            Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, handler)
             discoveryServiceMock.getProviders.mockReturnValue([createProviderWrapper({ handler })])
             systemMetadataRepositoryMock.get.mockResolvedValue({
                 ...defaultTaskConfig,
@@ -257,7 +247,7 @@ describe('SchedulerService', () => {
             const handler = jest.fn(function (this: unknown) {
                 capturedThis = this
             })
-            Reflect.defineMetadata(TASK, createTaskMetadata(), handler)
+            Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, handler)
             const wrapper = createProviderWrapper({ handler })
             discoveryServiceMock.getProviders.mockReturnValue([wrapper])
             systemMetadataRepositoryMock.get.mockResolvedValue({
@@ -276,18 +266,10 @@ describe('SchedulerService', () => {
 
         it('logs and continues when a startup execution fails', async () => {
             const failingHandler = jest.fn().mockRejectedValue(new Error('startup boom'))
-            Reflect.defineMetadata(
-                TASK,
-                createTaskMetadata({ name: ScheduledTasks.SYNC_CLIENT_ACCOUNTS }),
-                failingHandler
-            )
+            Reflect.defineMetadata(TASK, ScheduledTasks.SYNC_CLIENT_ACCOUNTS, failingHandler)
 
             const succeedingHandler = jest.fn().mockResolvedValue(true)
-            Reflect.defineMetadata(
-                TASK,
-                createTaskMetadata({ name: ScheduledTasks.PROCESS_SUBSCRIPTIONS }),
-                succeedingHandler
-            )
+            Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, succeedingHandler)
 
             discoveryServiceMock.getProviders.mockReturnValue([
                 createProviderWrapper({ failingHandler }),
@@ -315,10 +297,10 @@ describe('SchedulerService', () => {
 
         it('registers multiple tasks discovered across providers', async () => {
             const handlerA = jest.fn()
-            Reflect.defineMetadata(TASK, createTaskMetadata({ name: ScheduledTasks.PROCESS_SUBSCRIPTIONS }), handlerA)
+            Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, handlerA)
 
             const handlerB = jest.fn()
-            Reflect.defineMetadata(TASK, createTaskMetadata({ name: ScheduledTasks.SYNC_CLIENT_ACCOUNTS }), handlerB)
+            Reflect.defineMetadata(TASK, ScheduledTasks.SYNC_CLIENT_ACCOUNTS, handlerB)
 
             discoveryServiceMock.getProviders.mockReturnValue([
                 createProviderWrapper({ handlerA }),
@@ -337,17 +319,18 @@ describe('SchedulerService', () => {
 
     describe('create', () => {
         it('registers the cron job', () => {
-            const metadata = createTaskMetadata()
+            service.create(ScheduledTasks.PROCESS_SUBSCRIPTIONS, '0 0 * * * *', jest.fn())
 
-            service.create(metadata, jest.fn())
-
-            expect(schedulerRegistryMock.addCronJob).toHaveBeenCalledWith(metadata.name, expect.anything())
+            expect(schedulerRegistryMock.addCronJob).toHaveBeenCalledWith(
+                ScheduledTasks.PROCESS_SUBSCRIPTIONS,
+                expect.anything()
+            )
         })
 
         it('skips registration when a job with the same name already exists', () => {
             schedulerRegistryMock.doesExist.mockReturnValue(true)
 
-            service.create(createTaskMetadata(), jest.fn())
+            service.create(ScheduledTasks.PROCESS_SUBSCRIPTIONS, '0 0 * * * *', jest.fn())
 
             expect(schedulerRegistryMock.addCronJob).not.toHaveBeenCalled()
         })
@@ -355,7 +338,7 @@ describe('SchedulerService', () => {
         it('invokes the handler when the cron job ticks', async () => {
             const handler = jest.fn().mockResolvedValue(true)
 
-            const job = service.create(createTaskMetadata(), handler)
+            const job = service.create(ScheduledTasks.PROCESS_SUBSCRIPTIONS, '0 0 * * * *', handler)
 
             await job?.fireOnTick()
 
@@ -373,7 +356,7 @@ describe('SchedulerService', () => {
             schedulerRegistryMock.doesExist.mockReturnValue(true)
             schedulerRegistryMock.getCronJob.mockReturnValue(job)
 
-            service.start(createTaskMetadata())
+            service.start(ScheduledTasks.PROCESS_SUBSCRIPTIONS)
 
             expect(job.start).toHaveBeenCalledTimes(1)
         })
@@ -383,7 +366,7 @@ describe('SchedulerService', () => {
             schedulerRegistryMock.doesExist.mockReturnValue(true)
             schedulerRegistryMock.getCronJob.mockReturnValue(job)
 
-            service.start(createTaskMetadata())
+            service.start(ScheduledTasks.PROCESS_SUBSCRIPTIONS)
 
             expect(job.start).not.toHaveBeenCalled()
         })
@@ -391,7 +374,7 @@ describe('SchedulerService', () => {
         it('warns when the job is not registered', () => {
             schedulerRegistryMock.doesExist.mockReturnValue(false)
 
-            service.start(createTaskMetadata())
+            service.start(ScheduledTasks.PROCESS_SUBSCRIPTIONS)
 
             expect(schedulerRegistryMock.getCronJob).not.toHaveBeenCalled()
         })
@@ -403,7 +386,7 @@ describe('SchedulerService', () => {
             schedulerRegistryMock.doesExist.mockReturnValue(true)
             schedulerRegistryMock.getCronJob.mockReturnValue(job)
 
-            service.stop(createTaskMetadata())
+            service.stop(ScheduledTasks.PROCESS_SUBSCRIPTIONS)
 
             expect(job.stop).toHaveBeenCalledTimes(1)
         })
@@ -413,7 +396,7 @@ describe('SchedulerService', () => {
             schedulerRegistryMock.doesExist.mockReturnValue(true)
             schedulerRegistryMock.getCronJob.mockReturnValue(job)
 
-            service.stop(createTaskMetadata())
+            service.stop(ScheduledTasks.PROCESS_SUBSCRIPTIONS)
 
             expect(job.stop).not.toHaveBeenCalled()
         })
@@ -421,7 +404,7 @@ describe('SchedulerService', () => {
         it('warns when the job is not registered', () => {
             schedulerRegistryMock.doesExist.mockReturnValue(false)
 
-            service.stop(createTaskMetadata())
+            service.stop(ScheduledTasks.PROCESS_SUBSCRIPTIONS)
 
             expect(schedulerRegistryMock.getCronJob).not.toHaveBeenCalled()
         })
