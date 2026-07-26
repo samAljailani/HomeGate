@@ -6,6 +6,7 @@ import { DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core'
 import { TASK } from '@/decorators'
 import { DiscoveredTask, TaskHandler, TaskMetadata } from '@/types/models/tasks'
 import { CronJob } from 'cron'
+import { TaskService } from './tasks.service'
 
 @Injectable()
 export class SchedulerService extends BaseService implements OnApplicationBootstrap, OnModuleDestroy {
@@ -129,28 +130,36 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
         const tasks: DiscoveredTask[] = []
 
         for (const wrapper of this.discoveryService.getProviders()) {
-            const { instance } = wrapper
-            if (!instance || !Object.getPrototypeOf(instance)) continue
+            if (!(wrapper.instance instanceof TaskService)) continue
 
+            // Widen the narrowed TaskService type so methods can be looked up by name.
+            const instance = wrapper.instance as unknown as Record<string, (...args: unknown[]) => unknown>
+            const providerName = wrapper.instance.constructor.name
             const prototype = Object.getPrototypeOf(instance)
 
             for (const methodName of this.metadataScanner.getAllMethodNames(prototype)) {
-                const metadata = this.reflector.get<TaskMetadata>(TASK, instance[methodName])
+                const method = instance[methodName]
+
+                if (typeof method !== 'function') {
+                    continue
+                }
+
+                const metadata = this.reflector.get<TaskMetadata>(TASK, method)
 
                 if (!metadata) {
                     continue
                 }
 
-                if (instance[methodName].length !== 0) {
+                if (method.length !== 0) {
                     this.logger.warn(
-                        `Task '${metadata.name}' on '${instance.constructor.name}.${methodName}' expects ` +
-                            `${instance[methodName].length} argument(s) and will be skipped — task handlers must accept no arguments`
+                        `Task '${metadata.name}' on '${providerName}.${methodName}' expects ` +
+                            `${method.length} argument(s) and will be skipped — task handlers must accept no arguments`
                     )
                     continue
                 }
 
                 tasks.push({
-                    handler: (instance[methodName] as TaskHandler).bind(instance),
+                    handler: (method as TaskHandler).bind(instance),
                     metadata,
                 })
             }

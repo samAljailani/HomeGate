@@ -8,6 +8,14 @@ import { TaskMetadata } from '@/types/models/tasks'
 import { ScheduledTasks } from '@/types/enums'
 import { CronJob } from 'cron'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
+import { TaskService } from '@/api/services/tasks.service'
+
+// Replace TaskService with a bare class so fake providers can extend it (satisfying the
+// scheduler's instanceof filter) without pulling in the real decorated handlers or
+// constructor dependencies.
+jest.mock('@/api/services/tasks.service', () => ({
+    TaskService: class TaskService {},
+}))
 
 function createTaskMetadata(overrides: Partial<TaskMetadata> = {}): TaskMetadata {
     return {
@@ -47,9 +55,15 @@ function createDiscoveryServiceMock() {
 /**
  * Builds a fake provider wrapper whose instance has the given methods.
  * Methods are defined on a prototype so MetadataScanner can discover them.
+ * Extends the (mocked) TaskService so the instance passes the scheduler's discovery filter.
  */
 function createProviderWrapper(methods: Record<string, (...args: never[]) => unknown>) {
-    class FakeProvider {}
+    class FakeProvider extends TaskService {
+        constructor() {
+            // The mocked TaskService base class takes no constructor arguments at runtime.
+            super(undefined as never, undefined as never)
+        }
+    }
 
     for (const [name, fn] of Object.entries(methods)) {
         Object.defineProperty(FakeProvider.prototype, name, {
@@ -124,6 +138,23 @@ describe('SchedulerService', () => {
 
         it('ignores providers without an instance', async () => {
             discoveryServiceMock.getProviders.mockReturnValue([{ instance: null }, { instance: undefined }])
+
+            await service.startAll()
+
+            expect(schedulerRegistryMock.addCronJob).not.toHaveBeenCalled()
+        })
+
+        it('ignores decorated methods on providers that are not the task service', async () => {
+            const handler = jest.fn()
+            Reflect.defineMetadata(TASK, createTaskMetadata(), handler)
+
+            class NotTaskService {}
+            Object.defineProperty(NotTaskService.prototype, 'handler', {
+                value: handler,
+                writable: true,
+                configurable: true,
+            })
+            discoveryServiceMock.getProviders.mockReturnValue([{ instance: new NotTaskService() }])
 
             await service.startAll()
 
