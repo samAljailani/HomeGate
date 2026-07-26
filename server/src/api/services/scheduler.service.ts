@@ -8,7 +8,8 @@ import { DiscoveredTask, TaskHandler, TaskMetadata } from '@/types/models/tasks'
 import { CronJob, CronTime } from 'cron'
 import { TaskService } from './tasks.service'
 import { ISystemMetadataRepository } from '@/data/repositories/ISystemMetadataRepository'
-import { SystemConfigKey, TaskConfig } from '@/types/models/SystemConfig'
+import { SystemConfigKey, TaskConfig, TasksSystemConfig } from '@/types/models/SystemConfig'
+import { systemDefaults } from '@/data/config.defaults'
 import { ScheduledTasks } from '@/types/enums'
 
 @Injectable()
@@ -35,6 +36,25 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
     async startAll(): Promise<void> {
         const tasks = this.discoverTasks()
         const taskConfig = await this.systemMetadataRepository.get(SystemConfigKey.TASKS)
+
+        // Auto-seed: if any discovered task is missing from the DB config, add its defaults and persist
+        const discoveredNames = tasks.map((t) => t.metadata.name)
+        let seeded = false
+
+        for (const name of discoveredNames) {
+            if (!taskConfig[name]) {
+                const defaults = systemDefaults[SystemConfigKey.TASKS][name]
+                if (defaults) {
+                    taskConfig[name] = defaults
+                    seeded = true
+                    this.logger.log(`Seeded missing task config for '${name}' with defaults`)
+                }
+            }
+        }
+
+        if (seeded) {
+            await this.systemMetadataRepository.set(SystemConfigKey.TASKS, taskConfig)
+        }
 
         this.logger.log(`Discovered ${tasks.length} scheduled task(s)`)
 
