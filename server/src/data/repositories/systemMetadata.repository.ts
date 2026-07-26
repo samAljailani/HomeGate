@@ -48,6 +48,18 @@ export class SystemMetadataRepository extends BaseRepository implements ISystemM
         }
     }
 
+    async exists(key: SystemConfigKey): Promise<boolean> {
+        try {
+            const row = await this.db.systemMetadata.findUnique({ where: { key } })
+            return row !== null
+        } catch (error) {
+            this.logger.error(`exists failed for key: ${key}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error)
+        }
+    }
+
     private deepMerge<T extends Record<string, unknown>>(defaults: T, overrides: Partial<T>): T {
         const result = structuredClone(defaults)
 

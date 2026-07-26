@@ -9,7 +9,6 @@ import { CronJob, CronTime, validateCronExpression } from 'cron'
 import { TaskService } from './tasks.service'
 import { ISystemMetadataRepository } from '@/data/repositories/ISystemMetadataRepository'
 import { SystemConfigKey, TaskConfig } from '@/types/models/SystemConfig'
-import { systemDefaults } from '@/data/config.defaults'
 import { ScheduledTasks } from '@/types/enums'
 import { TaskConfigResponseDto, UpdateTaskConfigDto } from '@/types/dtos/taskDto'
 
@@ -38,25 +37,18 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
 
     async startAll(): Promise<void> {
         const tasks = this.discoverTasks()
+        // Returns DB values merged over code defaults; if no DB row exists, returns a clone of defaults.
         const taskConfig = await this.systemMetadataRepository.get(SystemConfigKey.TASKS)
 
-        // Auto-seed: if any discovered task is missing from the DB config, add its defaults and persist
-        const discoveredNames = tasks.map((t) => t.name)
-        let seeded = false
-
-        for (const name of discoveredNames) {
-            if (!taskConfig[name]) {
-                const defaults = systemDefaults[SystemConfigKey.TASKS][name]
-                if (defaults) {
-                    taskConfig[name] = defaults
-                    seeded = true
-                    this.logger.log(`Seeded missing task config for '${name}' with defaults`)
-                }
+        // Validate: every discovered task must have a config entry (from defaults or DB).
+        // If neither has it, fail fast — add an entry to config.defaults.ts.
+        for (const task of tasks) {
+            if (!taskConfig[task.name]) {
+                throw new Error(
+                    `Discovered task '${task.name}' has no configuration in defaults or database. ` +
+                        `Add an entry to config.defaults.ts for this task.`
+                )
             }
-        }
-
-        if (seeded) {
-            await this.systemMetadataRepository.set(SystemConfigKey.TASKS, taskConfig)
         }
 
         this.logger.log(`Discovered ${tasks.length} scheduled task(s)`)

@@ -33,6 +33,7 @@ function createSystemMetadataRepositoryMock(overrides: Partial<TasksSystemConfig
     return {
         get: jest.fn().mockResolvedValue(config),
         set: jest.fn().mockResolvedValue(undefined),
+        exists: jest.fn().mockResolvedValue(true),
     }
 }
 
@@ -310,6 +311,17 @@ describe('SchedulerService', () => {
             await service.startAll()
 
             expect(schedulerRegistryMock.addCronJob).toHaveBeenCalledTimes(2)
+        })
+
+        it('throws when a discovered task has no config in defaults or database', async () => {
+            const handler = jest.fn()
+            Reflect.defineMetadata(TASK, 'unknown_task' as ScheduledTasks, handler)
+            discoveryServiceMock.getProviders.mockReturnValue([createProviderWrapper({ handler })])
+            systemMetadataRepositoryMock.get.mockResolvedValue(defaultTaskConfig)
+
+            await expect(service.startAll()).rejects.toThrow(
+                `Discovered task 'unknown_task' has no configuration in defaults or database`
+            )
         })
     })
 

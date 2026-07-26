@@ -182,4 +182,34 @@ describe('SystemMetadataRepository', () => {
     })
 
     // #endregion set
+
+    // #region exists
+
+    describe('exists', () => {
+        it('returns true when a row exists', async () => {
+            prismaMock.systemMetadata.findUnique.mockResolvedValue({ key: SystemConfigKey.TASKS, value: {} })
+
+            const result = await repository.exists(SystemConfigKey.TASKS)
+
+            expect(result).toBe(true)
+        })
+
+        it('returns false when no row exists', async () => {
+            prismaMock.systemMetadata.findUnique.mockResolvedValue(null)
+
+            const result = await repository.exists(SystemConfigKey.TASKS)
+
+            expect(result).toBe(false)
+        })
+
+        it('logs and rethrows on prisma error', async () => {
+            const error = new Error('connection lost')
+            prismaMock.systemMetadata.findUnique.mockRejectedValue(error)
+
+            await expect(repository.exists(SystemConfigKey.TASKS)).rejects.toThrow()
+            expect(loggerMock.error).toHaveBeenCalled()
+        })
+    })
+
+    // #endregion exists
 })
