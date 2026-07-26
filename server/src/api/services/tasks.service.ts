@@ -15,7 +15,7 @@ export class TaskService extends BaseService {
         super(logger)
     }
 
-    @Task({ name: ScheduledTasks.PROCESS_SUBSCRIPTIONS, cronExpression: CronExpression.EVERY_HOUR, runOnStartup: true })
+    @Task({ name: ScheduledTasks.PROCESS_SUBSCRIPTIONS, cronExpression: CronExpression.EVERY_HOUR })
     async processSubscriptionsHandler(): Promise<boolean> {
         return this.runTask(ScheduledTasks.PROCESS_SUBSCRIPTIONS, () => this.subscriptionService.processSubscriptions())
     }
@@ -23,7 +23,6 @@ export class TaskService extends BaseService {
     @Task({
         name: ScheduledTasks.SYNC_CLIENT_ACCOUNTS,
         cronExpression: CronExpression.EVERY_12_HOURS,
-        runOnStartup: true,
     })
     async syncClientAccountsHandler(): Promise<boolean> {
         return this.runTask(ScheduledTasks.SYNC_CLIENT_ACCOUNTS, () => this.subscriptionService.syncClientAccounts())
@@ -32,7 +31,6 @@ export class TaskService extends BaseService {
     @Task({
         name: ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS,
         cronExpression: CronExpression.EVERY_12_HOURS,
-        runOnStartup: true,
     })
     async cleanupStaleLocalAccountsHandler(): Promise<boolean> {
         return this.runTask(ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS, () =>

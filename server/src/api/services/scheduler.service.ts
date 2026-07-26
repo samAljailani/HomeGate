@@ -5,8 +5,11 @@ import { BaseService } from './base.service'
 import { DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core'
 import { TASK } from '@/decorators'
 import { DiscoveredTask, TaskHandler, TaskMetadata } from '@/types/models/tasks'
-import { CronJob } from 'cron'
+import { CronJob, CronTime } from 'cron'
 import { TaskService } from './tasks.service'
+import { ISystemMetadataRepository } from '@/data/repositories/ISystemMetadataRepository'
+import { SystemConfigKey, TaskConfig } from '@/types/models/SystemConfig'
+import { ScheduledTasks } from '@/types/enums'
 
 @Injectable()
 export class SchedulerService extends BaseService implements OnApplicationBootstrap, OnModuleDestroy {
@@ -15,7 +18,8 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
         @Inject(Reflector) private reflector: Reflector,
         @Inject(DiscoveryService) private discoveryService: DiscoveryService,
         @Inject(MetadataScanner) private metadataScanner: MetadataScanner,
-        @Inject(SchedulerRegistry) private schedulerRegistry: SchedulerRegistry
+        @Inject(SchedulerRegistry) private schedulerRegistry: SchedulerRegistry,
+        @Inject(ISystemMetadataRepository) private systemMetadataRepository: ISystemMetadataRepository
     ) {
         super(logger)
     }
@@ -30,22 +34,29 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
 
     async startAll(): Promise<void> {
         const tasks = this.discoverTasks()
+        const taskConfig = await this.systemMetadataRepository.get(SystemConfigKey.TASKS)
 
         this.logger.log(`Discovered ${tasks.length} scheduled task(s)`)
 
         for (const task of tasks) {
-            if (task.metadata.enabled === false) {
+            const config = taskConfig[task.metadata.name]
+
+            if (!config || config.enabled === false) {
                 this.logger.log(`Skipping disabled task '${task.metadata.name}'`)
                 continue
             }
 
-            const job = this.create(task.metadata, task.handler)
+            // Use cronExpression from DB config (may differ from decorator default)
+            const effectiveMetadata: TaskMetadata = {
+                ...task.metadata,
+                cronExpression: config.cronExpression,
+            }
 
-            if (job && task.metadata.runOnStartup) {
+            const job = this.create(effectiveMetadata, task.handler)
+
+            if (job && config.runOnStartup) {
                 this.logger.log(`Running task '${task.metadata.name}' immediately on startup`)
                 try {
-                    // Fire through the job itself so the execution is tracked (lastExecution)
-                    // and waitForCompletion serializes it against scheduled ticks.
                     await job.fireOnTick()
                 } catch (error) {
                     this.logger.error(`Startup execution of task '${task.metadata.name}' failed`, {
@@ -97,6 +108,31 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
             task.stop()
             this.logger.log(`Stopped cron job '${taskMetadata.name}'`)
         }
+    }
+
+    updateTaskConfig(taskName: ScheduledTasks, config: TaskConfig): void {
+        if (!this.schedulerRegistry.doesExist('cron', taskName)) {
+            this.logger.warn(`Cannot update task '${taskName}': job is not registered`)
+            return
+        }
+
+        const job = this.schedulerRegistry.getCronJob(taskName)
+
+        if (!config.enabled) {
+            if (job.isActive) {
+                job.stop()
+                this.logger.log(`Disabled task '${taskName}'`)
+            }
+            return
+        }
+
+        job.setTime(new CronTime(config.cronExpression, 'UTC'))
+
+        if (!job.isActive) {
+            job.start()
+        }
+
+        this.logger.log(`Updated task '${taskName}' — cron='${config.cronExpression}', enabled=${config.enabled}`)
     }
 
     create(taskMetadata: TaskMetadata, handler: TaskHandler): CronJob | undefined {
