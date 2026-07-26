@@ -361,6 +361,11 @@ export class LoggingProvider {
         const env = configRepository.getEnv()
         this.targets = env.logger.targets
 
+        // logLevels is a module-level threshold shared by every LoggingProvider instance
+        // (transient-scoped), so setting it here keeps it in sync with config without
+        // requiring callers to resolve a transient instance just to configure it.
+        this.setLogLevel(env.logger.logLevel)
+
         this.loggers = []
 
         if (this.targets.includes(LogTarget.Console)) {

@@ -26,9 +26,9 @@ async function bootstrap() {
     const sessionStore = app.get(PrismaSessionStore)
     const configRepository = app.get(ConfigRepository)
 
-    await configureApplicationClients(app)
-
     const env = configRepository.getEnv()
+
+    await configureApplicationClients(app)
 
     const sessionOptions: session.SessionOptions = {
         secret: env.session.secret,

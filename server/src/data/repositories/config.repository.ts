@@ -1,4 +1,4 @@
-import { HomeGateHeader, LogFormat, LogTarget } from '@/types/enums'
+import { HomeGateHeader, LogFormat, LogLevel, LogTarget } from '@/types/enums'
 import { AppEnv, EnvData } from '@/types/models/EnvData'
 import { Injectable } from '@nestjs/common'
 import { CLS_ID } from 'nestjs-cls'
@@ -22,6 +22,7 @@ const getEnv = (): EnvData => {
         .map((x) => x.trim())
         .filter(Boolean) as LogTarget[]
     const COLOR_LOGS = process.env['COLOR_LOGS']?.toLowerCase() === 'true'
+    const LOG_LEVEL = (process.env['LOG_LEVEL']?.toLowerCase() as LogLevel) || LogLevel.Log
 
     const JELLYFIN_BASE_URL = process.env['JELLYFIN_BASE_URL']
     const JELLYFIN_API_KEY = process.env['JELLYFIN_API_KEY']
@@ -62,6 +63,7 @@ const getEnv = (): EnvData => {
             targets: LOG_TARGETS,
             colorLogs: COLOR_LOGS,
             logFormat: (process.env['LOG_FORMAT'] as LogFormat) || LogFormat.Console,
+            logLevel: LOG_LEVEL,
         },
         cls: {
             config: {
@@ -108,6 +110,7 @@ const validateEnvData = (envData: EnvData): void => {
         !envData.logger && 'logger',
         !envData.logger?.targets?.length && 'logger.targets',
         !envData.logger?.logFormat && 'logger.logFormat',
+        !Object.values(LogLevel).includes(envData.logger?.logLevel) && 'logger.logLevel (invalid value)',
         !envData.jellyfin.baseUrl && 'jellyfin.baseUrl',
         !envData.jellyfin.apiKey && 'jellyfin.apiKey',
         !envData.jellyfin.clientName && 'jellyfin.clientName',

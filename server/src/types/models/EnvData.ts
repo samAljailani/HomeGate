@@ -1,6 +1,6 @@
 import { OAuthProviderName } from '@prisma/generated'
 import { ClsModuleOptions } from 'nestjs-cls'
-import { LogFormat, LogTarget } from '@/types/enums'
+import { LogFormat, LogLevel, LogTarget } from '@/types/enums'
 import { ImmichProvisioningMode } from '@/types/enums'
 
 export enum AppEnv {
@@ -47,6 +47,7 @@ export interface EnvData {
         targets: LogTarget[]
         colorLogs: boolean
         logFormat: LogFormat
+        logLevel: LogLevel
     }
     cls: {
         config: ClsModuleOptions
