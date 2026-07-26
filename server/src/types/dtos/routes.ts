@@ -73,6 +73,10 @@ export const routes = {
     logs: defineRoutes('/api/logs', {
         list: '',
     }),
+    tasks: defineRoutes('/api/tasks', {
+        list: '',
+        update: ':name',
+    }),
     test: defineRoutes('/api/test', {}),
 } satisfies RoutesConfig
 
