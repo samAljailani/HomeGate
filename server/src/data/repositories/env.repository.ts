@@ -179,7 +179,7 @@ const validateEnvData = (envData: EnvData): void => {
 let cached: EnvData | undefined
 
 @Injectable()
-export class ConfigRepository {
+export class EnvRepository {
     constructor() {}
 
     getEnv(): EnvData {

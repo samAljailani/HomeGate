@@ -2,14 +2,14 @@ import { UnauthorizedException } from '@nestjs/common'
 import { PassportStrategy } from '@nestjs/passport'
 import { Strategy, VerifyCallback, Profile } from 'passport-google-oauth20'
 import { Inject, Injectable } from '@nestjs/common'
-import { ConfigRepository } from '@/data/repositories/config.repository'
+import { EnvRepository } from '@/data/repositories/env.repository'
 import { routes } from '@/types/dtos/routes'
 import { OpenIDRequestDto, OAuthUserProfileDto } from '@/types/dtos/authDto'
 import { OAuthProviderName } from '@/types/models/oauthProvider'
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
-    constructor(@Inject(ConfigRepository) configRepository: ConfigRepository) {
+    constructor(@Inject(EnvRepository) configRepository: EnvRepository) {
         const { clientId, clientSecret, scope } = configRepository
             .getEnv()
             .oAuth.providers.find((x) => x.name == OAuthProviderName.google)!

@@ -1,6 +1,6 @@
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { Inject, Injectable } from '@nestjs/common'
-import { ConfigRepository } from '@/data/repositories/config.repository'
+import { EnvRepository } from '@/data/repositories/env.repository'
 import {
     ApplicationUserModel,
     FilterApplicationUserParam,
@@ -35,7 +35,7 @@ export class JellyfinClient implements IApplicationManager {
 
     constructor(
         @Inject(LoggingProvider) private logger: LoggingProvider,
-        @Inject(ConfigRepository) config: ConfigRepository
+        @Inject(EnvRepository) config: EnvRepository
     ) {
         this.#baseUrl = config.getEnv().jellyfin.baseUrl
         this.#apiKey = config.getEnv().jellyfin.apiKey

@@ -1,4 +1,4 @@
-import { ConfigRepository } from '@/data/repositories/config.repository'
+import { EnvRepository } from '@/data/repositories/env.repository'
 
 import { IAuthSchemeRepository } from './IAuthSchemeRepository'
 import { IInviteRepository } from './IInviteRepository'
@@ -29,7 +29,7 @@ export { IUserAccountRepository } from './IUserAccountRepository'
 export { ISessionRepository } from './ISessionRepository'
 
 export const repositories = [
-    ConfigRepository,
+    EnvRepository,
     { provide: ILoggingRepository, useClass: LoggingRepository },
     { provide: IUserRepository, useClass: UserRepository },
     {

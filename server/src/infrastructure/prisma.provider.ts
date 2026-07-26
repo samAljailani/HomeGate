@@ -1,4 +1,4 @@
-import { ConfigRepository } from '@/data/repositories/config.repository'
+import { EnvRepository } from '@/data/repositories/env.repository'
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Logger } from '@nestjs/common'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/generated'
@@ -7,7 +7,7 @@ import { PrismaClient } from '@prisma/generated'
 export class PrismaProvider extends PrismaClient implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(PrismaProvider.name)
 
-    constructor(@Inject(ConfigRepository) configRepository: ConfigRepository) {
+    constructor(@Inject(EnvRepository) configRepository: EnvRepository) {
         const databaseUrl = configRepository.getEnv().database.url
         const adapter = new PrismaPg({ connectionString: databaseUrl })
         super({ adapter })

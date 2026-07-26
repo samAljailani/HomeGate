@@ -12,7 +12,7 @@ import { AppModule } from '@/app.module'
 import { AppEnv } from '@/types/models/EnvData'
 
 import { PrismaSessionStore } from '@/infrastructure/prismaSession.store'
-import { ConfigRepository } from '@/data/repositories/config.repository'
+import { EnvRepository } from '@/data/repositories/env.repository'
 import { csrfSynchronisedProtection } from '@/api/security/csrf'
 
 import { ApplicationClientRegistry } from './core/clients/applicationClientRegistry'
@@ -24,7 +24,7 @@ async function bootstrap() {
     app.enableShutdownHooks()
 
     const sessionStore = app.get(PrismaSessionStore)
-    const configRepository = app.get(ConfigRepository)
+    const configRepository = app.get(EnvRepository)
 
     const env = configRepository.getEnv()
 

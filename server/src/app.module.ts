@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { controllers } from '@/api/controllers'
 import { strategies } from '@/api/middleware/strategies'
-import { ConfigRepository } from '@/data/repositories/config.repository'
+import { EnvRepository } from '@/data/repositories/env.repository'
 import { ServeStaticModule } from '@nestjs/serve-static'
 import { ThrottlerModule } from '@nestjs/throttler'
 import { resolve } from 'path'
@@ -15,7 +15,7 @@ import { ApplicationClientRegistry } from './core/clients/applicationClientRegis
 import { ScheduleModule } from '@nestjs/schedule'
 import { DiscoveryModule } from '@nestjs/core'
 
-const configRepository: ConfigRepository = new ConfigRepository()
+const configRepository: EnvRepository = new EnvRepository()
 const env = configRepository.getEnv()
 
 @Module({

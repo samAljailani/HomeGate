@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { IApplicationManager } from '../IApplicationManager'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
-import { ConfigRepository } from '@/data/repositories/config.repository'
+import { EnvRepository } from '@/data/repositories/env.repository'
 import {
     ApplicationUserModel,
     ApplicationUserRequirements,
@@ -30,7 +30,7 @@ export class ImmichClient implements IApplicationManager {
 
     constructor(
         @Inject(LoggingProvider) private logger: LoggingProvider,
-        @Inject(ConfigRepository) config: ConfigRepository
+        @Inject(EnvRepository) config: EnvRepository
     ) {
         this.logger.setContext(this.constructor.name)
 

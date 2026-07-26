@@ -1,7 +1,7 @@
 import { Scope, Injectable, Inject } from '@nestjs/common'
 import { isLogLevelEnabled } from '@nestjs/common/services/utils/is-log-level-enabled.util'
 import { ClsService } from 'nestjs-cls'
-import { ConfigRepository } from '@/data/repositories/config.repository'
+import { EnvRepository } from '@/data/repositories/env.repository'
 import { LogColor, LogFormat, LogLevel, LogTarget } from '@/types/enums'
 import { ILoggingRepository } from '@/data/repositories/ILoggingRepository'
 
@@ -353,7 +353,7 @@ export class LoggingProvider {
 
     constructor(
         @Inject(ClsService) cls: ClsService | undefined,
-        @Inject(ConfigRepository) configRepository: ConfigRepository,
+        @Inject(EnvRepository) configRepository: EnvRepository,
         @Inject(ILoggingRepository) loggingRepository: ILoggingRepository
     ) {
         let colorLogs = false
