@@ -183,3 +183,11 @@ enum FailedOperation {
   expiration
   sync
 }
+
+model SystemMetadata {
+  key       String   @id @db.VarChar(128)
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("system_metadata")
+}

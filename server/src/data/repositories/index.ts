@@ -18,6 +18,8 @@ import { UserAccountRepository } from './userAccount.repository'
 import { UserOAuthIdentityRepository } from './userOAuthIdentity.repository'
 import { ILoggingRepository } from './ILoggingRepository'
 import { LoggingRepository } from './logging.repository'
+import { ISystemMetadataRepository } from './ISystemMetadataRepository'
+import { SystemMetadataRepository } from './systemMetadata.repository'
 
 export { IUserRepository } from './IUserRepository'
 export { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository'
@@ -27,6 +29,7 @@ export { IInviteRepository } from './IInviteRepository'
 export { IServiceRepository } from './IServiceRepository'
 export { IUserAccountRepository } from './IUserAccountRepository'
 export { ISessionRepository } from './ISessionRepository'
+export { ISystemMetadataRepository } from './ISystemMetadataRepository'
 
 export const repositories = [
     EnvRepository,
@@ -42,4 +45,5 @@ export const repositories = [
     { provide: IUserAccountRepository, useClass: UserAccountRepository },
     { provide: ISessionRepository, useClass: SessionRepository },
     { provide: IInviteRepository, useClass: InviteRepository },
+    { provide: ISystemMetadataRepository, useClass: SystemMetadataRepository },
 ]
