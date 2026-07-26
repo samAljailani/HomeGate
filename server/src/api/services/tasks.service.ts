@@ -17,16 +17,7 @@ export class TaskService extends BaseService {
 
     @Task({ name: ScheduledTasks.PROCESS_SUBSCRIPTIONS, cronExpression: CronExpression.EVERY_HOUR, runOnStartup: true })
     async processSubscriptionsHandler(): Promise<boolean> {
-        let success = false
-        try {
-            success = await this.subscriptionService.processSubscriptions()
-        } catch (error) {
-            this.logger.error(`A failure occurred executing the '${ScheduledTasks.PROCESS_SUBSCRIPTIONS}' task`, {
-                stackTrace: error instanceof Error ? error.stack : String(error),
-            })
-        }
-
-        return success
+        return this.runTask(ScheduledTasks.PROCESS_SUBSCRIPTIONS, () => this.subscriptionService.processSubscriptions())
     }
 
     @Task({
@@ -35,16 +26,7 @@ export class TaskService extends BaseService {
         runOnStartup: true,
     })
     async syncClientAccountsHandler(): Promise<boolean> {
-        let success = false
-        try {
-            success = await this.subscriptionService.syncClientAccounts()
-        } catch (error) {
-            this.logger.error(`A failure occurred executing the '${ScheduledTasks.SYNC_CLIENT_ACCOUNTS}' task`, {
-                stackTrace: error instanceof Error ? error.stack : String(error),
-            })
-        }
-
-        return success
+        return this.runTask(ScheduledTasks.SYNC_CLIENT_ACCOUNTS, () => this.subscriptionService.syncClientAccounts())
     }
 
     @Task({
@@ -53,18 +35,33 @@ export class TaskService extends BaseService {
         runOnStartup: true,
     })
     async cleanupStaleLocalAccountsHandler(): Promise<boolean> {
-        let success = false
-        try {
-            success = await this.subscriptionService.cleanupStaleLocalAccounts()
-        } catch (error) {
-            this.logger.error(
-                `A failure occurred executing the '${ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS}' task`,
-                {
-                    stackTrace: error instanceof Error ? error.stack : String(error),
-                }
-            )
-        }
+        return this.runTask(ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS, () =>
+            this.subscriptionService.cleanupStaleLocalAccounts()
+        )
+    }
 
-        return success
+    /**
+     * Runs a task's work function with consistent start/success/failure logging and timing.
+     * Never throws — failures are logged and reported back as a `false` success status.
+     */
+    private async runTask(taskName: ScheduledTasks, work: () => Promise<boolean>): Promise<boolean> {
+        const startedAt = Date.now()
+        const elapsedMs = () => Date.now() - startedAt
+
+        this.logger.debugFn(() => `Task '${taskName}' started`)
+
+        try {
+            const success = await work()
+
+            this.logger.debugFn(() => `Task '${taskName}' finished in ${elapsedMs()}ms with success=${success}`)
+
+            return success
+        } catch (error) {
+            this.logger.error(`Task '${taskName}' failed after ${elapsedMs()}ms`, {
+                stackTrace: error instanceof Error ? error.stack : String(error),
+            })
+
+            return false
+        }
     }
 }
