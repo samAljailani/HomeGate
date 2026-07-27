@@ -6,10 +6,13 @@ import { ISessionRepository } from '@/data/repositories/ISessionRepository'
 import { createOAuthProviderFixture } from '../../fixtures/oauthProvider.stub'
 import { OAuthProviderName } from '@prisma/generated'
 
-function createOAuthProviderRepositoryMock(): jest.Mocked<Pick<IOAuthProviderRepository, 'findMany' | 'setEnabled'>> {
+function createOAuthProviderRepositoryMock(): jest.Mocked<
+    Pick<IOAuthProviderRepository, 'findMany' | 'setEnabled' | 'findById'>
+> {
     return {
         findMany: jest.fn(),
         setEnabled: jest.fn(),
+        findById: jest.fn(),
     }
 }
 
@@ -155,4 +158,40 @@ describe('OAuthProviderManagementService', () => {
     })
 
     // #endregion disable
+
+    // #region updateEnabledById
+
+    describe('updateEnabledById', () => {
+        it('enables the provider found by id', async () => {
+            const provider = createOAuthProviderFixture({ id: 5, name: OAuthProviderName.google, enabled: true })
+            providerRepositoryMock.findById.mockResolvedValue(provider)
+            providerRepositoryMock.setEnabled.mockResolvedValue(provider)
+
+            const result = await service.updateEnabledById(5, true)
+
+            expect(providerRepositoryMock.findById).toHaveBeenCalledWith(5)
+            expect(providerRepositoryMock.setEnabled).toHaveBeenCalledWith(OAuthProviderName.google, true)
+            expect(result).toBe(provider)
+        })
+
+        it('disables the provider found by id', async () => {
+            const provider = createOAuthProviderFixture({ id: 5, name: OAuthProviderName.google, enabled: false })
+            providerRepositoryMock.findById.mockResolvedValue(provider)
+            providerRepositoryMock.setEnabled.mockResolvedValue(provider)
+            sessionRepositoryMock.deleteByProviderId.mockResolvedValue(undefined)
+
+            const result = await service.updateEnabledById(5, false)
+
+            expect(providerRepositoryMock.setEnabled).toHaveBeenCalledWith(OAuthProviderName.google, false)
+            expect(result).toBe(provider)
+        })
+
+        it('throws NotFoundException when provider not found by id', async () => {
+            providerRepositoryMock.findById.mockResolvedValue(null)
+
+            await expect(service.updateEnabledById(99, true)).rejects.toThrow(NotFoundException)
+        })
+    })
+
+    // #endregion updateEnabledById
 })

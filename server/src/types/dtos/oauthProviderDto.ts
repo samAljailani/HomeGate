@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { OAuthProviderName } from '@/types/models/oauthProvider'
-import { IsBoolean, IsEnum, IsInt, IsNotEmpty } from 'class-validator'
+import { IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional } from 'class-validator'
 
 export class OAuthProviderLoadRequestDto {
     @ApiProperty({ type: Number })
@@ -30,4 +30,11 @@ export class OAuthProviderActionRequestDto {
     @IsEnum(OAuthProviderName)
     @IsNotEmpty()
     name: OAuthProviderName
+}
+
+export class OAuthProviderPatchRequestDto {
+    @ApiProperty({ type: Boolean, required: false })
+    @IsOptional()
+    @IsBoolean()
+    enabled?: boolean
 }

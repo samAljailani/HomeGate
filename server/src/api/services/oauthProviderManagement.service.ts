@@ -29,4 +29,11 @@ export class OAuthProviderManagementService {
 
         return provider
     }
+
+    async updateEnabledById(id: number, enabled: boolean): Promise<OAuthProviderModel> {
+        const provider = await this.oauthProviderRepository.findById(id)
+        if (!provider) throw new NotFoundException(`OAuth provider with id '${id}' not found`)
+
+        return enabled ? this.enable(provider.name) : this.disable(provider.name)
+    }
 }

@@ -1,17 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing'
+import { BadRequestException } from '@nestjs/common'
 import { OAuthProviderController } from '@/api/controllers/oauthProvider.controller'
 import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
-import { OAuthProviderActionRequestDto } from '@/types/dtos/oauthProviderDto'
 import { createOAuthProviderFixture } from '../../fixtures/oauthProvider.stub'
-import { OAuthProviderName } from '@prisma/generated'
 
 function createOAuthProviderManagementServiceMock(): jest.Mocked<
-    Pick<OAuthProviderManagementService, 'list' | 'enable' | 'disable'>
+    Pick<OAuthProviderManagementService, 'list' | 'updateEnabledById'>
 > {
     return {
         list: jest.fn(),
-        enable: jest.fn(),
-        disable: jest.fn(),
+        updateEnabledById: jest.fn(),
     }
 }
 
@@ -55,55 +53,40 @@ describe('OAuthProviderController', () => {
 
     // #endregion list
 
-    // #region enable
+    // #region update
 
-    describe('enable', () => {
-        const request: OAuthProviderActionRequestDto = { name: OAuthProviderName.google }
+    describe('update', () => {
+        it('calls updateEnabledById with id and true when enabled is true', async () => {
+            const provider = createOAuthProviderFixture({ id: 1, enabled: true })
+            oauthProviderManagementMock.updateEnabledById.mockResolvedValue(provider)
 
-        it('calls oauthProviderManagementService.enable with the name', async () => {
-            const provider = createOAuthProviderFixture({ enabled: true })
-            oauthProviderManagementMock.enable.mockResolvedValue(provider)
+            await controller.update(1, { enabled: true })
 
-            await controller.enable(request)
+            expect(oauthProviderManagementMock.updateEnabledById).toHaveBeenCalledWith(1, true)
+        })
 
-            expect(oauthProviderManagementMock.enable).toHaveBeenCalledWith(OAuthProviderName.google)
+        it('calls updateEnabledById with id and false when enabled is false', async () => {
+            const provider = createOAuthProviderFixture({ id: 1, enabled: false })
+            oauthProviderManagementMock.updateEnabledById.mockResolvedValue(provider)
+
+            await controller.update(1, { enabled: false })
+
+            expect(oauthProviderManagementMock.updateEnabledById).toHaveBeenCalledWith(1, false)
         })
 
         it('returns the mapped DTO', async () => {
             const provider = createOAuthProviderFixture({ id: 1, enabled: true })
-            oauthProviderManagementMock.enable.mockResolvedValue(provider)
+            oauthProviderManagementMock.updateEnabledById.mockResolvedValue(provider)
 
-            const result = await controller.enable(request)
+            const result = await controller.update(1, { enabled: true })
 
             expect(result).toEqual({ id: 1, name: provider.name, enabled: true })
         })
-    })
 
-    // #endregion enable
-
-    // #region disable
-
-    describe('disable', () => {
-        const request: OAuthProviderActionRequestDto = { name: OAuthProviderName.google }
-
-        it('calls oauthProviderManagementService.disable with the name', async () => {
-            const provider = createOAuthProviderFixture({ enabled: false })
-            oauthProviderManagementMock.disable.mockResolvedValue(provider)
-
-            await controller.disable(request)
-
-            expect(oauthProviderManagementMock.disable).toHaveBeenCalledWith(OAuthProviderName.google)
-        })
-
-        it('returns the mapped DTO', async () => {
-            const provider = createOAuthProviderFixture({ id: 1, enabled: false })
-            oauthProviderManagementMock.disable.mockResolvedValue(provider)
-
-            const result = await controller.disable(request)
-
-            expect(result).toEqual({ id: 1, name: provider.name, enabled: false })
+        it('throws BadRequestException when no fields provided', async () => {
+            await expect(controller.update(1, {})).rejects.toThrow(BadRequestException)
         })
     })
 
-    // #endregion disable
+    // #endregion update
 })

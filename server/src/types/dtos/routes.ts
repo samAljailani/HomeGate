@@ -63,8 +63,7 @@ export const routes = {
     }),
     oauthProviders: defineRoutes('/api/oauth-providers', {
         list: '',
-        enable: 'enable',
-        disable: 'disable',
+        update: ':id',
     }),
     logs: defineRoutes('/api/logs', {
         list: '',
