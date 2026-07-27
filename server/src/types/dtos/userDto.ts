@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger'
-import { IsBoolean, IsDate, IsEmail, IsNotEmpty, IsString, IsUUID } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { Transform } from 'class-transformer'
+import { IsBoolean, IsDate, IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator'
 
 export class UserFindOptions {
     withDeleted?: boolean
@@ -89,6 +90,24 @@ export class UserDeleteRequestDto {
     @ApiProperty({ type: Boolean })
     @IsBoolean()
     softDelete: boolean
+}
+
+export class UserPatchRequestDto {
+    @ApiPropertyOptional({ type: Boolean })
+    @IsOptional()
+    @IsBoolean()
+    enabled?: boolean
+}
+
+export class UserDeleteQueryDto {
+    @ApiPropertyOptional({
+        type: Boolean,
+        description: 'Permanently delete the account. Ignored for non-admin callers.',
+    })
+    @IsOptional()
+    @Transform(({ value }) => value === true || value === 'true')
+    @IsBoolean()
+    hard?: boolean
 }
 
 export class UserResponseForAdminDto extends UserResponseDto {

@@ -52,11 +52,10 @@ export const routes = {
         validate: 'validate/:token',
     }),
     users: defineRoutes('/api/users', {
-        delete: '',
-        disable: 'disable',
-        enable: 'enable',
         list: '',
         get: ':id',
+        update: ':id',
+        delete: ':id',
     }),
     services: defineRoutes('/api/services', {
         list: '',
