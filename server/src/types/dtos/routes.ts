@@ -38,14 +38,12 @@ export const routes = {
     csrf: defineRoutes('/api/csrf', {}),
     subscriptions: defineRoutes('/api/subscriptions', {
         subscribe: '',
-        delete: '',
-        disable: 'disable',
-        enable: 'enable',
-        renew: 'renew',
-        autoRenew: 'auto-renew',
         list: '',
-        listByUser: 'user/:userId',
         me: 'me',
+        get: ':id',
+        update: ':id',
+        renew: ':id/renew',
+        delete: ':id',
     }),
     invites: defineRoutes('/api/invites', {
         create: '',

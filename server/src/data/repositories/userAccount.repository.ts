@@ -22,6 +22,7 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
 
     private mapUserAccount(userAccount: PrismaUserAccount): UserAccountModel {
         return {
+            id: userAccount.id,
             userId: userAccount.userId,
             userServiceAccountId: userAccount.userServiceAccountId,
             serviceId: userAccount.serviceId,
@@ -51,6 +52,18 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
             return userAccount ? this.mapUserAccount(userAccount) : null
         } catch (error) {
             this.logger.error(`find failed for userId: ${userId}, serviceId: ${serviceId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.userAccount)
+        }
+    }
+
+    async findById(id: string): Promise<UserAccountModel | null> {
+        try {
+            const userAccount = await this.db.userAccount.findUnique({ where: { id } })
+            return userAccount ? this.mapUserAccount(userAccount) : null
+        } catch (error) {
+            this.logger.error(`findById failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.userAccount)

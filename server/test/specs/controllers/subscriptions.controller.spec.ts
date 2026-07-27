@@ -1,31 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { SubscriptionController } from '@/api/controllers/subscriptions.controller'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
-import { SubscriptionRenewRequestDto, SubscriptionAutoRenewRequestDto } from '@/types/dtos/subscriptionsDto'
 import { createRequestMock } from '../../mocks/httpContext.mock'
 import { createUserAccountFixture } from '../../fixtures/userAccount.stub'
 
 function createSubscriptionServiceMock(): jest.Mocked<
-    Pick<
-        SubscriptionService,
-        'subscribe' | 'delete' | 'disable' | 'enable' | 'renew' | 'setAutoRenew' | 'listAll' | 'listByUser'
-    >
+    Pick<SubscriptionService, 'subscribe' | 'delete' | 'update' | 'renew' | 'getById' | 'listAll' | 'listByUser'>
 > {
     return {
         subscribe: jest.fn(),
         delete: jest.fn(),
-        disable: jest.fn(),
-        enable: jest.fn(),
+        update: jest.fn(),
         renew: jest.fn(),
-        setAutoRenew: jest.fn(),
+        getById: jest.fn(),
         listAll: jest.fn(),
         listByUser: jest.fn(),
     }
 }
 
-describe('SubscriptionController — renew / setAutoRenew / listAll / listByUser', () => {
+describe('SubscriptionController — update / renew / getById / delete / listAll / listMine', () => {
     let controller: SubscriptionController
     let subscriptionServiceMock: ReturnType<typeof createSubscriptionServiceMock>
+
+    const subscriptionId = 'subscription-uuid-1'
 
     beforeEach(async () => {
         subscriptionServiceMock = createSubscriptionServiceMock()
@@ -45,22 +42,20 @@ describe('SubscriptionController — renew / setAutoRenew / listAll / listByUser
     // #region renew
 
     describe('renew', () => {
-        const request: SubscriptionRenewRequestDto = { userId: 'user-uuid-1', serviceId: 1 }
-
-        it('calls subscriptionService.renew with userId and serviceId', async () => {
+        it('calls subscriptionService.renew with the subscription id', async () => {
             const account = createUserAccountFixture()
             subscriptionServiceMock.renew.mockResolvedValue(account)
 
-            await controller.renew(request)
+            await controller.renew(subscriptionId)
 
-            expect(subscriptionServiceMock.renew).toHaveBeenCalledWith('user-uuid-1', 1)
+            expect(subscriptionServiceMock.renew).toHaveBeenCalledWith(subscriptionId)
         })
 
         it('returns the updated account', async () => {
             const account = createUserAccountFixture()
             subscriptionServiceMock.renew.mockResolvedValue(account)
 
-            const result = await controller.renew(request)
+            const result = await controller.renew(subscriptionId)
 
             expect(result).toBe(account)
         })
@@ -68,31 +63,74 @@ describe('SubscriptionController — renew / setAutoRenew / listAll / listByUser
 
     // #endregion renew
 
-    // #region setAutoRenew
+    // #region update
 
-    describe('setAutoRenew', () => {
-        it('calls setAutoRenew with true', async () => {
-            const request: SubscriptionAutoRenewRequestDto = { userId: 'user-uuid-1', serviceId: 1, autoRenew: true }
+    describe('update', () => {
+        it('forwards the policy object to the service', async () => {
             const account = createUserAccountFixture({ autoRenew: true })
-            subscriptionServiceMock.setAutoRenew.mockResolvedValue(account)
+            subscriptionServiceMock.update.mockResolvedValue(account)
 
-            await controller.setAutoRenew(request)
+            await controller.update(subscriptionId, { enabled: true, autoRenew: true })
 
-            expect(subscriptionServiceMock.setAutoRenew).toHaveBeenCalledWith('user-uuid-1', 1, true)
+            expect(subscriptionServiceMock.update).toHaveBeenCalledWith(subscriptionId, {
+                enabled: true,
+                autoRenew: true,
+            })
         })
 
-        it('calls setAutoRenew with false', async () => {
-            const request: SubscriptionAutoRenewRequestDto = { userId: 'user-uuid-1', serviceId: 1, autoRenew: false }
+        it('returns the updated account', async () => {
             const account = createUserAccountFixture({ autoRenew: false })
-            subscriptionServiceMock.setAutoRenew.mockResolvedValue(account)
+            subscriptionServiceMock.update.mockResolvedValue(account)
 
-            await controller.setAutoRenew(request)
+            const result = await controller.update(subscriptionId, { autoRenew: false })
 
-            expect(subscriptionServiceMock.setAutoRenew).toHaveBeenCalledWith('user-uuid-1', 1, false)
+            expect(result).toBe(account)
         })
     })
 
-    // #endregion setAutoRenew
+    // #endregion update
+
+    // #region getById
+
+    describe('getById', () => {
+        it('returns the subscription from the service', async () => {
+            const account = createUserAccountFixture()
+            subscriptionServiceMock.getById.mockResolvedValue(account)
+
+            const result = await controller.getById(subscriptionId)
+
+            expect(subscriptionServiceMock.getById).toHaveBeenCalledWith(subscriptionId)
+            expect(result).toBe(account)
+        })
+    })
+
+    // #endregion getById
+
+    // #region delete
+
+    describe('delete', () => {
+        it('calls delete with the id, session user, and immediate flag', async () => {
+            const req = createRequestMock()
+            req.session.userId = 'session-user-uuid'
+            subscriptionServiceMock.delete.mockResolvedValue(true)
+
+            await controller.delete(subscriptionId, { immediate: true }, req)
+
+            expect(subscriptionServiceMock.delete).toHaveBeenCalledWith(subscriptionId, 'session-user-uuid', true)
+        })
+
+        it('passes immediate as undefined when not provided', async () => {
+            const req = createRequestMock()
+            req.session.userId = 'session-user-uuid'
+            subscriptionServiceMock.delete.mockResolvedValue(true)
+
+            await controller.delete(subscriptionId, {}, req)
+
+            expect(subscriptionServiceMock.delete).toHaveBeenCalledWith(subscriptionId, 'session-user-uuid', undefined)
+        })
+    })
+
+    // #endregion delete
 
     // #region listAll
 
@@ -106,35 +144,21 @@ describe('SubscriptionController — renew / setAutoRenew / listAll / listByUser
             expect(subscriptionServiceMock.listAll).toHaveBeenCalled()
             expect(result).toHaveLength(2)
         })
-    })
 
-    // #endregion listAll
-
-    // #region listByUser
-
-    describe('listByUser', () => {
-        const userId = 'user-uuid-1'
-
-        it('calls listByUser with the route param userId', async () => {
+        it('filters by userId when the query param is provided', async () => {
+            const userId = 'user-uuid-1'
             const accounts = [createUserAccountFixture({ userId })]
             subscriptionServiceMock.listByUser.mockResolvedValue(accounts)
 
-            await controller.listByUser(userId, {})
+            const result = await controller.listAll({ userId })
 
             expect(subscriptionServiceMock.listByUser).toHaveBeenCalledWith(userId, undefined, undefined)
-        })
-
-        it('returns the user subscriptions', async () => {
-            const accounts = [createUserAccountFixture({ userId })]
-            subscriptionServiceMock.listByUser.mockResolvedValue(accounts)
-
-            const result = await controller.listByUser(userId, {})
-
+            expect(subscriptionServiceMock.listAll).not.toHaveBeenCalled()
             expect(result).toHaveLength(1)
         })
     })
 
-    // #endregion listByUser
+    // #endregion listAll
 
     // #region listMine
 

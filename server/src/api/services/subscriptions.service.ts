@@ -4,16 +4,13 @@ import {
     Inject,
     Injectable,
     InternalServerErrorException,
+    NotFoundException,
     ServiceUnavailableException,
     forwardRef,
 } from '@nestjs/common'
 import { UserService } from './user.service'
 import { IServiceRepository, IUserAccountRepository } from '@/data/repositories'
-import {
-    SubscriptionCreateRequestDto,
-    SubscriptionDeleteRequestDto,
-    SubscriptionDisableRequestDto,
-} from '@/types/dtos/subscriptionsDto'
+import { SubscriptionCreateRequestDto, SubscriptionPatchRequestDto } from '@/types/dtos/subscriptionsDto'
 import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
 import { ApplicationClientNames, FailedOperation, UserAccountStatus } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -224,37 +221,37 @@ export class SubscriptionService {
         }
     }
 
-    async delete(request: SubscriptionDeleteRequestDto, currentUserId: string): Promise<boolean> {
-        const user = await this.userService.getUserById({ userId: request.userId })
+    async delete(subscriptionId: string, currentUserId: string, deleteImmediately?: boolean): Promise<boolean> {
+        const existingUserServiceAccount = await this.getById(subscriptionId)
+
+        const user = await this.userService.getUserById({ userId: existingUserServiceAccount.userId })
         const currentUser = await this.userService.getUserById({ userId: currentUserId })
 
         if (!user || !currentUser) {
-            throw new BadRequestException(`User does not exist, userId: ${currentUserId ?? request.userId}`)
+            throw new BadRequestException(`User does not exist, userId: ${currentUserId}`)
         }
 
-        if (!currentUser.isAdmin && currentUserId !== request.userId) {
+        if (!currentUser.isAdmin && currentUserId !== existingUserServiceAccount.userId) {
             throw new BadRequestException(`A non-admin user cannot delete a subscription for another user.`)
         }
 
-        const service = await this.serviceRepository.findById(request.serviceId)
+        const service = await this.serviceRepository.findById(existingUserServiceAccount.serviceId)
 
         if (!service) {
             throw new BadRequestException('Service does not exist')
         }
 
-        const existingUserServiceAccount = await this.userAccountRepository.find(request.userId, request.serviceId)
-
-        if (!existingUserServiceAccount || !this.isCurrentlyActive(existingUserServiceAccount)) {
+        if (!this.isCurrentlyActive(existingUserServiceAccount)) {
             throw new ConflictException('User is not subscribed to the service')
         }
 
         try {
-            if (request.deleteImmediately === true) {
+            if (deleteImmediately === true) {
                 const client = await this.getServiceClient(service.name)
 
                 await this.userAccountRepository.update({
-                    userId: request.userId,
-                    serviceId: request.serviceId,
+                    userId: existingUserServiceAccount.userId,
+                    serviceId: existingUserServiceAccount.serviceId,
                     status: UserAccountStatus.cancelling,
                 })
 
@@ -271,8 +268,8 @@ export class SubscriptionService {
                 }
 
                 await this.userAccountRepository.update({
-                    userId: request.userId,
-                    serviceId: request.serviceId,
+                    userId: existingUserServiceAccount.userId,
+                    serviceId: existingUserServiceAccount.serviceId,
                     status: UserAccountStatus.cancelled,
                     cancelledAt: new Date(),
                     lastError: null,
@@ -285,8 +282,8 @@ export class SubscriptionService {
 
             if (existingUserServiceAccount.autoRenew) {
                 const updatedUserServiceAccount = await this.userAccountRepository.update({
-                    userId: request.userId,
-                    serviceId: request.serviceId,
+                    userId: existingUserServiceAccount.userId,
+                    serviceId: existingUserServiceAccount.serviceId,
                     autoRenew: false,
                 })
 
@@ -314,8 +311,8 @@ export class SubscriptionService {
             })
 
             await this.markSubscriptionFailed(
-                request.userId,
-                request.serviceId,
+                existingUserServiceAccount.userId,
+                existingUserServiceAccount.serviceId,
                 this.toSafeErrorMessage(error),
                 FailedOperation.cancellation
             )
@@ -356,27 +353,59 @@ export class SubscriptionService {
         this.logger.log(`Disabled ${accountsToDisable.length} subscription(s) for user ${userId}`)
     }
 
-    async disable(request: SubscriptionDisableRequestDto): Promise<boolean> {
-        return this.updateUserDisabledStatus(request.userId, request.serviceId, UserAccountStatus.disabled)
-    }
-
-    async enable(request: SubscriptionDisableRequestDto): Promise<boolean> {
-        return this.updateUserDisabledStatus(request.userId, request.serviceId, UserAccountStatus.active)
-    }
-
-    async renew(userId: string, serviceId: number): Promise<UserAccountModel> {
-        const account = await this.userAccountRepository.find(userId, serviceId)
+    async getById(subscriptionId: string): Promise<UserAccountModel> {
+        const account = await this.userAccountRepository.findById(subscriptionId)
 
         if (!account) {
-            throw new BadRequestException('Subscription not found')
+            throw new NotFoundException('Subscription not found')
         }
+
+        return account
+    }
+
+    /**
+     * Applies a partial state update (policy object) to a subscription.
+     * - `enabled` transitions the account between active and disabled (including the external service account).
+     * - `autoRenew` toggles automatic renewal.
+     */
+    async update(subscriptionId: string, patch: SubscriptionPatchRequestDto): Promise<UserAccountModel> {
+        if (patch.enabled === undefined && patch.autoRenew === undefined) {
+            throw new BadRequestException('No fields provided to update')
+        }
+
+        const account = await this.getById(subscriptionId)
+
+        if (patch.enabled !== undefined) {
+            const status = patch.enabled ? UserAccountStatus.active : UserAccountStatus.disabled
+            await this.updateUserDisabledStatus(account.userId, account.serviceId, status)
+        }
+
+        if (patch.autoRenew !== undefined) {
+            const updated = await this.userAccountRepository.update({
+                userId: account.userId,
+                serviceId: account.serviceId,
+                autoRenew: patch.autoRenew,
+            })
+
+            if (!updated) {
+                throw new BadRequestException('Failed to update auto-renew')
+            }
+
+            this.logger.log(`Admin set autoRenew=${patch.autoRenew} for subscription '${subscriptionId}'`)
+        }
+
+        return this.getById(subscriptionId)
+    }
+
+    async renew(subscriptionId: string): Promise<UserAccountModel> {
+        const account = await this.getById(subscriptionId)
 
         const baseDate = account.expiresAt && account.expiresAt.getTime() > Date.now() ? account.expiresAt : new Date()
         const newExpiresAt = this.getDefaultExpirationDate(baseDate)
 
         const updated = await this.userAccountRepository.update({
-            userId,
-            serviceId,
+            userId: account.userId,
+            serviceId: account.serviceId,
             expiresAt: newExpiresAt,
             lastError: null,
         })
@@ -386,26 +415,8 @@ export class SubscriptionService {
         }
 
         this.logger.log(
-            `Admin renewed subscription for user '${userId}' on service '${serviceId}'. New expiry: ${newExpiresAt.toISOString()}`
+            `Admin renewed subscription '${subscriptionId}' for user '${account.userId}' on service '${account.serviceId}'. New expiry: ${newExpiresAt.toISOString()}`
         )
-
-        return updated
-    }
-
-    async setAutoRenew(userId: string, serviceId: number, autoRenew: boolean): Promise<UserAccountModel> {
-        const account = await this.userAccountRepository.find(userId, serviceId)
-
-        if (!account) {
-            throw new BadRequestException('Subscription not found')
-        }
-
-        const updated = await this.userAccountRepository.update({ userId, serviceId, autoRenew })
-
-        if (!updated) {
-            throw new BadRequestException('Failed to update auto-renew')
-        }
-
-        this.logger.log(`Admin set autoRenew=${autoRenew} for user '${userId}' on service '${serviceId}'`)
 
         return updated
     }
@@ -747,14 +758,14 @@ export class SubscriptionService {
      *                              is provisioning (use `subscribe()` instead)
      * @throws ConflictException    if the account is not in a failed state
      */
-    async retryFailedOperation(request: SubscriptionDisableRequestDto, currentUserId: string): Promise<boolean> {
+    async retryFailedOperation(userId: string, serviceId: number, currentUserId: string): Promise<boolean> {
         const currentUser = await this.userService.getUserById({ userId: currentUserId })
 
         if (!currentUser?.isAdmin) {
             throw new BadRequestException('Unauthorized: admin access required to retry a failed operation')
         }
 
-        const existingAccount = await this.userAccountRepository.find(request.userId, request.serviceId)
+        const existingAccount = await this.userAccountRepository.find(userId, serviceId)
 
         if (!existingAccount || existingAccount.status !== UserAccountStatus.failed) {
             throw new ConflictException('Account is not in a failed state')
@@ -764,13 +775,13 @@ export class SubscriptionService {
             throw new BadRequestException('Use subscribe() to retry failed provisioning')
         }
 
-        const user = await this.userService.getUserById({ userId: request.userId })
+        const user = await this.userService.getUserById({ userId })
 
         if (!user) {
             throw new BadRequestException('User does not exist')
         }
 
-        const service = await this.serviceRepository.findById(request.serviceId)
+        const service = await this.serviceRepository.findById(serviceId)
 
         if (!service) {
             throw new BadRequestException('Service does not exist')
@@ -803,8 +814,8 @@ export class SubscriptionService {
                 }
 
                 await this.userAccountRepository.update({
-                    userId: request.userId,
-                    serviceId: request.serviceId,
+                    userId,
+                    serviceId,
                     status: UserAccountStatus.cancelled,
                     cancelledAt: new Date(),
                     lastError: null,
@@ -833,8 +844,8 @@ export class SubscriptionService {
                 }
 
                 await this.userAccountRepository.update({
-                    userId: request.userId,
-                    serviceId: request.serviceId,
+                    userId,
+                    serviceId,
                     status: UserAccountStatus.expired,
                     lastError: null,
                     failedAt: null,
@@ -853,8 +864,8 @@ export class SubscriptionService {
             // FailedOperation.sync — external account was not found during sync
             if (externalIsGone) {
                 await this.userAccountRepository.update({
-                    userId: request.userId,
-                    serviceId: request.serviceId,
+                    userId,
+                    serviceId,
                     status: UserAccountStatus.cancelled,
                     cancelledAt: new Date(),
                     lastError: null,
@@ -867,8 +878,8 @@ export class SubscriptionService {
                 )
             } else {
                 await this.userAccountRepository.update({
-                    userId: request.userId,
-                    serviceId: request.serviceId,
+                    userId,
+                    serviceId,
                     status: UserAccountStatus.active,
                     lastError: null,
                     failedAt: null,
