@@ -1,8 +1,8 @@
-import { Body, Controller, Get, Inject, Put, Query } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Query } from '@nestjs/common'
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
-import { ServiceActionRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
+import { ServicePatchRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 import { ApplicationClientNames } from '@/types/enums'
@@ -23,23 +23,20 @@ export class ServiceController {
         return services.map((s) => ({ id: s.id, name: s.name, enabled: s.enabled, url: s.url }))
     }
 
-    @Put(routes.services.subPath.enable)
+    @Patch(routes.services.subPath.update)
     @AdminRoute()
-    @ApiOperation({ summary: 'Enable a service (admin only)' })
-    @ApiBody({ type: ServiceActionRequestDto })
+    @ApiOperation({ summary: 'Update service state — enabled (admin only)' })
+    @ApiBody({ type: ServicePatchRequestDto })
     @ApiOkResponse({ type: ServiceResponseDto })
-    async enable(@Body() request: ServiceActionRequestDto): Promise<ServiceResponseDto> {
-        const service = await this.serviceManagementService.enable(request.name as ApplicationClientNames)
-        return { id: service.id, name: service.name, enabled: service.enabled, url: service.url }
-    }
+    async update(@Param('name') name: string, @Body() request: ServicePatchRequestDto): Promise<ServiceResponseDto> {
+        if (request.enabled === undefined) {
+            throw new BadRequestException('No fields provided to update')
+        }
 
-    @Put(routes.services.subPath.disable)
-    @AdminRoute()
-    @ApiOperation({ summary: 'Disable a service (admin only)' })
-    @ApiBody({ type: ServiceActionRequestDto })
-    @ApiOkResponse({ type: ServiceResponseDto })
-    async disable(@Body() request: ServiceActionRequestDto): Promise<ServiceResponseDto> {
-        const service = await this.serviceManagementService.disable(request.name as ApplicationClientNames)
+        const service = request.enabled
+            ? await this.serviceManagementService.enable(name as ApplicationClientNames)
+            : await this.serviceManagementService.disable(name as ApplicationClientNames)
+
         return { id: service.id, name: service.name, enabled: service.enabled, url: service.url }
     }
 }

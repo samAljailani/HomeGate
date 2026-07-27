@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
+import { BadRequestException } from '@nestjs/common'
 import { ServiceController } from '@/api/controllers/service.controller'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
-import { ServiceActionRequestDto } from '@/types/dtos/serviceDto'
 import { createServiceFixture } from '../../fixtures/service.stub'
 import { ApplicationClientNames } from '@/types/enums'
 
@@ -55,55 +55,44 @@ describe('ServiceController', () => {
 
     // #endregion list
 
-    // #region enable
+    // #region update
 
-    describe('enable', () => {
-        const request: ServiceActionRequestDto = { name: ApplicationClientNames.jellyfin }
+    describe('update', () => {
+        const name = ApplicationClientNames.Jellyfin
 
-        it('calls serviceManagementService.enable with the name', async () => {
+        it('enables the service when enabled is true', async () => {
             const svc = createServiceFixture({ enabled: true })
             serviceManagementMock.enable.mockResolvedValue(svc)
 
-            await controller.enable(request)
+            await controller.update(name, { enabled: true })
 
-            expect(serviceManagementMock.enable).toHaveBeenCalledWith(ApplicationClientNames.jellyfin)
+            expect(serviceManagementMock.enable).toHaveBeenCalledWith(ApplicationClientNames.Jellyfin)
+            expect(serviceManagementMock.disable).not.toHaveBeenCalled()
+        })
+
+        it('disables the service when enabled is false', async () => {
+            const svc = createServiceFixture({ enabled: false })
+            serviceManagementMock.disable.mockResolvedValue(svc)
+
+            await controller.update(name, { enabled: false })
+
+            expect(serviceManagementMock.disable).toHaveBeenCalledWith(ApplicationClientNames.Jellyfin)
+            expect(serviceManagementMock.enable).not.toHaveBeenCalled()
         })
 
         it('returns the mapped DTO', async () => {
             const svc = createServiceFixture({ id: 1, enabled: true })
             serviceManagementMock.enable.mockResolvedValue(svc)
 
-            const result = await controller.enable(request)
+            const result = await controller.update(name, { enabled: true })
 
             expect(result).toEqual({ id: 1, name: svc.name, enabled: true, url: null })
         })
-    })
 
-    // #endregion enable
-
-    // #region disable
-
-    describe('disable', () => {
-        const request: ServiceActionRequestDto = { name: ApplicationClientNames.jellyfin }
-
-        it('calls serviceManagementService.disable with the name', async () => {
-            const svc = createServiceFixture({ enabled: false })
-            serviceManagementMock.disable.mockResolvedValue(svc)
-
-            await controller.disable(request)
-
-            expect(serviceManagementMock.disable).toHaveBeenCalledWith(ApplicationClientNames.jellyfin)
-        })
-
-        it('returns the mapped DTO', async () => {
-            const svc = createServiceFixture({ id: 1, enabled: false })
-            serviceManagementMock.disable.mockResolvedValue(svc)
-
-            const result = await controller.disable(request)
-
-            expect(result).toEqual({ id: 1, name: svc.name, enabled: false, url: null })
+        it('throws BadRequestException when no fields provided', async () => {
+            await expect(controller.update(name, {})).rejects.toThrow(BadRequestException)
         })
     })
 
-    // #endregion disable
+    // #endregion update
 })
