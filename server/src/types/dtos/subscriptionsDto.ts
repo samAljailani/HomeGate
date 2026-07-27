@@ -10,6 +10,7 @@ export { UserAccountStatus }
 export class SubscriptionParamsDto {
     @ApiProperty({ type: String, format: 'uuid' })
     @IsUUID()
+    @IsNotEmpty()
     id: string
 }
 

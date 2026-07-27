@@ -10,6 +10,7 @@ export class UserFindOptions {
 export class UserParamsDto {
     @ApiProperty({ type: String, format: 'uuid' })
     @IsUUID()
+    @IsNotEmpty()
     id: string
 }
 

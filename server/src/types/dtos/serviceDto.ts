@@ -7,7 +7,6 @@ export class ServiceParamsDto {
     @IsNotEmpty()
     name: string
 }
-
 export class ServiceLoadRequestDto {
     @ApiProperty({ type: Number })
     @IsInt()

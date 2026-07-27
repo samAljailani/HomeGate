@@ -1,10 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type, Transform } from 'class-transformer'
-import { IsBoolean, IsEmail, IsInt, IsOptional, IsUUID, Min } from 'class-validator'
+import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsUUID, Min } from 'class-validator'
 
 export class InviteParamsDto {
     @ApiProperty({ type: String, format: 'uuid' })
     @IsUUID()
+    @IsNotEmpty()
     id: string
 }
 

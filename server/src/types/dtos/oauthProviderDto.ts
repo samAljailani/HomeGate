@@ -7,6 +7,7 @@ export class OAuthProviderParamsDto {
     @ApiProperty({ type: Number })
     @Type(() => Number)
     @IsInt()
+    @IsNotEmpty()
     id: number
 }
 
