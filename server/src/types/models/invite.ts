@@ -1,4 +1,10 @@
-import { InviteRevokedReason } from '@prisma/generated'
+export const InviteRevokedReason = {
+    ADMIN: 'ADMIN',
+    AUTO_FAILED_ATTEMPTS: 'AUTO_FAILED_ATTEMPTS',
+    AUTO_SUPERSEDED: 'AUTO_SUPERSEDED',
+} as const
+
+export type InviteRevokedReason = (typeof InviteRevokedReason)[keyof typeof InviteRevokedReason]
 
 export type InviteModel = {
     id: string

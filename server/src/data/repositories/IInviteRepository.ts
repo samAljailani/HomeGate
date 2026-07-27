@@ -1,5 +1,4 @@
-import { CreateInviteModel, InviteModel } from '@/types/models/invite'
-import { InviteRevokedReason, Prisma } from '@prisma/generated'
+import { CreateInviteModel, InviteModel, InviteRevokedReason } from '@/types/models/invite'
 
 export const IInviteRepository = Symbol('IInviteRepository')
 
@@ -14,12 +13,7 @@ export interface IInviteRepository {
      * invite is still pending (not used, not revoked, not expired), which prevents a
      * double-spend race. Returns the claimed invite, or null if it was no longer pending.
      */
-    claim(id: string, usedByUserId: string, tx?: Prisma.TransactionClient): Promise<InviteModel | null>
+    claim(id: string, usedByUserId: string): Promise<InviteModel | null>
     incrementFailedAttempts(id: string): Promise<number>
-    revoke(
-        id: string,
-        reason: InviteRevokedReason,
-        revokedByUserId?: string | null,
-        tx?: Prisma.TransactionClient
-    ): Promise<InviteModel | null>
+    revoke(id: string, reason: InviteRevokedReason, revokedByUserId?: string | null): Promise<InviteModel | null>
 }

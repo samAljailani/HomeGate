@@ -1,4 +1,4 @@
-import { OAuthUserProfileDto } from '@/types/dtos/authDto'
+import { OAuthUserProfileDto, SignUpRequestDto } from '@/types/dtos/authDto'
 import { OAuthAuthModel } from '@/types/models/oauthAuth'
 import { Injectable, Inject, forwardRef, BadRequestException, InternalServerErrorException } from '@nestjs/common'
 import { UserService } from './user.service'
@@ -7,7 +7,6 @@ import { OAuthProviderModel } from '@/types/models/oauthProvider'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { InviteService } from './invite.service'
-import { PrismaProvider } from '@/infrastructure/prisma.provider'
 
 @Injectable()
 export class AuthService extends BaseService {
@@ -15,8 +14,7 @@ export class AuthService extends BaseService {
         @Inject(forwardRef(() => UserService)) private userService: UserService,
         @Inject(LoggingProvider) logger: LoggingProvider,
         @Inject(IOAuthProviderRepository) private oauthProviderRepository: IOAuthProviderRepository,
-        @Inject(InviteService) private inviteService: InviteService,
-        @Inject(PrismaProvider) private db: PrismaProvider
+        @Inject(InviteService) private inviteService: InviteService
     ) {
         super(logger)
     }
@@ -80,8 +78,12 @@ export class AuthService extends BaseService {
         }
     }
 
-    async signUp(token: string, request: OAuthUserProfileDto): Promise<OAuthAuthModel> {
-        const invite = await this.inviteService.validateToken(token, request.email)
+    /**
+     * Redeem an invite and provision the account. The OAuth identity is intentionally not
+     * created here — it is linked on the user's next sign-in via {@link authorize}.
+     */
+    async signUp(request: SignUpRequestDto): Promise<void> {
+        const invite = await this.inviteService.validateToken(request.inviteToken, request.email)
 
         const existing = await this.userService.getUserByEmail(request.email)
 
@@ -90,28 +92,15 @@ export class AuthService extends BaseService {
             throw new BadRequestException('An account with this email already exists.')
         }
 
-        const oauthProvider = await this.resolveOAuthProvider(request)
+        const created = await this.userService.createUser({ email: request.email, firstName: '', lastName: '' })
 
-        if (oauthProvider == null) {
-            throw new InternalServerErrorException('OAuth provider is unavailable.')
+        if (created == null || !created.id) {
+            throw new InternalServerErrorException('Failed to create user account.')
         }
 
-        const user = await this.db.$transaction(async (tx) => {
-            const created = await this.userService.createUserWithOAuthIdentity(
-                { email: request.email, firstName: request.firstName ?? '', lastName: request.lastName ?? '' },
-                oauthProvider.id,
-                request.providerAccountId,
-                tx
-            )
+        await this.inviteService.claimToken(invite.id, created.id)
 
-            await this.inviteService.claimToken(invite.id, created.id, tx)
-
-            return created
-        })
-
-        this.logger.log(`User ${user.username} registered via invite ${invite.id}`)
-
-        return { id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: oauthProvider.id }
+        this.logger.log(`User ${created.username} registered via invite ${invite.id}`)
     }
 
     async signOut(userId: string | undefined, username?: string | undefined): Promise<void> {

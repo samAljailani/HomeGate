@@ -6,9 +6,8 @@ import {
     ConflictException,
     ForbiddenException,
 } from '@nestjs/common'
-import { InviteRevokedReason, Prisma } from '@prisma/generated'
 import { IInviteRepository } from '@/data/repositories'
-import { InviteModel } from '@/types/models/invite'
+import { InviteModel, InviteRevokedReason } from '@/types/models/invite'
 import { CreateInviteRequestDto, CreateInviteResponseDto, InviteResponseDto } from '@/types/dtos/inviteDto'
 import { CryptographyProvider } from '@/infrastructure/cryptography.provider'
 import { BaseService } from './base.service'
@@ -138,12 +137,11 @@ export class InviteService extends BaseService {
     }
 
     /**
-     * Atomically claim a validated invite for a user. Intended to run inside the same
-     * transaction that creates the user so consumption and account creation are all-or-nothing.
-     * Throws if the invite is no longer pending (lost double-spend race).
+     * Atomically claim a validated invite for a user. The repository guards against a
+     * double-spend race and returns null if the invite is no longer pending.
      */
-    async claimToken(inviteId: string, userId: string, tx?: Prisma.TransactionClient): Promise<InviteModel> {
-        const claimed = await this.inviteRepository.claim(inviteId, userId, tx)
+    async claimToken(inviteId: string, userId: string): Promise<InviteModel> {
+        const claimed = await this.inviteRepository.claim(inviteId, userId)
 
         if (claimed == null) {
             throw new ConflictException('Invite token has already been used.')

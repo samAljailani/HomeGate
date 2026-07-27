@@ -12,7 +12,6 @@ import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserServiceMock } from '../../mocks/user.service.mock'
 import { createOAuthProviderRepositoryMock } from '../../mocks/oauthProvider.repository.mock'
 import { createInviteServiceMock } from '../../mocks/invite.service.mock'
-import { PrismaProvider } from '@/infrastructure/prisma.provider'
 
 describe('AuthService', () => {
     let service: AuthService
@@ -34,10 +33,6 @@ describe('AuthService', () => {
                 { provide: LoggingProvider, useValue: loggerMock },
                 { provide: IOAuthProviderRepository, useValue: oauthProviderRepositoryMock },
                 { provide: InviteService, useValue: inviteServiceMock },
-                {
-                    provide: PrismaProvider,
-                    useValue: { $transaction: jest.fn(async (cb: (tx: unknown) => unknown) => cb({})) },
-                },
             ],
         }).compile()
 

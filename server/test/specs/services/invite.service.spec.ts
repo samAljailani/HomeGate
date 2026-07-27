@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { ConflictException, ForbiddenException, NotFoundException, UnprocessableEntityException } from '@nestjs/common'
-import { InviteRevokedReason } from '@prisma/generated'
 import { InviteService } from '@/api/services/invite.service'
 import { IInviteRepository } from '@/data/repositories/IInviteRepository'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { CryptographyProvider } from '@/infrastructure/cryptography.provider'
 import { UserService } from '@/api/services/user.service'
 import { MAX_INVITE_FAILED_ATTEMPTS } from '@/types/invite.constants'
+import { InviteRevokedReason } from '@/types/models/invite'
 import { createInviteRepositoryMock } from '../../mocks/invite.repository.mock'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserServiceMock } from '../../mocks/user.service.mock'
@@ -218,7 +218,7 @@ describe('InviteService', () => {
             inviteRepositoryMock.claim.mockResolvedValue(claimed)
 
             await expect(service.claimToken('invite-id', 'user-id')).resolves.toEqual(claimed)
-            expect(inviteRepositoryMock.claim).toHaveBeenCalledWith('invite-id', 'user-id', undefined)
+            expect(inviteRepositoryMock.claim).toHaveBeenCalledWith('invite-id', 'user-id')
         })
     })
 })

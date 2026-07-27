@@ -92,9 +92,11 @@ export class AuthController {
 
         let response
         try {
-            response = transaction
-                ? await this.authService.signUp(transaction.inviteToken, body)
-                : await this.authService.authorize(body)
+            if (transaction) {
+                await this.authService.signUp({ inviteToken: transaction.inviteToken, email: body.email })
+            }
+
+            response = await this.authService.authorize(body)
         } catch (error) {
             this.logger.error('OAuth callback failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,

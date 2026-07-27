@@ -178,21 +178,12 @@ describe('AuthController', () => {
 
     describe('googleAuthRedirect (signup flow)', () => {
         beforeEach(() => {
+            expressRequestMock.user = createOAuthUserProfileFixture()
             expressRequestMock.session.oauthTransaction = {
                 inviteToken: 'raw-token',
                 inviteId: 'invite-id-123',
                 expiresAt: new Date(Date.now() + 86400_000),
             }
-        })
-
-        describe('when signUp returns null', () => {
-            it('redirects to sign-in with auth_failed error', async () => {
-                authServiceMock.signUp.mockResolvedValue(null as any)
-
-                await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
-
-                expect(expressResponseMock.redirect).toHaveBeenCalledWith(expect.stringContaining('error=auth_failed'))
-            })
         })
 
         describe('when signUp throws', () => {
@@ -213,28 +204,43 @@ describe('AuthController', () => {
             })
         })
 
-        describe('when signUp succeeds', () => {
-            it('calls signUp with the invite token from the session', async () => {
-                expressRequestMock.user = createOAuthUserProfileFixture()
-                authServiceMock.signUp.mockResolvedValue(createOAuthAuthResultFixture())
+        describe('when signUp succeeds but authorize returns null', () => {
+            it('redirects to sign-in with auth_failed error', async () => {
+                authServiceMock.signUp.mockResolvedValue(undefined)
+                authServiceMock.authorize.mockResolvedValue(null)
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
-                expect(authServiceMock.signUp).toHaveBeenCalledWith('raw-token', expressRequestMock.user)
+                expect(expressResponseMock.redirect).toHaveBeenCalledWith(expect.stringContaining('error=auth_failed'))
+            })
+        })
+
+        describe('when signUp and authorize succeed', () => {
+            it('calls signUp with the invite token from the session and the OAuth email', async () => {
+                authServiceMock.signUp.mockResolvedValue(undefined)
+                authServiceMock.authorize.mockResolvedValue(createOAuthAuthResultFixture())
+
+                await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
+
+                expect(authServiceMock.signUp).toHaveBeenCalledWith({
+                    inviteToken: 'raw-token',
+                    email: expressRequestMock.user.email,
+                })
             })
 
-            it('does not call authorize', async () => {
-                authServiceMock.signUp.mockResolvedValue(createOAuthAuthResultFixture())
+            it('calls authorize with the OAuth profile to link the identity', async () => {
+                authServiceMock.signUp.mockResolvedValue(undefined)
+                authServiceMock.authorize.mockResolvedValue(createOAuthAuthResultFixture())
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
-                expect(authServiceMock.authorize).not.toHaveBeenCalled()
+                expect(authServiceMock.authorize).toHaveBeenCalledWith(expressRequestMock.user)
             })
 
             it('regenerates session and sets user data', async () => {
-                expressRequestMock.user = createOAuthUserProfileFixture()
                 const result = createOAuthAuthResultFixture()
-                authServiceMock.signUp.mockResolvedValue(result)
+                authServiceMock.signUp.mockResolvedValue(undefined)
+                authServiceMock.authorize.mockResolvedValue(result)
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
@@ -247,7 +253,8 @@ describe('AuthController', () => {
             })
 
             it('redirects to home', async () => {
-                authServiceMock.signUp.mockResolvedValue(createOAuthAuthResultFixture())
+                authServiceMock.signUp.mockResolvedValue(undefined)
+                authServiceMock.authorize.mockResolvedValue(createOAuthAuthResultFixture())
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 

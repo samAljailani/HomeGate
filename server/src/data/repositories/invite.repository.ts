@@ -4,8 +4,7 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { BaseRepository } from './base.repository'
 import { IInviteRepository } from './IInviteRepository'
 import type { InviteModel as PrismaInvite } from '@prisma/generated/models'
-import { InviteRevokedReason, Prisma } from '@prisma/generated'
-import { CreateInviteModel, InviteModel } from '@/types/models/invite'
+import { CreateInviteModel, InviteModel, InviteRevokedReason } from '@/types/models/invite'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
 
@@ -88,10 +87,9 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
         }
     }
 
-    async claim(id: string, usedByUserId: string, tx?: Prisma.TransactionClient): Promise<InviteModel | null> {
-        const client = tx ?? this.db
+    async claim(id: string, usedByUserId: string): Promise<InviteModel | null> {
         try {
-            const result = await client.invite.updateMany({
+            const result = await this.db.invite.updateMany({
                 where: {
                     id,
                     usedAt: null,
@@ -105,7 +103,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
                 return null
             }
 
-            const invite = await client.invite.findUnique({ where: { id } })
+            const invite = await this.db.invite.findUnique({ where: { id } })
             return invite ? this.mapInvite(invite) : null
         } catch (error) {
             this.logger.error(`claim failed for id: ${id}`, {
@@ -133,12 +131,10 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
     async revoke(
         id: string,
         reason: InviteRevokedReason,
-        revokedByUserId?: string | null,
-        tx?: Prisma.TransactionClient
+        revokedByUserId?: string | null
     ): Promise<InviteModel | null> {
-        const client = tx ?? this.db
         try {
-            const invite = await client.invite.update({
+            const invite = await this.db.invite.update({
                 where: { id },
                 data: { revokedAt: new Date(), revokedReason: reason, revokedByUserId: revokedByUserId ?? null },
             })
