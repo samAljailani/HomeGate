@@ -7,6 +7,12 @@ export class UserFindOptions {
     withActive?: boolean
 }
 
+export class UserParamsDto {
+    @ApiProperty({ type: String, format: 'uuid' })
+    @IsUUID()
+    id: string
+}
+
 export class UserLoadRequestDto {
     @ApiProperty({ type: String })
     @IsUUID()
@@ -88,7 +94,7 @@ export class UserPatchRequestDto {
     enabled?: boolean
 }
 
-export class UserDeleteQueryDto {
+export class UserDeleteRequestDto {
     @ApiPropertyOptional({
         type: Boolean,
         description: 'Permanently delete the account. Ignored for non-admin callers.',

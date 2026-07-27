@@ -60,7 +60,7 @@ describe('OAuthProviderController', () => {
             const provider = createOAuthProviderFixture({ id: 1, enabled: true })
             oauthProviderManagementMock.updateEnabledById.mockResolvedValue(provider)
 
-            await controller.update(1, { enabled: true })
+            await controller.update({ id: 1 }, { enabled: true })
 
             expect(oauthProviderManagementMock.updateEnabledById).toHaveBeenCalledWith(1, true)
         })
@@ -69,7 +69,7 @@ describe('OAuthProviderController', () => {
             const provider = createOAuthProviderFixture({ id: 1, enabled: false })
             oauthProviderManagementMock.updateEnabledById.mockResolvedValue(provider)
 
-            await controller.update(1, { enabled: false })
+            await controller.update({ id: 1 }, { enabled: false })
 
             expect(oauthProviderManagementMock.updateEnabledById).toHaveBeenCalledWith(1, false)
         })
@@ -78,13 +78,13 @@ describe('OAuthProviderController', () => {
             const provider = createOAuthProviderFixture({ id: 1, enabled: true })
             oauthProviderManagementMock.updateEnabledById.mockResolvedValue(provider)
 
-            const result = await controller.update(1, { enabled: true })
+            const result = await controller.update({ id: 1 }, { enabled: true })
 
             expect(result).toEqual({ id: 1, name: provider.name, enabled: true })
         })
 
         it('throws BadRequestException when no fields provided', async () => {
-            await expect(controller.update(1, {})).rejects.toThrow(BadRequestException)
+            await expect(controller.update({ id: 1 }, {})).rejects.toThrow(BadRequestException)
         })
     })
 

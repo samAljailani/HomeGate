@@ -64,7 +64,7 @@ describe('ServiceController', () => {
             const svc = createServiceFixture({ enabled: true })
             serviceManagementMock.enable.mockResolvedValue(svc)
 
-            await controller.update(name, { enabled: true })
+            await controller.update({ name }, { enabled: true })
 
             expect(serviceManagementMock.enable).toHaveBeenCalledWith(ApplicationClientNames.Jellyfin)
             expect(serviceManagementMock.disable).not.toHaveBeenCalled()
@@ -74,7 +74,7 @@ describe('ServiceController', () => {
             const svc = createServiceFixture({ enabled: false })
             serviceManagementMock.disable.mockResolvedValue(svc)
 
-            await controller.update(name, { enabled: false })
+            await controller.update({ name }, { enabled: false })
 
             expect(serviceManagementMock.disable).toHaveBeenCalledWith(ApplicationClientNames.Jellyfin)
             expect(serviceManagementMock.enable).not.toHaveBeenCalled()
@@ -84,13 +84,13 @@ describe('ServiceController', () => {
             const svc = createServiceFixture({ id: 1, enabled: true })
             serviceManagementMock.enable.mockResolvedValue(svc)
 
-            const result = await controller.update(name, { enabled: true })
+            const result = await controller.update({ name }, { enabled: true })
 
             expect(result).toEqual({ id: 1, name: svc.name, enabled: true, url: null })
         })
 
         it('throws BadRequestException when no fields provided', async () => {
-            await expect(controller.update(name, {})).rejects.toThrow(BadRequestException)
+            await expect(controller.update({ name }, {})).rejects.toThrow(BadRequestException)
         })
     })
 

@@ -5,7 +5,6 @@ import {
     Get,
     Inject,
     Param,
-    ParseUUIDPipe,
     Patch,
     Post,
     Query,
@@ -27,8 +26,9 @@ import { AdminRoute } from '@/decorators'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import {
     SubscriptionCreateRequestDto,
-    SubscriptionDeleteQueryDto,
-    SubscriptionListQueryDto,
+    SubscriptionDeleteRequestDto,
+    SubscriptionListRequestDto,
+    SubscriptionParamsDto,
     SubscriptionPatchRequestDto,
 } from '@/types/dtos/subscriptionsDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
@@ -65,7 +65,7 @@ export class SubscriptionController {
     @AdminRoute()
     @ApiOperation({ summary: 'List subscriptions, optionally filtered by user (admin only)' })
     @ApiOkResponse({ description: 'List of subscriptions' })
-    async listAll(@Query() query: SubscriptionListQueryDto) {
+    async listAll(@Query() query: SubscriptionListRequestDto) {
         if (query.userId) {
             return this.subscriptionService.listByUser(query.userId, query.take, query.skip)
         }
@@ -78,8 +78,8 @@ export class SubscriptionController {
     @ApiOperation({ summary: 'Get a subscription by id (admin only)' })
     @ApiOkResponse({ description: 'The subscription' })
     @ApiNotFoundResponse({ description: 'Subscription not found' })
-    async getById(@Param('id', ParseUUIDPipe) id: string) {
-        return this.subscriptionService.getById(id)
+    async getById(@Param() params: SubscriptionParamsDto) {
+        return this.subscriptionService.getById(params.id)
     }
 
     @Patch(routes.subscriptions.subPath.update)
@@ -91,8 +91,8 @@ export class SubscriptionController {
     @ApiBadRequestResponse({ description: 'No fields provided or invalid request' })
     @ApiNotFoundResponse({ description: 'Subscription not found' })
     @ApiConflictResponse({ description: 'Subscription is not in a valid state for the transition' })
-    async update(@Param('id', ParseUUIDPipe) id: string, @Body() request: SubscriptionPatchRequestDto) {
-        return this.subscriptionService.update(id, request)
+    async update(@Param() params: SubscriptionParamsDto, @Body() request: SubscriptionPatchRequestDto) {
+        return this.subscriptionService.update(params.id, request)
     }
 
     @Post(routes.subscriptions.subPath.renew)
@@ -100,8 +100,8 @@ export class SubscriptionController {
     @ApiOperation({ summary: 'Renew a subscription by 30 days (admin only)' })
     @ApiOkResponse({ description: 'Subscription renewed successfully' })
     @ApiNotFoundResponse({ description: 'Subscription not found' })
-    async renew(@Param('id', ParseUUIDPipe) id: string) {
-        return this.subscriptionService.renew(id)
+    async renew(@Param() params: SubscriptionParamsDto) {
+        return this.subscriptionService.renew(params.id)
     }
 
     @Delete(routes.subscriptions.subPath.delete)
@@ -113,10 +113,10 @@ export class SubscriptionController {
     @ApiConflictResponse({ description: 'User is not subscribed to the service' })
     @ApiServiceUnavailableResponse({ description: 'Failed to delete external account' })
     async delete(
-        @Param('id', ParseUUIDPipe) id: string,
-        @Query() query: SubscriptionDeleteQueryDto,
+        @Param() params: SubscriptionParamsDto,
+        @Query() query: SubscriptionDeleteRequestDto,
         @Request() req: ExpressRequest
     ) {
-        return this.subscriptionService.delete(id, req.session.userId!, query.immediate)
+        return this.subscriptionService.delete(params.id, req.session.userId!, query.immediate)
     }
 }

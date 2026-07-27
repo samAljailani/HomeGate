@@ -1,6 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { Type } from 'class-transformer'
 import { OAuthProviderName } from '@/types/models/oauthProvider'
 import { IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional } from 'class-validator'
+
+export class OAuthProviderParamsDto {
+    @ApiProperty({ type: Number })
+    @Type(() => Number)
+    @IsInt()
+    id: number
+}
 
 export class OAuthProviderLoadRequestDto {
     @ApiProperty({ type: Number })

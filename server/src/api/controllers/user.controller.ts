@@ -7,7 +7,6 @@ import {
     Inject,
     NotFoundException,
     Param,
-    ParseUUIDPipe,
     Patch,
     Query,
     Request,
@@ -18,7 +17,8 @@ import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
 import { UserService } from '@/api/services/user.service'
 import {
-    UserDeleteQueryDto,
+    UserDeleteRequestDto,
+    UserParamsDto,
     UserPatchRequestDto,
     UserResponseForAdminDto,
 } from '@/types/dtos/userDto'
@@ -42,9 +42,9 @@ export class UserController {
     @AdminRoute()
     @ApiOperation({ summary: 'Get a user by ID' })
     @ApiOkResponse({ type: UserResponseForAdminDto })
-    async getUser(@Param('id', ParseUUIDPipe) id: string): Promise<UserResponseForAdminDto> {
-        const user = await this.userService.getUserByIdForAdmin(id)
-        if (!user) throw new NotFoundException(`User '${id}' not found`)
+    async getUser(@Param() params: UserParamsDto): Promise<UserResponseForAdminDto> {
+        const user = await this.userService.getUserByIdForAdmin(params.id)
+        if (!user) throw new NotFoundException(`User '${params.id}' not found`)
         return user
     }
 
@@ -53,13 +53,13 @@ export class UserController {
     @ApiOperation({ summary: 'Update a user account state — enabled (admin only)' })
     @ApiBody({ type: UserPatchRequestDto })
     @ApiOkResponse({ description: 'User updated successfully' })
-    async updateUser(@Param('id', ParseUUIDPipe) id: string, @Body() request: UserPatchRequestDto): Promise<void> {
+    async updateUser(@Param() params: UserParamsDto, @Body() request: UserPatchRequestDto): Promise<void> {
         if (request.enabled === undefined) return
 
         if (request.enabled) {
-            await this.userService.enableUser(id)
+            await this.userService.enableUser(params.id)
         } else {
-            await this.userService.disableUser(id)
+            await this.userService.disableUser(params.id)
         }
     }
 
@@ -69,8 +69,8 @@ export class UserController {
     @ApiOkResponse({ description: 'User deleted successfully' })
     @ApiForbiddenResponse({ description: 'Insufficient permissions' })
     async deleteUser(
-        @Param('id', ParseUUIDPipe) id: string,
-        @Query() query: UserDeleteQueryDto,
+        @Param() params: UserParamsDto,
+        @Query() query: UserDeleteRequestDto,
         @Request() req: ExpressRequest
     ): Promise<void> {
         const sessionUserId = req.session.userId!
@@ -78,12 +78,12 @@ export class UserController {
 
         // Non-admins may only soft-delete their own account; the hard flag is ignored for them.
         if (query.hard && sessionIsAdmin) {
-            await this.userService.hardDeleteUser(id)
+            await this.userService.hardDeleteUser(params.id)
             return
         }
 
-        this.assertSelfOrAdmin(sessionUserId, id, sessionIsAdmin)
-        await this.userService.softDeleteUser(id)
+        this.assertSelfOrAdmin(sessionUserId, params.id, sessionIsAdmin)
+        await this.userService.softDeleteUser(params.id)
     }
 
     private assertSelfOrAdmin(sessionUserId: string, targetUserId: string, isAdmin: boolean): void {

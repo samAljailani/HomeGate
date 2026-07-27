@@ -2,7 +2,7 @@ import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Query
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
-import { ServicePatchRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
+import { ServiceParamsDto, ServicePatchRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 import { ApplicationClientNames } from '@/types/enums'
@@ -28,14 +28,14 @@ export class ServiceController {
     @ApiOperation({ summary: 'Update service state — enabled (admin only)' })
     @ApiBody({ type: ServicePatchRequestDto })
     @ApiOkResponse({ type: ServiceResponseDto })
-    async update(@Param('name') name: string, @Body() request: ServicePatchRequestDto): Promise<ServiceResponseDto> {
+    async update(@Param() params: ServiceParamsDto, @Body() request: ServicePatchRequestDto): Promise<ServiceResponseDto> {
         if (request.enabled === undefined) {
             throw new BadRequestException('No fields provided to update')
         }
 
         const service = request.enabled
-            ? await this.serviceManagementService.enable(name as ApplicationClientNames)
-            : await this.serviceManagementService.disable(name as ApplicationClientNames)
+            ? await this.serviceManagementService.enable(params.name as ApplicationClientNames)
+            : await this.serviceManagementService.disable(params.name as ApplicationClientNames)
 
         return { id: service.id, name: service.name, enabled: service.enabled, url: service.url }
     }

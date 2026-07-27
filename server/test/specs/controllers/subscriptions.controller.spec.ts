@@ -46,7 +46,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
             const account = createUserAccountFixture()
             subscriptionServiceMock.renew.mockResolvedValue(account)
 
-            await controller.renew(subscriptionId)
+            await controller.renew({ id: subscriptionId })
 
             expect(subscriptionServiceMock.renew).toHaveBeenCalledWith(subscriptionId)
         })
@@ -55,7 +55,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
             const account = createUserAccountFixture()
             subscriptionServiceMock.renew.mockResolvedValue(account)
 
-            const result = await controller.renew(subscriptionId)
+            const result = await controller.renew({ id: subscriptionId })
 
             expect(result).toBe(account)
         })
@@ -70,7 +70,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
             const account = createUserAccountFixture({ autoRenew: true })
             subscriptionServiceMock.update.mockResolvedValue(account)
 
-            await controller.update(subscriptionId, { enabled: true, autoRenew: true })
+            await controller.update({ id: subscriptionId }, { enabled: true, autoRenew: true })
 
             expect(subscriptionServiceMock.update).toHaveBeenCalledWith(subscriptionId, {
                 enabled: true,
@@ -82,7 +82,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
             const account = createUserAccountFixture({ autoRenew: false })
             subscriptionServiceMock.update.mockResolvedValue(account)
 
-            const result = await controller.update(subscriptionId, { autoRenew: false })
+            const result = await controller.update({ id: subscriptionId }, { autoRenew: false })
 
             expect(result).toBe(account)
         })
@@ -97,7 +97,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
             const account = createUserAccountFixture()
             subscriptionServiceMock.getById.mockResolvedValue(account)
 
-            const result = await controller.getById(subscriptionId)
+            const result = await controller.getById({ id: subscriptionId })
 
             expect(subscriptionServiceMock.getById).toHaveBeenCalledWith(subscriptionId)
             expect(result).toBe(account)
@@ -114,7 +114,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
             req.session.userId = 'session-user-uuid'
             subscriptionServiceMock.delete.mockResolvedValue(true)
 
-            await controller.delete(subscriptionId, { immediate: true }, req)
+            await controller.delete({ id: subscriptionId }, { immediate: true }, req)
 
             expect(subscriptionServiceMock.delete).toHaveBeenCalledWith(subscriptionId, 'session-user-uuid', true)
         })
@@ -124,7 +124,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
             req.session.userId = 'session-user-uuid'
             subscriptionServiceMock.delete.mockResolvedValue(true)
 
-            await controller.delete(subscriptionId, {}, req)
+            await controller.delete({ id: subscriptionId }, {}, req)
 
             expect(subscriptionServiceMock.delete).toHaveBeenCalledWith(subscriptionId, 'session-user-uuid', undefined)
         })

@@ -51,7 +51,7 @@ describe('UserController', () => {
                 req.session.userId = targetUserId
                 req.session.isAdmin = false
 
-                await controller.deleteUser(targetUserId, {}, req)
+                await controller.deleteUser({ id: targetUserId }, {}, req)
 
                 expect(userServiceMock.softDeleteUser).toHaveBeenCalledWith(targetUserId)
             })
@@ -63,7 +63,7 @@ describe('UserController', () => {
                 req.session.userId = 'admin-uuid'
                 req.session.isAdmin = true
 
-                await controller.deleteUser(targetUserId, {}, req)
+                await controller.deleteUser({ id: targetUserId }, {}, req)
 
                 expect(userServiceMock.softDeleteUser).toHaveBeenCalledWith(targetUserId)
             })
@@ -75,7 +75,7 @@ describe('UserController', () => {
                 req.session.userId = 'other-user-uuid'
                 req.session.isAdmin = false
 
-                await expect(controller.deleteUser(targetUserId, {}, req)).rejects.toThrow(ForbiddenException)
+                await expect(controller.deleteUser({ id: targetUserId }, {}, req)).rejects.toThrow(ForbiddenException)
             })
 
             it('does not call softDeleteUser', async () => {
@@ -83,7 +83,7 @@ describe('UserController', () => {
                 req.session.userId = 'other-user-uuid'
                 req.session.isAdmin = false
 
-                await controller.deleteUser(targetUserId, {}, req).catch(() => {})
+                await controller.deleteUser({ id: targetUserId }, {}, req).catch(() => {})
 
                 expect(userServiceMock.softDeleteUser).not.toHaveBeenCalled()
             })
@@ -103,7 +103,7 @@ describe('UserController', () => {
                 req.session.userId = 'admin-uuid'
                 req.session.isAdmin = true
 
-                await controller.deleteUser(targetUserId, { hard: true }, req)
+                await controller.deleteUser({ id: targetUserId }, { hard: true }, req)
 
                 expect(userServiceMock.hardDeleteUser).toHaveBeenCalledWith(targetUserId)
             })
@@ -115,7 +115,7 @@ describe('UserController', () => {
                 req.session.userId = targetUserId
                 req.session.isAdmin = false
 
-                await controller.deleteUser(targetUserId, { hard: true }, req)
+                await controller.deleteUser({ id: targetUserId }, { hard: true }, req)
 
                 expect(userServiceMock.hardDeleteUser).not.toHaveBeenCalled()
                 expect(userServiceMock.softDeleteUser).toHaveBeenCalledWith(targetUserId)
@@ -126,7 +126,7 @@ describe('UserController', () => {
                 req.session.userId = 'other-user-uuid'
                 req.session.isAdmin = false
 
-                await expect(controller.deleteUser(targetUserId, { hard: true }, req)).rejects.toThrow(
+                await expect(controller.deleteUser({ id: targetUserId }, { hard: true }, req)).rejects.toThrow(
                     ForbiddenException
                 )
             })
@@ -143,7 +143,7 @@ describe('UserController', () => {
         it('enables the user when enabled is true', async () => {
             userServiceMock.enableUser.mockResolvedValue(undefined)
 
-            await controller.updateUser(userId, { enabled: true })
+            await controller.updateUser({ id: userId }, { enabled: true })
 
             expect(userServiceMock.enableUser).toHaveBeenCalledWith(userId)
             expect(userServiceMock.disableUser).not.toHaveBeenCalled()
@@ -152,14 +152,14 @@ describe('UserController', () => {
         it('disables the user when enabled is false', async () => {
             userServiceMock.disableUser.mockResolvedValue(undefined)
 
-            await controller.updateUser(userId, { enabled: false })
+            await controller.updateUser({ id: userId }, { enabled: false })
 
             expect(userServiceMock.disableUser).toHaveBeenCalledWith(userId)
             expect(userServiceMock.enableUser).not.toHaveBeenCalled()
         })
 
         it('does nothing when enabled is not provided', async () => {
-            await controller.updateUser(userId, {})
+            await controller.updateUser({ id: userId }, {})
 
             expect(userServiceMock.enableUser).not.toHaveBeenCalled()
             expect(userServiceMock.disableUser).not.toHaveBeenCalled()
@@ -200,7 +200,7 @@ describe('UserController', () => {
                 isEnabled: true,
             })
 
-            const result = await controller.getUser(userId)
+            const result = await controller.getUser({ id: userId })
 
             expect(userServiceMock.getUserByIdForAdmin).toHaveBeenCalledWith(userId)
             expect(result.id).toBe(userId)
@@ -209,7 +209,7 @@ describe('UserController', () => {
         it('throws NotFoundException when user does not exist', async () => {
             userServiceMock.getUserByIdForAdmin.mockResolvedValue(null)
 
-            await expect(controller.getUser(userId)).rejects.toThrow(NotFoundException)
+            await expect(controller.getUser({ id: userId })).rejects.toThrow(NotFoundException)
         })
     })
 

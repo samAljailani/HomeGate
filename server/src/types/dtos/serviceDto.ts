@@ -1,6 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
+export class ServiceParamsDto {
+    @ApiProperty({ type: String })
+    @IsString()
+    @IsNotEmpty()
+    name: string
+}
+
 export class ServiceLoadRequestDto {
     @ApiProperty({ type: Number })
     @IsInt()

@@ -5,14 +5,17 @@ import {
     Get,
     Inject,
     Param,
-    ParseIntPipe,
     Patch,
     Query,
 } from '@nestjs/common'
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
-import { OAuthProviderPatchRequestDto, OAuthProviderResponseDto } from '@/types/dtos/oauthProviderDto'
+import {
+    OAuthProviderParamsDto,
+    OAuthProviderPatchRequestDto,
+    OAuthProviderResponseDto,
+} from '@/types/dtos/oauthProviderDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
@@ -39,14 +42,14 @@ export class OAuthProviderController {
     @ApiBody({ type: OAuthProviderPatchRequestDto })
     @ApiOkResponse({ type: OAuthProviderResponseDto })
     async update(
-        @Param('id', ParseIntPipe) id: number,
+        @Param() params: OAuthProviderParamsDto,
         @Body() request: OAuthProviderPatchRequestDto
     ): Promise<OAuthProviderResponseDto> {
         if (request.enabled === undefined) {
             throw new BadRequestException('No fields provided to update')
         }
 
-        const provider = await this.oauthProviderManagementService.updateEnabledById(id, request.enabled)
+        const provider = await this.oauthProviderManagementService.updateEnabledById(params.id, request.enabled)
         return { id: provider.id, name: provider.name, enabled: provider.enabled }
     }
 }

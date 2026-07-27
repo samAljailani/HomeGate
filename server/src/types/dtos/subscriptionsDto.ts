@@ -7,6 +7,12 @@ import { UserAccountStatus } from '@/types/enums'
 
 export { UserAccountStatus }
 
+export class SubscriptionParamsDto {
+    @ApiProperty({ type: String, format: 'uuid' })
+    @IsUUID()
+    id: string
+}
+
 export class SubscriptionCreateRequestDto {
     @ApiProperty({ type: Number })
     @Type(() => Number)
@@ -40,7 +46,7 @@ export class SubscriptionCreateRequestDto {
     autoRenew: boolean
 }
 
-export class SubscriptionDeleteQueryDto {
+export class SubscriptionDeleteRequestDto {
     @ApiPropertyOptional({
         type: Boolean,
         description: 'Immediately delete the external account instead of cancelling auto-renew',
@@ -63,7 +69,7 @@ export class SubscriptionPatchRequestDto {
     autoRenew?: boolean
 }
 
-export class SubscriptionListQueryDto extends PaginationRequestDto {
+export class SubscriptionListRequestDto extends PaginationRequestDto {
     @ApiPropertyOptional({ type: String, description: 'Filter subscriptions by user id' })
     @IsOptional()
     @IsUUID()
