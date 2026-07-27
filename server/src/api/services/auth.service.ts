@@ -7,6 +7,7 @@ import { OAuthProviderModel } from '@/types/models/oauthProvider'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { InviteService } from './invite.service'
+import { PrismaProvider } from '@/infrastructure/prisma.provider'
 
 @Injectable()
 export class AuthService extends BaseService {
@@ -14,7 +15,8 @@ export class AuthService extends BaseService {
         @Inject(forwardRef(() => UserService)) private userService: UserService,
         @Inject(LoggingProvider) logger: LoggingProvider,
         @Inject(IOAuthProviderRepository) private oauthProviderRepository: IOAuthProviderRepository,
-        @Inject(InviteService) private inviteService: InviteService
+        @Inject(InviteService) private inviteService: InviteService,
+        @Inject(PrismaProvider) private db: PrismaProvider
     ) {
         super(logger)
     }
@@ -94,13 +96,18 @@ export class AuthService extends BaseService {
             throw new InternalServerErrorException('OAuth provider is unavailable.')
         }
 
-        const user = await this.userService.createUserWithOAuthIdentity(
-            { email: request.email, firstName: request.firstName ?? '', lastName: request.lastName ?? '' },
-            oauthProvider.id,
-            request.providerAccountId
-        )
+        const user = await this.db.$transaction(async (tx) => {
+            const created = await this.userService.createUserWithOAuthIdentity(
+                { email: request.email, firstName: request.firstName ?? '', lastName: request.lastName ?? '' },
+                oauthProvider.id,
+                request.providerAccountId,
+                tx
+            )
 
-        await this.inviteService.useToken(token, user.id)
+            await this.inviteService.claimToken(invite.id, created.id, tx)
+
+            return created
+        })
 
         this.logger.log(`User ${user.username} registered via invite ${invite.id}`)
 

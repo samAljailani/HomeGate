@@ -4,6 +4,7 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { BaseRepository } from './base.repository'
 import { IInviteRepository } from './IInviteRepository'
 import type { InviteModel as PrismaInvite } from '@prisma/generated/models'
+import { InviteRevokedReason, Prisma } from '@prisma/generated'
 import { CreateInviteModel, InviteModel } from '@/types/models/invite'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
@@ -23,8 +24,11 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
             createdAt: invite.createdAt,
             usedAt: invite.usedAt,
             revokedAt: invite.revokedAt,
+            revokedReason: invite.revokedReason,
+            failedAttempts: invite.failedAttempts,
             createdByUserId: invite.createdByUserId,
             usedByUserId: invite.usedByUserId,
+            revokedByUserId: invite.revokedByUserId,
         }
     }
 
@@ -52,6 +56,26 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
         }
     }
 
+    async findActivePendingByEmail(email: string): Promise<InviteModel | null> {
+        try {
+            const invite = await this.db.invite.findFirst({
+                where: {
+                    email,
+                    usedAt: null,
+                    revokedAt: null,
+                    expiresAt: { gt: new Date() },
+                },
+                orderBy: { createdAt: 'desc' },
+            })
+            return invite ? this.mapInvite(invite) : null
+        } catch (error) {
+            this.logger.error(`findActivePendingByEmail failed`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.invite)
+        }
+    }
+
     async create(request: CreateInviteModel): Promise<InviteModel> {
         try {
             const invite = await this.db.invite.create({ data: request })
@@ -64,26 +88,59 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
         }
     }
 
-    async markUsed(id: string, usedByUserId: string): Promise<InviteModel | null> {
+    async claim(id: string, usedByUserId: string, tx?: Prisma.TransactionClient): Promise<InviteModel | null> {
+        const client = tx ?? this.db
         try {
-            const invite = await this.db.invite.update({
-                where: { id },
+            const result = await client.invite.updateMany({
+                where: {
+                    id,
+                    usedAt: null,
+                    revokedAt: null,
+                    expiresAt: { gt: new Date() },
+                },
                 data: { usedByUserId, usedAt: new Date() },
             })
-            return this.mapInvite(invite)
+
+            if (result.count === 0) {
+                return null
+            }
+
+            const invite = await client.invite.findUnique({ where: { id } })
+            return invite ? this.mapInvite(invite) : null
         } catch (error) {
-            this.logger.error(`markUsed failed for id: ${id}`, {
+            this.logger.error(`claim failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.invite)
         }
     }
 
-    async revoke(id: string): Promise<InviteModel | null> {
+    async incrementFailedAttempts(id: string): Promise<number> {
         try {
             const invite = await this.db.invite.update({
                 where: { id },
-                data: { revokedAt: new Date() },
+                data: { failedAttempts: { increment: 1 } },
+            })
+            return invite.failedAttempts
+        } catch (error) {
+            this.logger.error(`incrementFailedAttempts failed for id: ${id}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.invite)
+        }
+    }
+
+    async revoke(
+        id: string,
+        reason: InviteRevokedReason,
+        revokedByUserId?: string | null,
+        tx?: Prisma.TransactionClient
+    ): Promise<InviteModel | null> {
+        const client = tx ?? this.db
+        try {
+            const invite = await client.invite.update({
+                where: { id },
+                data: { revokedAt: new Date(), revokedReason: reason, revokedByUserId: revokedByUserId ?? null },
             })
             return this.mapInvite(invite)
         } catch (error) {

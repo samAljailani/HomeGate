@@ -4,6 +4,7 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { BaseRepository } from './base.repository'
 import { IUserRepository } from './IUserRepository'
 import type { UserModel as PrismaUser } from '@prisma/generated/models'
+import { Prisma } from '@prisma/generated'
 import { CreateUserModel, UpdateUserModel, UserModel, UserFilterOptions } from '@/types/models/user'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
@@ -80,13 +81,19 @@ export class UserRepository extends BaseRepository implements IUserRepository {
         }
     }
 
-    async createWithOAuthIdentity(request: CreateUserModel, providerId: number, profileId: string): Promise<UserModel> {
+    async createWithOAuthIdentity(
+        request: CreateUserModel,
+        providerId: number,
+        profileId: string,
+        tx?: Prisma.TransactionClient
+    ): Promise<UserModel> {
         try {
-            const user = await this.db.$transaction(async (tx) => {
-                const created = await tx.user.create({ data: request })
-                await tx.userOAuthIdentity.create({ data: { userId: created.id, providerId, profileId } })
+            const run = async (client: Prisma.TransactionClient) => {
+                const created = await client.user.create({ data: request })
+                await client.userOAuthIdentity.create({ data: { userId: created.id, providerId, profileId } })
                 return created
-            })
+            }
+            const user = tx ? await run(tx) : await this.db.$transaction(run)
             return this.mapUser(user)
         } catch (error) {
             this.logger.error(`createWithOAuthIdentity failed for email: ${request.email}`, {

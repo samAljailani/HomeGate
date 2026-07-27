@@ -49,7 +49,6 @@ export const routes = {
         create: '',
         list: '',
         update: ':id',
-        validate: 'validate/:token',
     }),
     users: defineRoutes('/api/users', {
         list: '',

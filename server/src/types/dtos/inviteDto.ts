@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type, Transform } from 'class-transformer'
-import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsUUID, Min } from 'class-validator'
+import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsUUID, Max, Min } from 'class-validator'
+import { MAX_INVITE_EXPIRY_DAYS } from '@/types/invite.constants'
 
 export class InviteParamsDto {
     @ApiProperty({ type: String, format: 'uuid' })
@@ -20,6 +21,7 @@ export class CreateInviteRequestDto {
     @Type(() => Number)
     @IsInt()
     @Min(1)
+    @Max(MAX_INVITE_EXPIRY_DAYS)
     expiresInDays: number
 }
 
@@ -50,10 +52,16 @@ export class InviteResponseDto {
     revokedAt: Date | null
 
     @ApiPropertyOptional({ type: String })
+    revokedReason: string | null
+
+    @ApiPropertyOptional({ type: String })
     createdByUserId: string | null
 
     @ApiPropertyOptional({ type: String })
     usedByUserId: string | null
+
+    @ApiPropertyOptional({ type: String })
+    revokedByUserId: string | null
 }
 
 export class CreateInviteResponseDto {
@@ -62,9 +70,4 @@ export class CreateInviteResponseDto {
 
     @ApiProperty({ type: InviteResponseDto })
     invite: InviteResponseDto
-}
-
-export class ValidateInviteResponseDto {
-    @ApiProperty({ type: Boolean })
-    valid: boolean
 }

@@ -181,7 +181,7 @@ describe('UserController', () => {
 
             expect(userServiceMock.listUsers).toHaveBeenCalled()
             expect(result).toHaveLength(1)
-            expect(result[0].id).toBe(user.id)
+            expect(result[0]!.id).toBe(user.id)
         })
     })
 

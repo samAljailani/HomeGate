@@ -2,20 +2,17 @@ import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Post,
 import {
     ApiBadRequestResponse,
     ApiBody,
-    ApiConflictResponse,
-    ApiForbiddenResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
     ApiParam,
     ApiTags,
-    ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import type { Request as ExpressRequest } from 'express'
-import { AdminRoute, Public } from '@/decorators'
+import { AdminRoute } from '@/decorators'
 import { InviteService } from '@/api/services/invite.service'
-import { CreateInviteRequestDto, InviteParamsDto, InvitePatchRequestDto, ValidateInviteResponseDto } from '@/types/dtos/inviteDto'
+import { CreateInviteRequestDto, InviteParamsDto, InvitePatchRequestDto } from '@/types/dtos/inviteDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
@@ -51,27 +48,15 @@ export class InviteController {
     @ApiBody({ type: InvitePatchRequestDto })
     @ApiOkResponse({ description: 'Invite revoked successfully' })
     @ApiNotFoundResponse({ description: 'Invite not found' })
-    async update(@Param() params: InviteParamsDto, @Body() request: InvitePatchRequestDto) {
+    async update(
+        @Param() params: InviteParamsDto,
+        @Body() request: InvitePatchRequestDto,
+        @Request() req: ExpressRequest
+    ) {
         if (request.revoked !== true) {
             throw new BadRequestException('Only revoking an invite is supported (revoked: true)')
         }
 
-        return this.inviteService.revokeToken(params.id)
-    }
-
-    @Get(routes.invites.subPath.validate)
-    @Public()
-    @Throttle({ default: { ttl: 60_000, limit: 20 } })
-    @ApiOperation({ summary: 'Validate an invite token (public)' })
-    @ApiParam({ name: 'token', type: String })
-    @ApiOkResponse({ description: 'Token is valid', type: ValidateInviteResponseDto })
-    @ApiBadRequestResponse({ description: 'Token is invalid' })
-    @ApiNotFoundResponse({ description: 'Token not found' })
-    @ApiConflictResponse({ description: 'Token already used' })
-    @ApiUnprocessableEntityResponse({ description: 'Token expired or revoked' })
-    @ApiForbiddenResponse({ description: 'Token not valid for this account' })
-    async validate(@Param('token') token: string): Promise<ValidateInviteResponseDto> {
-        await this.inviteService.validateToken(token) // will throw if in valid
-        return { valid: true }
+        return this.inviteService.revokeToken(params.id, req.session.userId!)
     }
 }

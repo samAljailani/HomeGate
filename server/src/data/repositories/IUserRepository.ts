@@ -1,4 +1,5 @@
 import { CreateUserModel, UpdateUserModel, UserModel, UserFilterOptions } from '@/types/models/user'
+import { Prisma } from '@prisma/generated'
 
 export const IUserRepository = Symbol('IUserRepository')
 
@@ -7,7 +8,12 @@ export interface IUserRepository {
     findByEmail(email: string): Promise<UserModel | null>
     findMany(filter: UserFilterOptions, take?: number, skip?: number): Promise<UserModel[]>
     create(request: CreateUserModel): Promise<UserModel | null>
-    createWithOAuthIdentity(request: CreateUserModel, providerId: number, profileId: string): Promise<UserModel>
+    createWithOAuthIdentity(
+        request: CreateUserModel,
+        providerId: number,
+        profileId: string,
+        tx?: Prisma.TransactionClient
+    ): Promise<UserModel>
     update(request: UpdateUserModel): Promise<UserModel | null>
     usernameExists(username: string): Promise<boolean>
     softDelete(id: string): Promise<void>

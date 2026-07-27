@@ -14,6 +14,7 @@ import { OAuthIdentityCreateRequestDto, OAuthIdentityResponseDto } from '@/types
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { SubscriptionService } from './subscriptions.service'
+import { Prisma } from '@prisma/generated'
 
 @Injectable()
 export class UserService extends BaseService {
@@ -51,10 +52,11 @@ export class UserService extends BaseService {
     async createUserWithOAuthIdentity(
         newUser: UserCreateRequestDto,
         providerId: number,
-        profileId: string
+        profileId: string,
+        tx?: Prisma.TransactionClient
     ): Promise<UserResponseForAdminDto> {
         const username = await this.generateUsername(newUser.email)
-        const user = await this.userRepository.createWithOAuthIdentity({ ...newUser, username }, providerId, profileId)
+        const user = await this.userRepository.createWithOAuthIdentity({ ...newUser, username }, providerId, profileId, tx)
         return this.userModelToLoadRequestForAdmin(user)
     }
 

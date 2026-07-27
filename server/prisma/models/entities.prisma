@@ -14,6 +14,7 @@ model User {
   logs            Log[]               @relation("UserLogs")
   createdInvites  Invite[]            @relation("CreatedInvites")
   usedInvite      Invite?             @relation("UsedInvites")
+  revokedInvites  Invite[]            @relation("RevokedInvites")
 
   @@map("users")
 }
@@ -137,16 +138,27 @@ model Invite {
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   usedAt          DateTime? @map("used_at") @db.Timestamptz(6)
   revokedAt       DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedReason   InviteRevokedReason? @map("revoked_reason")
+  failedAttempts  Int       @default(0) @map("failed_attempts")
 
   createdByUserId String?   @map("created_by_user_id") @db.Uuid
   usedByUserId    String?   @map("used_by_user_id") @db.Uuid
+  revokedByUserId String?   @map("revoked_by_user_id") @db.Uuid
 
   createdBy       User?     @relation("CreatedInvites", fields: [createdByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   usedBy          User?     @relation("UsedInvites", fields: [usedByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  revokedBy       User?     @relation("RevokedInvites", fields: [revokedByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([usedByUserId])
   @@map("invites")
 }
+
+enum InviteRevokedReason {
+  ADMIN
+  AUTO_FAILED_ATTEMPTS
+  AUTO_SUPERSEDED
+}
+
 enum OAuthProviderName {
   google
 }
