@@ -24,6 +24,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             isAdmin: user.isAdmin,
             isDeleted: user.isDeleted,
             isEnabled: user.isEnabled,
+            status: user.status,
             createdAt: user.createdAt,
         }
     }
@@ -74,6 +75,69 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             return this.mapUser(user)
         } catch (error) {
             this.logger.error(`create failed for email: ${request.email}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.user)
+        }
+    }
+
+    async createProvisional(request: CreateUserModel): Promise<UserModel> {
+        try {
+            const user = await this.db.user.create({
+                data: { ...request, status: 'PENDING', provisionedAt: new Date() },
+            })
+            return this.mapUser(user)
+        } catch (error) {
+            this.logger.error(`createProvisional failed for email: ${request.email}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.user)
+        }
+    }
+
+    async touchProvisional(id: string): Promise<void> {
+        try {
+            await this.db.user.update({ where: { id }, data: { provisionedAt: new Date() } })
+        } catch (error) {
+            this.logger.error(`touchProvisional failed for id: ${id}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.user)
+        }
+    }
+
+    async activate(id: string): Promise<UserModel> {
+        try {
+            const user = await this.db.user.update({ where: { id }, data: { status: 'ACTIVE' } })
+            return this.mapUser(user)
+        } catch (error) {
+            this.logger.error(`activate failed for id: ${id}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.user)
+        }
+    }
+
+    async findPendingByEmail(email: string): Promise<UserModel | null> {
+        try {
+            const user = await this.db.user.findFirst({ where: { email, status: 'PENDING' } })
+            return user ? this.mapUser(user) : null
+        } catch (error) {
+            this.logger.error(`findPendingByEmail failed for email: ${email}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.user)
+        }
+    }
+
+    async deletePendingOlderThan(cutoff: Date): Promise<number> {
+        try {
+            const result = await this.db.user.deleteMany({
+                where: { status: 'PENDING', provisionedAt: { lt: cutoff } },
+            })
+            return result.count
+        } catch (error) {
+            this.logger.error('deletePendingOlderThan failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.user)

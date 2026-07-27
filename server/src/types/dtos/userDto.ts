@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
-import { IsBoolean, IsDate, IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator'
+import { IsBoolean, IsDate, IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator'
+import { UserStatus } from '@/types/models/user'
 
 export class UserFindOptions {
     withDeleted?: boolean
@@ -114,6 +115,10 @@ export class UserResponseForAdminDto extends UserResponseDto {
     @ApiProperty({ type: Boolean })
     @IsBoolean()
     isEnabled: boolean
+
+    @ApiProperty({ enum: UserStatus })
+    @IsIn(Object.values(UserStatus))
+    status: UserStatus
 
     @ApiProperty({ type: Date })
     @IsDate()

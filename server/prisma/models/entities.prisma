@@ -6,6 +6,8 @@ model User {
   isAdmin         Boolean             @default(false) @map("is_admin")
   isDeleted       Boolean             @default(false) @map("is_deleted")
   isEnabled       Boolean             @default(true) @map("is_enabled")
+  status          UserStatus          @default(ACTIVE) @map("status")
+  provisionedAt   DateTime?           @map("provisioned_at") @db.Timestamptz(6)
   createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   username        String              @unique @db.VarChar(64)
   userSessions    Session[]           @relation("UserSessions")
@@ -157,6 +159,11 @@ enum InviteRevokedReason {
   ADMIN
   AUTO_FAILED_ATTEMPTS
   AUTO_SUPERSEDED
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
 }
 
 enum OAuthProviderName {
