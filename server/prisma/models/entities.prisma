@@ -60,6 +60,7 @@ model Service {
 }
 
 model UserAccount {
+  id                   String            @id @default(uuid()) @db.Uuid
   userId               String            @map("user_id") @db.Uuid
   serviceId            Int               @map("service_id")
   userServiceAccountId String?           @map("user_service_account_id")
@@ -83,7 +84,7 @@ model UserAccount {
   service              Service           @relation("ServiceAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
   user                 User              @relation("UserAccounts", fields: [userId], references: [id], onDelete: Cascade)
 
-  @@id([userId, serviceId], map: "user_accounts_pkey")
+  @@unique([userId, serviceId])
   @@unique([serviceId, username])
   @@unique([serviceId, userServiceAccountId])
   @@map("user_accounts")
