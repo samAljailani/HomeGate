@@ -1,12 +1,20 @@
-import { OAuthUserProfileDto, SignUpRequestDto } from '@/types/dtos/authDto'
+import { OAuthUserProfileDto } from '@/types/dtos/authDto'
 import { OAuthAuthModel } from '@/types/models/oauthAuth'
 import { Injectable, Inject, forwardRef, BadRequestException, InternalServerErrorException } from '@nestjs/common'
 import { UserService } from './user.service'
 import { IOAuthProviderRepository } from '@/data/repositories'
 import { OAuthProviderModel } from '@/types/models/oauthProvider'
+import { UserStatus } from '@/types/models/user'
+import { SIGNUP_COMPLETION_WINDOW_MINUTES } from '@/types/auth.constants'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { InviteService } from './invite.service'
+
+/** Context handed back to the controller after an invite sign-up is initiated. */
+export type BeginSignUpResult = {
+    inviteId: string
+    expiresAt: Date
+}
 
 @Injectable()
 export class AuthService extends BaseService {
@@ -33,6 +41,16 @@ export class AuthService extends BaseService {
 
             if (user.isDeleted || !user.isEnabled) {
                 this.logger.log(`Attempted login for user with email: ${request.email}, provider: ${request.provider}`)
+
+                return null
+            }
+
+            if (user.status !== UserStatus.ACTIVE) {
+                // Only fully active accounts may log in (e.g. provisional PENDING accounts that
+                // have not completed the invite sign-up flow, or any future non-active state).
+                this.logger.log(
+                    `Login rejected for non-active (status=${user.status}) account with email: ${request.email}`
+                )
 
                 return null
             }
@@ -79,28 +97,83 @@ export class AuthService extends BaseService {
     }
 
     /**
-     * Redeem an invite and provision the account. The OAuth identity is intentionally not
-     * created here — it is linked on the user's next sign-in via {@link authorize}.
+     * Begin an invite sign-up. Validates the invite and, for a bound invite, provisions (or reuses)
+     * a PENDING account for the bound email so the identity can be linked on the first successful
+     * OAuth sign-in. Returns the context the controller stores in the session for the completion
+     * step, including the short window by which sign-in must be completed.
      */
-    async signUp(request: SignUpRequestDto): Promise<void> {
-        const invite = await this.inviteService.validateToken(request.inviteToken, request.email)
+    async beginSignUp(token: string): Promise<BeginSignUpResult> {
+        const invite = await this.inviteService.validateToken(token)
 
-        const existing = await this.userService.getUserByEmail(request.email)
+        if (invite.email != null) {
+            const existing = await this.userService.getUserByEmail(invite.email)
 
-        if (existing != null) {
-            this.logger.log(`Sign up attempted with existing email: ${request.email}`)
+            if (existing != null && existing.status !== UserStatus.PENDING) {
+                this.logger.log(`Sign up attempted for existing account: ${invite.email}`)
+                throw new BadRequestException('An account with this email already exists.')
+            }
+
+            if (existing == null) {
+                await this.userService.createProvisionalUser(invite.email)
+                this.logger.log(`Provisional account created for invite ${invite.id}`)
+            } else {
+                // Existing PENDING account (not ACTIVE, per the guard above): reset its staleness
+                // clock so a renewed sign-up isn't reaped mid-flight by cleanup_pending_users.
+                await this.userService.touchProvisionalUser(existing.id)
+            }
+        }
+
+        const expiresAt = new Date(Date.now() + SIGNUP_COMPLETION_WINDOW_MINUTES * 60_000)
+
+        return { inviteId: invite.id, expiresAt }
+    }
+
+    /**
+     * Complete an invite sign-up from the OAuth callback: re-validate (enforcing the bound-email
+     * match), link the OAuth identity, consume the invite, and activate the account. A bound invite
+     * activates its pre-provisioned PENDING account; an unbound invite creates the account here.
+     */
+    async completeSignUp(token: string, profile: OAuthUserProfileDto): Promise<OAuthAuthModel> {
+        const invite = await this.inviteService.validateToken(token, profile.email)
+
+        const provider = await this.resolveOAuthProvider(profile)
+
+        if (provider == null) {
+            throw new InternalServerErrorException('OAuth provider is unavailable.')
+        }
+
+        const existing = await this.userService.getUserByEmail(profile.email)
+
+        if (existing != null && existing.status !== UserStatus.PENDING) {
+            this.logger.log(`Sign up completion attempted for existing account: ${profile.email}`)
             throw new BadRequestException('An account with this email already exists.')
         }
 
-        const created = await this.userService.createUser({ email: request.email, firstName: '', lastName: '' })
+        const wasProvisional = existing != null
 
-        if (created == null || !created.id) {
+        const account =
+            existing ??
+            (await this.userService.createUser({ email: profile.email, firstName: '', lastName: '' }))
+
+        if (account == null || !account.id) {
             throw new InternalServerErrorException('Failed to create user account.')
         }
 
-        await this.inviteService.claimToken(invite.id, created.id)
+        await this.userService.CreateUserOAuthIdentity({
+            userId: account.id,
+            providerId: provider.id,
+            profileId: profile.providerAccountId,
+        })
 
-        this.logger.log(`User ${created.username} registered via invite ${invite.id}`)
+        await this.inviteService.claimToken(invite.id, account.id)
+
+        if (wasProvisional) {
+            await this.userService.activateUser(account.id)
+        }
+
+        this.logger.log(`User ${account.username} registered via invite ${invite.id}`)
+
+        return { id: account.id, username: account.username, isAdmin: account.isAdmin, providerId: provider.id }
     }
 
     async signOut(userId: string | undefined, username?: string | undefined): Promise<void> {

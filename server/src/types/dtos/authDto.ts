@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 
 export class AuthResponseDto {
@@ -39,16 +39,6 @@ export class OpenIDRequestDto {
 
     @IsBoolean()
     nonce?: boolean
-}
-
-export class SignUpRequestDto {
-    @IsString()
-    @IsNotEmpty()
-    inviteToken: string
-
-    @IsEmail()
-    @IsNotEmpty()
-    email: string
 }
 
 export class OAuthUserProfileDto {

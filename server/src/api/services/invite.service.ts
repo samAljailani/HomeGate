@@ -13,6 +13,7 @@ import { CryptographyProvider } from '@/infrastructure/cryptography.provider'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { UserService } from './user.service'
+import { UserStatus } from '@/types/models/user'
 import { MAX_INVITE_FAILED_ATTEMPTS } from '@/types/invite.constants'
 
 @Injectable()
@@ -49,7 +50,7 @@ export class InviteService extends BaseService {
         if (options.email != null) {
             const existingUser = await this.userService.getUserByEmail(options.email)
 
-            if (existingUser != null) {
+            if (existingUser != null && existingUser.status !== UserStatus.PENDING) {
                 throw new ConflictException('An account with this email already exists.')
             }
 
