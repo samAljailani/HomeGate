@@ -17,8 +17,9 @@ flowchart LR
         direction TB
         IC["InviteController<br/>POST / · GET / · PATCH /:id · DELETE /:id"]
         AC["AuthController<br/>(sign-up redemption)"]
-        IS["InviteService<br/>(create · validate · revoke · use)"]
-        AS["AuthService<br/>(signUp)"]
+        IS["InviteService<br/>(create · validate · revoke · claim)"]
+        AS["AuthService<br/>(beginSignUp · completeSignUp)"]
+        US["UserService<br/>(provision · activate)"]
         CRYPTO["CryptographyProvider<br/>(token gen + SHA-256 hash)"]
         REPO["InviteRepository<br/>(IInviteRepository)"]
         LOG["LoggingProvider"]
@@ -28,21 +29,28 @@ flowchart LR
     GUEST["Invited guest"] -->|"redeem"| AC
     IC -->|"AdminRoute guard"| IS
     AC --> AS
-    AS -->|"authorizeRedemption · useToken"| IS
+    AS -->|"validateToken · claimToken"| IS
+    AS -->|"provision · activate"| US
     IS --> CRYPTO
     IS --> REPO
     IS --> LOG
     REPO --> DB[("PostgreSQL<br/>invite table<br/>(token hash @unique)")]
-    AS -->|"createUser (same tx)"| DB
+    US --> DB
 ```
 
 Component responsibilities:
 
 - **InviteController** — admin-only surface for the invite lifecycle (create, list,
   revoke). Enforces authorization; delegates all rules to `InviteService`.
-- **AuthController / AuthService** — the redemption path. Sign-up calls
-  `validateToken(token, email)` then consumes the invite via `useToken` inside the
-  **same transaction** that creates the user (see *Redemption Atomicity*).
+- **AuthController / AuthService** — the redemption path, split across two phases. At
+  `/join`, `beginSignUp` calls `validateToken(token)` and (for a bound invite) provisions a
+  `PENDING` account; on the OAuth callback, `completeSignUp` re-runs `validateToken(token,
+  email)`, links the identity, activates the account, and only then consumes the invite via
+  `claimToken`. The invite is **never** claimed until sign-up succeeds. See
+  [auth-session.md](auth-session.md) for the full flow.
+- **UserService** — owns the provisional-account lifecycle (`PENDING -> ACTIVE`) and reaps
+  abandoned sign-ups; it is the component `AuthService` calls to create and activate the
+  account behind a redemption.
 - **InviteService** — owns all invite rules: token generation, hashing, lifecycle
   transitions, dedup, and redemption validation. The only component that decides
   whether an invite is valid.
@@ -50,8 +58,10 @@ Component responsibilities:
   SHA-256 hash stored at rest. Plaintext is returned to the caller exactly once.
 - **InviteRepository** — persistence behind `IInviteRepository`. Stores only the token
   **hash** (`@unique`), never plaintext.
-- **PostgreSQL** — single source of truth. Because redemption and user creation share one
-  database, invite consumption and account creation run in one transaction.
+- **PostgreSQL** — single source of truth for invites and accounts. Invite consumption
+  (`claimToken`) and account activation are separate writes, not a cross-service
+  transaction; correctness comes from claiming the invite only after the account is
+  activated, so a failed sign-up leaves the invite reusable.
 
 ## Invite Lifecycle
 
@@ -249,37 +259,68 @@ sequenceDiagram
 
 # Redeem Invite
 
+Redemption is **two-phase and provider-agnostic**. The invite link never forces a specific
+identity provider: `/join` validates the invite and redirects the guest to the sign-in page,
+where they pick any enabled provider. The invite token is carried in the server-side session
+(never on the OAuth callback URL), and the invite is consumed only after sign-in succeeds. The
+end-to-end flow — including the sign-up completion window and session handling — is documented
+in [auth-session.md](auth-session.md); this section covers only the invite-specific decisions.
+
 ```mermaid
 sequenceDiagram
     participant Client
+    participant AC as Auth Controller
+    participant AS as Auth Service
     participant I as Invite Service
-    participant R as Invite Repository
+    participant U as User Service
+    participant IDP as OAuth provider
 
-    Client->>I: Redeem token with email
-    I->>R: Atomically load and claim valid invite
+    Note over Client,AS: Phase 1 — begin (GET /auth/join?token)
+    Client->>AC: Open invite link
+    AC->>AS: beginSignUp(token)
+    AS->>I: validateToken(token)
 
-    alt User is authenticated
-        I->>R: Revoke invite
-        I-->>Client: Redemption rejected
+    alt Invite invalid / expired / revoked / used
+        I-->>AS: Invalid token
+        AS-->>AC: Reject
+        AC-->>Client: Redirect to sign-in (error=invalid_invite)
 
-    else Email belongs to existing account
-        I->>R: Revoke invite
-        I-->>Client: Redemption rejected
+    else Bound invite, account already active
+        AS-->>AC: Reject
+        AC-->>Client: Redirect to sign-in (error=invalid_invite)
 
-    else Bound email does not match
-        I->>R: Atomically increment failed attempts
-
-        alt Failed attempts >= 3
-            I->>R: Revoke invite
+    else Valid
+        opt Bound invite, no account yet
+            AS->>U: Provision PENDING account for bound email
         end
+        AS-->>AC: { inviteId, completion window }
+        AC-->>Client: Store token in session, redirect to sign-in
+    end
 
-        I-->>Client: Invalid invitation details
+    Note over Client,U: Phase 2 — complete (OAuth callback)
+    Client->>IDP: Choose provider & authenticate
+    IDP-->>AC: Profile (req.user)
+    AC->>AS: completeSignUp(token, profile)
+    AS->>I: validateToken(token, profile.email)
 
-    else Valid new-user redemption
-        I->>R: Create user and consume invite
-        I-->>Client: Account created
+    alt Bound email does not match
+        I->>I: Increment failed attempts (auto-revoke at >= 3)
+        I-->>AS: Invalid token
+        AS-->>AC: Reject
+        AC-->>Client: Redirect to sign-in (error=auth_failed)
+
+    else Valid
+        AS->>U: Activate PENDING account (or create for unbound invite)
+        AS->>U: Link OAuth identity
+        AS->>I: claimToken(inviteId, userId)
+        AS-->>AC: Authenticated
+        AC-->>Client: Establish session, redirect home
     end
 ```
+
+If the guest abandons a bound-invite sign-up, the provisional `PENDING` account is reaped by the
+`cleanup_pending_users` task. Because the invite is claimed only on completion, an abandoned
+sign-up leaves the invite `Pending` and reusable until its own `expiresAt`.
 
 # Validate Token
 
