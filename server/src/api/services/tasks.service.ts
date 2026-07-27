@@ -4,12 +4,15 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { ScheduledTasks } from '@/types/enums'
 import { Task } from '@/decorators'
 import { SubscriptionService } from './subscriptions.service'
+import { UserService } from './user.service'
+import { SIGNUP_COMPLETION_WINDOW_MINUTES } from '@/types/auth.constants'
 
 @Injectable()
 export class TaskService extends BaseService {
     constructor(
         @Inject(LoggingProvider) logger: LoggingProvider,
-        @Inject(SubscriptionService) private subscriptionService: SubscriptionService
+        @Inject(SubscriptionService) private subscriptionService: SubscriptionService,
+        @Inject(UserService) private userService: UserService
     ) {
         super(logger)
     }
@@ -28,6 +31,13 @@ export class TaskService extends BaseService {
     async cleanupStaleLocalAccountsHandler(): Promise<boolean> {
         return this.runTask(ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS, () =>
             this.subscriptionService.cleanupStaleLocalAccounts()
+        )
+    }
+
+    @Task(ScheduledTasks.CLEANUP_PENDING_USERS)
+    async cleanupPendingUsersHandler(): Promise<boolean> {
+        return this.runTask(ScheduledTasks.CLEANUP_PENDING_USERS, () =>
+            this.userService.deleteStalePendingUsers(SIGNUP_COMPLETION_WINDOW_MINUTES)
         )
     }
 

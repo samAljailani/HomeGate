@@ -18,6 +18,11 @@ const taskDefaults: TasksSystemConfig = Object.freeze({
         runOnStartup: true,
         cronExpression: CronExpression.EVERY_12_HOURS,
     },
+    [ScheduledTasks.CLEANUP_PENDING_USERS]: {
+        enabled: true,
+        runOnStartup: true,
+        cronExpression: '*/2 * * * *',
+    },
 }) as TasksSystemConfig
 
 export const systemDefaults: Readonly<SystemConfigMap> = Object.freeze({
