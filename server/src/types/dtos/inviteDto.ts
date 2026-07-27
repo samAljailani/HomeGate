@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type, Transform } from 'class-transformer'
-import { IsEmail, IsInt, IsOptional, Min } from 'class-validator'
+import { IsBoolean, IsEmail, IsInt, IsOptional, Min } from 'class-validator'
 
 export class CreateInviteRequestDto {
     @ApiPropertyOptional({ type: String })
@@ -14,6 +14,13 @@ export class CreateInviteRequestDto {
     @IsInt()
     @Min(1)
     expiresInDays: number
+}
+
+export class InvitePatchRequestDto {
+    @ApiPropertyOptional({ type: Boolean })
+    @IsOptional()
+    @IsBoolean()
+    revoked?: boolean
 }
 
 export class InviteResponseDto {

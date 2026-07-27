@@ -7,13 +7,6 @@ import { UserAccountStatus } from '@/types/enums'
 
 export { UserAccountStatus }
 
-export class SubscriptionLoadRequestDto {
-    @ApiProperty({ type: String })
-    @IsUUID()
-    @IsNotEmpty()
-    userId: string
-}
-
 export class SubscriptionCreateRequestDto {
     @ApiProperty({ type: Number })
     @Type(() => Number)

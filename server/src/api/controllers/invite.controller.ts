@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, Put, Query, Request } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Post, Query, Request } from '@nestjs/common'
 import {
     ApiBadRequestResponse,
     ApiBody,
@@ -15,7 +15,7 @@ import { Throttle } from '@nestjs/throttler'
 import type { Request as ExpressRequest } from 'express'
 import { AdminRoute, Public } from '@/decorators'
 import { InviteService } from '@/api/services/invite.service'
-import { CreateInviteRequestDto, ValidateInviteResponseDto } from '@/types/dtos/inviteDto'
+import { CreateInviteRequestDto, InvitePatchRequestDto, ValidateInviteResponseDto } from '@/types/dtos/inviteDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
@@ -43,14 +43,19 @@ export class InviteController {
         return this.inviteService.listInvites(pagination.take, pagination.skip)
     }
 
-    @Put(routes.invites.subPath.revoke)
+    @Patch(routes.invites.subPath.update)
     @AdminRoute()
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @ApiOperation({ summary: 'Revoke an invite (admin only)' })
     @ApiParam({ name: 'id', type: String })
+    @ApiBody({ type: InvitePatchRequestDto })
     @ApiOkResponse({ description: 'Invite revoked successfully' })
     @ApiNotFoundResponse({ description: 'Invite not found' })
-    async revoke(@Param('id') id: string) {
+    async update(@Param('id') id: string, @Body() request: InvitePatchRequestDto) {
+        if (request.revoked !== true) {
+            throw new BadRequestException('Only revoking an invite is supported (revoked: true)')
+        }
+
         return this.inviteService.revokeToken(id)
     }
 

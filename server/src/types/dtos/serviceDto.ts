@@ -60,13 +60,6 @@ export class ServiceResponseDto {
     url: string | null
 }
 
-export class ServiceActionRequestDto {
-    @ApiProperty({ type: String })
-    @IsString()
-    @IsNotEmpty()
-    name: string
-}
-
 export class ServicePatchRequestDto {
     @ApiPropertyOptional({ type: Boolean })
     @IsOptional()

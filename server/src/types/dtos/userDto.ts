@@ -81,17 +81,6 @@ export class UserUpdateRequestDto {
     username?: string
 }
 
-export class UserDeleteRequestDto {
-    @ApiProperty({ type: String })
-    @IsUUID()
-    @IsNotEmpty()
-    userId: string
-
-    @ApiProperty({ type: Boolean })
-    @IsBoolean()
-    softDelete: boolean
-}
-
 export class UserPatchRequestDto {
     @ApiPropertyOptional({ type: Boolean })
     @IsOptional()

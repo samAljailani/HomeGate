@@ -48,7 +48,7 @@ export const routes = {
     invites: defineRoutes('/api/invites', {
         create: '',
         list: '',
-        revoke: 'revoke/:id',
+        update: ':id',
         validate: 'validate/:token',
     }),
     users: defineRoutes('/api/users', {

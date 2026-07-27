@@ -25,13 +25,6 @@ export class OAuthProviderResponseDto {
     enabled: boolean
 }
 
-export class OAuthProviderActionRequestDto {
-    @ApiProperty({ enum: OAuthProviderName })
-    @IsEnum(OAuthProviderName)
-    @IsNotEmpty()
-    name: OAuthProviderName
-}
-
 export class OAuthProviderPatchRequestDto {
     @ApiProperty({ type: Boolean, required: false })
     @IsOptional()
