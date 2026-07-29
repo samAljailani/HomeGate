@@ -60,6 +60,43 @@ export class SystemMetadataRepository extends BaseRepository implements ISystemM
         }
     }
 
+    /**
+     * Compares the current DB row against code defaults and writes back any keys that are
+     * missing from the stored value. Returns the list of newly-persisted keys.
+     * This handles the case where a new task is added to config.defaults.ts but an existing
+     * DB row predates it and will never be rewritten otherwise.
+     */
+    async syncDefaults<K extends SystemConfigKey>(key: K): Promise<string[]> {
+        try {
+            const row = await this.db.systemMetadata.findUnique({ where: { key } })
+
+            if (!row) {
+                return []
+            }
+
+            const stored = row.value as Record<string, unknown>
+            const defaults = systemDefaults[key] as Record<string, unknown>
+            const newKeys = Object.keys(defaults).filter((k) => !(k in stored))
+
+            if (newKeys.length === 0) {
+                return []
+            }
+
+            const merged = this.deepMerge(
+                defaults as SystemConfigMap[K],
+                stored as Partial<SystemConfigMap[K]>
+            )
+            await this.db.systemMetadata.update({ where: { key }, data: { value: merged as object } })
+
+            return newKeys
+        } catch (error) {
+            this.logger.error(`syncDefaults failed for key: ${key}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error)
+        }
+    }
+
     private deepMerge<T extends Record<string, unknown>>(defaults: T, overrides: Partial<T>): T {
         const result = structuredClone(defaults)
 

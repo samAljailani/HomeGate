@@ -37,6 +37,13 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
 
     async startAll(): Promise<void> {
         const tasks = this.discoverTasks()
+
+        // Persist any new keys found in the default configuration that is not currently saved in the database.
+        const newKeys = await this.systemMetadataRepository.syncDefaults(SystemConfigKey.TASKS)
+        if (newKeys.length > 0) {
+            this.logger.log(`Persisted ${newKeys.length} new task default(s) to DB: ${newKeys.join(', ')}`)
+        }
+
         // Returns DB values merged over code defaults; if no DB row exists, returns a clone of defaults.
         const taskConfig = await this.systemMetadataRepository.get(SystemConfigKey.TASKS)
 

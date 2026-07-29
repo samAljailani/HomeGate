@@ -26,6 +26,11 @@ const defaultTaskConfig: TasksSystemConfig = {
         runOnStartup: false,
         cronExpression: '0 0 */12 * * *',
     },
+    [ScheduledTasks.CLEANUP_PENDING_USERS]: {
+        enabled: true,
+        runOnStartup: true,
+        cronExpression: '*/2 * * * *',
+    },
 }
 
 function createSystemMetadataRepositoryMock(overrides: Partial<TasksSystemConfig> = {}) {
@@ -34,6 +39,7 @@ function createSystemMetadataRepositoryMock(overrides: Partial<TasksSystemConfig
         get: jest.fn().mockResolvedValue(config),
         set: jest.fn().mockResolvedValue(undefined),
         exists: jest.fn().mockResolvedValue(true),
+        syncDefaults: jest.fn().mockResolvedValue([]),
     }
 }
 
@@ -73,7 +79,7 @@ function createProviderWrapper(methods: Record<string, (...args: never[]) => unk
     class FakeProvider extends TaskService {
         constructor() {
             // The mocked TaskService base class takes no constructor arguments at runtime.
-            super(undefined as never, undefined as never)
+            super(undefined as never, undefined as never, undefined as never)
         }
     }
 
