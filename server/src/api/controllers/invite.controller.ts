@@ -23,7 +23,7 @@ export class InviteController {
 
     @Post()
     @AdminRoute()
-    @Throttle({ default: { ttl: 60_000, limit: 10 } })
+    @Throttle({ default: { ttl: 60_000, limit: 60 } })
     @ApiOperation({ summary: 'Generate an invite token (admin only)' })
     @ApiBody({ type: CreateInviteRequestDto })
     @ApiOkResponse({ description: 'Invite token created successfully' })
