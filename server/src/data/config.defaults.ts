@@ -10,7 +10,7 @@ const taskDefaults: TasksSystemConfig = Object.freeze({
     },
     [ScheduledTasks.SYNC_CLIENT_ACCOUNTS]: {
         enabled: true,
-        runOnStartup: false,
+        runOnStartup: true,
         cronExpression: CronExpression.EVERY_12_HOURS,
     },
     [ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS]: {
