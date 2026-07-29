@@ -65,6 +65,7 @@ export class AuthController {
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     async googleAuthRedirect(@Request() req: ExpressRequest, @Res() res: ExpressResponse) {
         return this.handleOAuthRedirect(req, res)
+        //TODO: remove invite token from session.
     }
 
     @Post(routes.auth.subPath.signOut)
@@ -73,6 +74,7 @@ export class AuthController {
         const username = req.session.username
 
         try {
+            //TODO: remove session
             await this.authService.signOut(userId, username)
             await new Promise<void>((resolve) => req.session.destroy(() => resolve()))
         } catch (error) {
