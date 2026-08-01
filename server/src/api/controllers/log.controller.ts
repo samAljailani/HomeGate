@@ -1,10 +1,11 @@
 import { Controller, Get, Inject, Query } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { LogService } from '@/api/services/log.service'
 import { LogListRequestDto, LogResponseDto } from '@/types/dtos/logDto'
 import { LogFilterOptions } from '@/data/repositories/ILoggingRepository'
 import { routes } from '@/types/dtos/routes'
+import { LogLevel } from '@/types/enums'
 
 @ApiTags('Logs')
 @Controller(routes.logs.basePath)
@@ -14,6 +15,10 @@ export class LogController {
     @Get(routes.logs.subPath.list)
     @AdminRoute()
     @ApiOperation({ summary: 'List application logs (admin only)' })
+    @ApiQuery({ name: 'userId', type: String, required: false })
+    @ApiQuery({ name: 'logLevel', enum: LogLevel, required: false })
+    @ApiQuery({ name: 'take', type: Number, required: false })
+    @ApiQuery({ name: 'skip', type: Number, required: false })
     @ApiOkResponse({ type: [LogResponseDto] })
     async list(@Query() query: LogListRequestDto): Promise<LogResponseDto[]> {
         const filter: LogFilterOptions = {}

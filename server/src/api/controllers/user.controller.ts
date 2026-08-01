@@ -11,7 +11,7 @@ import {
     Query,
     Request,
 } from '@nestjs/common'
-import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
@@ -33,6 +33,8 @@ export class UserController {
     @Get(routes.users.subPath.list)
     @AdminRoute()
     @ApiOperation({ summary: 'List all users' })
+    @ApiQuery({ name: 'take', type: Number, required: false })
+    @ApiQuery({ name: 'skip', type: Number, required: false })
     @ApiOkResponse({ type: [UserResponseForAdminDto] })
     async listUsers(@Query() pagination: PaginationRequestDto): Promise<UserResponseForAdminDto[]> {
         return this.userService.listUsers(pagination.take, pagination.skip)

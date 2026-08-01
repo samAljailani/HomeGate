@@ -8,7 +8,7 @@ import {
     Patch,
     Query,
 } from '@nestjs/common'
-import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
 import {
@@ -30,6 +30,8 @@ export class OAuthProviderController {
     @Get(routes.oauthProviders.subPath.list)
     @AdminRoute()
     @ApiOperation({ summary: 'List all OAuth providers (admin only)' })
+    @ApiQuery({ name: 'take', type: Number, required: false })
+    @ApiQuery({ name: 'skip', type: Number, required: false })
     @ApiOkResponse({ type: [OAuthProviderResponseDto] })
     async list(@Query() pagination: PaginationRequestDto): Promise<OAuthProviderResponseDto[]> {
         const providers = await this.oauthProviderManagementService.list(pagination.take, pagination.skip)

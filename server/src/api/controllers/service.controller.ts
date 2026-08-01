@@ -1,5 +1,5 @@
 import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Query } from '@nestjs/common'
-import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
 import { ServiceParamsDto, ServicePatchRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
@@ -17,6 +17,8 @@ export class ServiceController {
     @Get(routes.services.subPath.list)
     @AdminRoute()
     @ApiOperation({ summary: 'List all services (admin only)' })
+    @ApiQuery({ name: 'take', type: Number, required: false })
+    @ApiQuery({ name: 'skip', type: Number, required: false })
     @ApiOkResponse({ type: [ServiceResponseDto] })
     async list(@Query() pagination: PaginationRequestDto): Promise<ServiceResponseDto[]> {
         const services = await this.serviceManagementService.list(pagination.take, pagination.skip)
