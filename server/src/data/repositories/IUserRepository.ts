@@ -7,6 +7,11 @@ export interface IUserRepository {
     findByEmail(email: string): Promise<UserModel | null>
     findMany(filter: UserFilterOptions, take?: number, skip?: number): Promise<UserModel[]>
     create(request: CreateUserModel): Promise<UserModel | null>
+    createProvisional(request: CreateUserModel): Promise<UserModel>
+    touchProvisional(id: string): Promise<void>
+    activate(id: string): Promise<UserModel>
+    findPendingByEmail(email: string): Promise<UserModel | null>
+    deletePendingOlderThan(cutoff: Date): Promise<number>
     createWithOAuthIdentity(request: CreateUserModel, providerId: number, profileId: string): Promise<UserModel>
     update(request: UpdateUserModel): Promise<UserModel | null>
     usernameExists(username: string): Promise<boolean>

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { BadRequestException } from '@nestjs/common'
+import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import { IUserAccountRepository } from '@/data/repositories'
 import { IServiceRepository } from '@/data/repositories'
@@ -9,9 +9,12 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserAccountFixture } from '../../fixtures/userAccount.stub'
 
-function createUserAccountRepositoryMock(): jest.Mocked<Pick<IUserAccountRepository, 'find' | 'findMany' | 'update'>> {
+function createUserAccountRepositoryMock(): jest.Mocked<
+    Pick<IUserAccountRepository, 'find' | 'findById' | 'findMany' | 'update'>
+> {
     return {
         find: jest.fn(),
+        findById: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
     }
@@ -50,23 +53,24 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
     // #region renew
 
     describe('renew', () => {
+        const subscriptionId = 'subscription-uuid-1'
         const userId = 'user-uuid-1'
         const serviceId = 1
 
-        it('throws BadRequestException when subscription not found', async () => {
-            userAccountRepositoryMock.find.mockResolvedValue(null)
+        it('throws NotFoundException when subscription not found', async () => {
+            userAccountRepositoryMock.findById.mockResolvedValue(null)
 
-            await expect(service.renew(userId, serviceId)).rejects.toThrow(BadRequestException)
+            await expect(service.renew(subscriptionId)).rejects.toThrow(NotFoundException)
         })
 
         it('extends expiry from current expiresAt when still in the future', async () => {
             const futureExpiry = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) // 10 days from now
-            const account = createUserAccountFixture({ userId, serviceId, expiresAt: futureExpiry })
+            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId, expiresAt: futureExpiry })
             const updated = { ...account, expiresAt: new Date(futureExpiry.getTime() + 30 * 24 * 60 * 60 * 1000) }
-            userAccountRepositoryMock.find.mockResolvedValue(account)
+            userAccountRepositoryMock.findById.mockResolvedValue(account)
             userAccountRepositoryMock.update.mockResolvedValue(updated)
 
-            const result = await service.renew(userId, serviceId)
+            const result = await service.renew(subscriptionId)
 
             const newExpiry = userAccountRepositoryMock.update.mock.calls[0]![0]!.expiresAt!
             expect(newExpiry.getTime()).toBeGreaterThan(futureExpiry.getTime())
@@ -75,12 +79,12 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
 
         it('extends expiry from now when already expired', async () => {
             const pastExpiry = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) // 5 days ago
-            const account = createUserAccountFixture({ userId, serviceId, expiresAt: pastExpiry })
+            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId, expiresAt: pastExpiry })
             const updated = { ...account }
-            userAccountRepositoryMock.find.mockResolvedValue(account)
+            userAccountRepositoryMock.findById.mockResolvedValue(account)
             userAccountRepositoryMock.update.mockResolvedValue(updated)
 
-            await service.renew(userId, serviceId)
+            await service.renew(subscriptionId)
 
             const newExpiry = userAccountRepositoryMock.update.mock.calls[0]![0]!.expiresAt!
             const thirtyDaysFromNow = Date.now() + 30 * 24 * 60 * 60 * 1000
@@ -89,35 +93,40 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
         })
 
         it('throws BadRequestException when update returns null', async () => {
-            const account = createUserAccountFixture({ userId, serviceId })
-            userAccountRepositoryMock.find.mockResolvedValue(account)
+            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId })
+            userAccountRepositoryMock.findById.mockResolvedValue(account)
             userAccountRepositoryMock.update.mockResolvedValue(null)
 
-            await expect(service.renew(userId, serviceId)).rejects.toThrow(BadRequestException)
+            await expect(service.renew(subscriptionId)).rejects.toThrow(BadRequestException)
         })
     })
 
     // #endregion renew
 
-    // #region setAutoRenew
+    // #region update (autoRenew)
 
-    describe('setAutoRenew', () => {
+    describe('update — autoRenew', () => {
+        const subscriptionId = 'subscription-uuid-1'
         const userId = 'user-uuid-1'
         const serviceId = 1
 
-        it('throws BadRequestException when subscription not found', async () => {
-            userAccountRepositoryMock.find.mockResolvedValue(null)
+        it('throws BadRequestException when no fields are provided', async () => {
+            await expect(service.update(subscriptionId, {})).rejects.toThrow(BadRequestException)
+        })
 
-            await expect(service.setAutoRenew(userId, serviceId, true)).rejects.toThrow(BadRequestException)
+        it('throws NotFoundException when subscription not found', async () => {
+            userAccountRepositoryMock.findById.mockResolvedValue(null)
+
+            await expect(service.update(subscriptionId, { autoRenew: true })).rejects.toThrow(NotFoundException)
         })
 
         it('sets autoRenew to true', async () => {
-            const account = createUserAccountFixture({ userId, serviceId, autoRenew: false })
+            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId, autoRenew: false })
             const updated = { ...account, autoRenew: true }
-            userAccountRepositoryMock.find.mockResolvedValue(account)
+            userAccountRepositoryMock.findById.mockResolvedValueOnce(account).mockResolvedValueOnce(updated)
             userAccountRepositoryMock.update.mockResolvedValue(updated)
 
-            const result = await service.setAutoRenew(userId, serviceId, true)
+            const result = await service.update(subscriptionId, { autoRenew: true })
 
             expect(userAccountRepositoryMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ userId, serviceId, autoRenew: true })
@@ -126,12 +135,12 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
         })
 
         it('sets autoRenew to false', async () => {
-            const account = createUserAccountFixture({ userId, serviceId, autoRenew: true })
+            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId, autoRenew: true })
             const updated = { ...account, autoRenew: false }
-            userAccountRepositoryMock.find.mockResolvedValue(account)
+            userAccountRepositoryMock.findById.mockResolvedValueOnce(account).mockResolvedValueOnce(updated)
             userAccountRepositoryMock.update.mockResolvedValue(updated)
 
-            const result = await service.setAutoRenew(userId, serviceId, false)
+            const result = await service.update(subscriptionId, { autoRenew: false })
 
             expect(userAccountRepositoryMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ userId, serviceId, autoRenew: false })
@@ -140,15 +149,15 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
         })
 
         it('throws BadRequestException when update returns null', async () => {
-            const account = createUserAccountFixture({ userId, serviceId })
-            userAccountRepositoryMock.find.mockResolvedValue(account)
+            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId })
+            userAccountRepositoryMock.findById.mockResolvedValue(account)
             userAccountRepositoryMock.update.mockResolvedValue(null)
 
-            await expect(service.setAutoRenew(userId, serviceId, true)).rejects.toThrow(BadRequestException)
+            await expect(service.update(subscriptionId, { autoRenew: true })).rejects.toThrow(BadRequestException)
         })
     })
 
-    // #endregion setAutoRenew
+    // #endregion update (autoRenew)
 
     // #region listAll
 

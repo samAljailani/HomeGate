@@ -13,6 +13,7 @@
     "start:debug": "tsx --inspect watch --tsconfig tsconfig.build.json src/main.ts",
     "start:prod": "node dist/src/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "generate:openapi": "tsx tools/generate-openapi.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -54,6 +55,7 @@
     "tsc-alias": "^1.8.17",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.19.4",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.1"
   },
   "overrides": {

@@ -1,8 +1,21 @@
-import { Body, Controller, Get, Inject, Put, Query } from '@nestjs/common'
+import {
+    BadRequestException,
+    Body,
+    Controller,
+    Get,
+    Inject,
+    Param,
+    Patch,
+    Query,
+} from '@nestjs/common'
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
-import { OAuthProviderActionRequestDto, OAuthProviderResponseDto } from '@/types/dtos/oauthProviderDto'
+import {
+    OAuthProviderParamsDto,
+    OAuthProviderPatchRequestDto,
+    OAuthProviderResponseDto,
+} from '@/types/dtos/oauthProviderDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
@@ -23,23 +36,20 @@ export class OAuthProviderController {
         return providers.map((p) => ({ id: p.id, name: p.name, enabled: p.enabled }))
     }
 
-    @Put(routes.oauthProviders.subPath.enable)
+    @Patch(routes.oauthProviders.subPath.update)
     @AdminRoute()
-    @ApiOperation({ summary: 'Enable an OAuth provider (admin only)' })
-    @ApiBody({ type: OAuthProviderActionRequestDto })
+    @ApiOperation({ summary: 'Update OAuth provider state — enabled (admin only)' })
+    @ApiBody({ type: OAuthProviderPatchRequestDto })
     @ApiOkResponse({ type: OAuthProviderResponseDto })
-    async enable(@Body() request: OAuthProviderActionRequestDto): Promise<OAuthProviderResponseDto> {
-        const provider = await this.oauthProviderManagementService.enable(request.name)
-        return { id: provider.id, name: provider.name, enabled: provider.enabled }
-    }
+    async update(
+        @Param() params: OAuthProviderParamsDto,
+        @Body() request: OAuthProviderPatchRequestDto
+    ): Promise<OAuthProviderResponseDto> {
+        if (request.enabled === undefined) {
+            throw new BadRequestException('No fields provided to update')
+        }
 
-    @Put(routes.oauthProviders.subPath.disable)
-    @AdminRoute()
-    @ApiOperation({ summary: 'Disable an OAuth provider (admin only)' })
-    @ApiBody({ type: OAuthProviderActionRequestDto })
-    @ApiOkResponse({ type: OAuthProviderResponseDto })
-    async disable(@Body() request: OAuthProviderActionRequestDto): Promise<OAuthProviderResponseDto> {
-        const provider = await this.oauthProviderManagementService.disable(request.name)
+        const provider = await this.oauthProviderManagementService.updateEnabledById(params.id, request.enabled)
         return { id: provider.id, name: provider.name, enabled: provider.enabled }
     }
 }

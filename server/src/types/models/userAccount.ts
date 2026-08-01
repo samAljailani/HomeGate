@@ -1,6 +1,7 @@
 import { FailedOperation, UserAccountStatus } from '@/types/enums'
 
 export type UserAccountModel = {
+    id: string
     userId: string
     serviceId: number
 

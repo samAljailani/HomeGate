@@ -1,9 +1,18 @@
-import { ApiProperty } from '@nestjs/swagger'
-import { IsBoolean, IsDate, IsEmail, IsNotEmpty, IsString, IsUUID } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { Transform } from 'class-transformer'
+import { IsBoolean, IsDate, IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator'
+import { UserStatus } from '@/types/models/user'
 
 export class UserFindOptions {
     withDeleted?: boolean
     withActive?: boolean
+}
+
+export class UserParamsDto {
+    @ApiProperty({ type: String, format: 'uuid' })
+    @IsUUID()
+    @IsNotEmpty()
+    id: string
 }
 
 export class UserLoadRequestDto {
@@ -80,15 +89,22 @@ export class UserUpdateRequestDto {
     username?: string
 }
 
-export class UserDeleteRequestDto {
-    @ApiProperty({ type: String })
-    @IsUUID()
-    @IsNotEmpty()
-    userId: string
-
-    @ApiProperty({ type: Boolean })
+export class UserPatchRequestDto {
+    @ApiPropertyOptional({ type: Boolean })
+    @IsOptional()
     @IsBoolean()
-    softDelete: boolean
+    enabled?: boolean
+}
+
+export class UserDeleteRequestDto {
+    @ApiPropertyOptional({
+        type: Boolean,
+        description: 'Permanently delete the account. Ignored for non-admin callers.',
+    })
+    @IsOptional()
+    @Transform(({ value }) => value === true || value === 'true')
+    @IsBoolean()
+    hard?: boolean
 }
 
 export class UserResponseForAdminDto extends UserResponseDto {
@@ -99,6 +115,10 @@ export class UserResponseForAdminDto extends UserResponseDto {
     @ApiProperty({ type: Boolean })
     @IsBoolean()
     isEnabled: boolean
+
+    @ApiProperty({ enum: UserStatus })
+    @IsIn(Object.values(UserStatus))
+    status: UserStatus
 
     @ApiProperty({ type: Date })
     @IsDate()

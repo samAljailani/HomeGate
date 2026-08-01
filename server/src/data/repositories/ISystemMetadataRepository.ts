@@ -4,4 +4,5 @@ export abstract class ISystemMetadataRepository {
     abstract get<K extends SystemConfigKey>(key: K): Promise<SystemConfigMap[K]>
     abstract set<K extends SystemConfigKey>(key: K, value: SystemConfigMap[K]): Promise<void>
     abstract exists(key: SystemConfigKey): Promise<boolean>
+    abstract syncDefaults<K extends SystemConfigKey>(key: K): Promise<string[]>
 }

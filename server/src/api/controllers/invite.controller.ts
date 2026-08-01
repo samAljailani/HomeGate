@@ -1,21 +1,18 @@
-import { Body, Controller, Get, Inject, Param, Post, Put, Query, Request } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Post, Query, Request } from '@nestjs/common'
 import {
     ApiBadRequestResponse,
     ApiBody,
-    ApiConflictResponse,
-    ApiForbiddenResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
     ApiParam,
     ApiTags,
-    ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import type { Request as ExpressRequest } from 'express'
-import { AdminRoute, Public } from '@/decorators'
+import { AdminRoute } from '@/decorators'
 import { InviteService } from '@/api/services/invite.service'
-import { CreateInviteRequestDto, ValidateInviteResponseDto } from '@/types/dtos/inviteDto'
+import { CreateInviteRequestDto, InviteParamsDto, InvitePatchRequestDto } from '@/types/dtos/inviteDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
@@ -26,7 +23,7 @@ export class InviteController {
 
     @Post()
     @AdminRoute()
-    @Throttle({ default: { ttl: 60_000, limit: 10 } })
+    @Throttle({ default: { ttl: 60_000, limit: 60 } })
     @ApiOperation({ summary: 'Generate an invite token (admin only)' })
     @ApiBody({ type: CreateInviteRequestDto })
     @ApiOkResponse({ description: 'Invite token created successfully' })
@@ -43,30 +40,23 @@ export class InviteController {
         return this.inviteService.listInvites(pagination.take, pagination.skip)
     }
 
-    @Put(routes.invites.subPath.revoke)
+    @Patch(routes.invites.subPath.update)
     @AdminRoute()
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @ApiOperation({ summary: 'Revoke an invite (admin only)' })
     @ApiParam({ name: 'id', type: String })
+    @ApiBody({ type: InvitePatchRequestDto })
     @ApiOkResponse({ description: 'Invite revoked successfully' })
     @ApiNotFoundResponse({ description: 'Invite not found' })
-    async revoke(@Param('id') id: string) {
-        return this.inviteService.revokeToken(id)
-    }
+    async update(
+        @Param() params: InviteParamsDto,
+        @Body() request: InvitePatchRequestDto,
+        @Request() req: ExpressRequest
+    ) {
+        if (request.revoked !== true) {
+            throw new BadRequestException('Only revoking an invite is supported (revoked: true)')
+        }
 
-    @Get(routes.invites.subPath.validate)
-    @Public()
-    @Throttle({ default: { ttl: 60_000, limit: 20 } })
-    @ApiOperation({ summary: 'Validate an invite token (public)' })
-    @ApiParam({ name: 'token', type: String })
-    @ApiOkResponse({ description: 'Token is valid', type: ValidateInviteResponseDto })
-    @ApiBadRequestResponse({ description: 'Token is invalid' })
-    @ApiNotFoundResponse({ description: 'Token not found' })
-    @ApiConflictResponse({ description: 'Token already used' })
-    @ApiUnprocessableEntityResponse({ description: 'Token expired or revoked' })
-    @ApiForbiddenResponse({ description: 'Token not valid for this account' })
-    async validate(@Param('token') token: string): Promise<ValidateInviteResponseDto> {
-        await this.inviteService.validateToken(token) // will throw if in valid
-        return { valid: true }
+        return this.inviteService.revokeToken(params.id, req.session.userId!)
     }
 }

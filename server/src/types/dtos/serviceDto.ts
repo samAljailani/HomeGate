@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsInt, IsNotEmpty, IsString } from 'class-validator'
+import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
+export class ServiceParamsDto {
+    @ApiProperty({ type: String })
+    @IsString()
+    @IsNotEmpty()
+    name: string
+}
 export class ServiceLoadRequestDto {
     @ApiProperty({ type: Number })
     @IsInt()
@@ -60,9 +66,9 @@ export class ServiceResponseDto {
     url: string | null
 }
 
-export class ServiceActionRequestDto {
-    @ApiProperty({ type: String })
-    @IsString()
-    @IsNotEmpty()
-    name: string
+export class ServicePatchRequestDto {
+    @ApiPropertyOptional({ type: Boolean })
+    @IsOptional()
+    @IsBoolean()
+    enabled?: boolean
 }

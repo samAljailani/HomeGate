@@ -6,6 +6,7 @@ export function createUserAccountFixture(overrides: Partial<UserAccountModel> = 
     const expiresAt = new Date('2026-07-31T00:00:00Z')
 
     return {
+        id: 'subscription-uuid-1',
         userId: 'user-uuid-1',
         serviceId: 1,
         userServiceAccountId: 'external-id-1',

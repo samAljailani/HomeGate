@@ -1,7 +1,5 @@
 import { AuthService } from '@/api/services/auth.service'
-import { InviteService } from '@/api/services/invite.service'
 import { createAuthServiceMock } from '../../mocks/auth.service.mock'
-import { createInviteServiceMock } from '../../mocks/invite.service.mock'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { AuthController } from '@/api/controllers/auth.controller'
@@ -9,8 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { createOAuthUserProfileFixture } from '../../fixtures/auth.stub'
 import { createRequestMock, createResponseMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
-import { createInviteFixture } from '../../fixtures/invite.stub'
-import { clientRoutes, routes } from '@/types/dtos/routes'
+import { clientRoutes } from '@/types/dtos/routes'
 import { NotFoundException } from '@nestjs/common'
 import { OAuthAuthModel } from '@/types/models/oauthAuth'
 
@@ -22,14 +19,12 @@ function createOAuthAuthResultFixture(overrides: Partial<OAuthAuthModel> = {}): 
 describe('AuthController', () => {
     let controller: AuthController
     let authServiceMock: ReturnType<typeof createAuthServiceMock>
-    let inviteServiceMock: ReturnType<typeof createInviteServiceMock>
     let loggingProviderMock: ReturnType<typeof createLoggerMock>
     let expressRequestMock: ReturnType<typeof createRequestMock>
     let expressResponseMock: ReturnType<typeof createResponseMock>
 
     beforeEach(async () => {
         authServiceMock = createAuthServiceMock()
-        inviteServiceMock = createInviteServiceMock()
         loggingProviderMock = createLoggerMock()
         expressRequestMock = createRequestMock()
         expressResponseMock = createResponseMock()
@@ -37,7 +32,6 @@ describe('AuthController', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 { provide: AuthService, useValue: authServiceMock },
-                { provide: InviteService, useValue: inviteServiceMock },
                 { provide: LoggingProvider, useValue: loggingProviderMock },
                 AuthController,
             ],
@@ -62,16 +56,16 @@ describe('AuthController', () => {
                 )
             })
 
-            it('does not validate the token', async () => {
+            it('does not begin sign-up', async () => {
                 await controller.join(undefined as any, expressRequestMock, expressResponseMock)
 
-                expect(inviteServiceMock.validateToken).not.toHaveBeenCalled()
+                expect(authServiceMock.beginSignUp).not.toHaveBeenCalled()
             })
         })
 
         describe('when token is invalid', () => {
             it('redirects to sign-in with invalid_invite error', async () => {
-                inviteServiceMock.validateToken.mockRejectedValue(new NotFoundException())
+                authServiceMock.beginSignUp.mockRejectedValue(new NotFoundException())
 
                 await controller.join('bad-token', expressRequestMock, expressResponseMock)
 
@@ -82,25 +76,28 @@ describe('AuthController', () => {
         })
 
         describe('when token is valid', () => {
-            it('stores oauthTransaction in session and redirects to google', async () => {
-                const invite = createInviteFixture()
-                inviteServiceMock.validateToken.mockResolvedValue(invite)
+            it('stores oauthTransaction in session and redirects to the sign-in page', async () => {
+                const expiresAt = new Date(Date.now() + 600_000)
+                authServiceMock.beginSignUp.mockResolvedValue({ inviteId: 'invite-id-123', expiresAt })
 
                 await controller.join('valid-token', expressRequestMock, expressResponseMock)
 
+                expect(authServiceMock.beginSignUp).toHaveBeenCalledWith('valid-token')
                 expect(expressRequestMock.session.regenerate).toHaveBeenCalled()
                 expect(expressRequestMock.session.oauthTransaction).toEqual({
                     inviteToken: 'valid-token',
-                    inviteId: invite.id,
-                    expiresAt: invite.expiresAt,
+                    inviteId: 'invite-id-123',
+                    expiresAt,
                 })
                 expect(expressRequestMock.session.save).toHaveBeenCalled()
-                expect(expressResponseMock.redirect).toHaveBeenCalledWith(routes.auth.google)
+                expect(expressResponseMock.redirect).toHaveBeenCalledWith(clientRoutes.signIn)
             })
 
             it('does not set userId on the session', async () => {
-                const invite = createInviteFixture()
-                inviteServiceMock.validateToken.mockResolvedValue(invite)
+                authServiceMock.beginSignUp.mockResolvedValue({
+                    inviteId: 'invite-id-123',
+                    expiresAt: new Date(Date.now() + 600_000),
+                })
 
                 await controller.join('valid-token', expressRequestMock, expressResponseMock)
 
@@ -178,6 +175,7 @@ describe('AuthController', () => {
 
     describe('googleAuthRedirect (signup flow)', () => {
         beforeEach(() => {
+            expressRequestMock.user = createOAuthUserProfileFixture()
             expressRequestMock.session.oauthTransaction = {
                 inviteToken: 'raw-token',
                 inviteId: 'invite-id-123',
@@ -185,19 +183,35 @@ describe('AuthController', () => {
             }
         })
 
-        describe('when signUp returns null', () => {
-            it('redirects to sign-in with auth_failed error', async () => {
-                authServiceMock.signUp.mockResolvedValue(null as any)
+        describe('when the sign-up window has expired', () => {
+            beforeEach(() => {
+                expressRequestMock.session.oauthTransaction = {
+                    inviteToken: 'raw-token',
+                    inviteId: 'invite-id-123',
+                    expiresAt: new Date(Date.now() - 1000),
+                }
+            })
 
+            it('redirects to sign-in with invite_expired error', async () => {
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
-                expect(expressResponseMock.redirect).toHaveBeenCalledWith(expect.stringContaining('error=auth_failed'))
+                expect(expressResponseMock.redirect).toHaveBeenCalledWith(
+                    expect.stringContaining('error=invite_expired')
+                )
+            })
+
+            it('clears the transaction and does not complete sign-up or authorize', async () => {
+                await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
+
+                expect(expressRequestMock.session.oauthTransaction).toBeUndefined()
+                expect(authServiceMock.completeSignUp).not.toHaveBeenCalled()
+                expect(authServiceMock.authorize).not.toHaveBeenCalled()
             })
         })
 
-        describe('when signUp throws', () => {
+        describe('when completeSignUp throws', () => {
             it('redirects to sign-in with auth_failed error', async () => {
-                authServiceMock.signUp.mockRejectedValue(new Error('invite expired'))
+                authServiceMock.completeSignUp.mockRejectedValue(new Error('invite expired'))
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
@@ -205,7 +219,7 @@ describe('AuthController', () => {
             })
 
             it('does not call authorize', async () => {
-                authServiceMock.signUp.mockRejectedValue(new Error())
+                authServiceMock.completeSignUp.mockRejectedValue(new Error())
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
@@ -213,31 +227,30 @@ describe('AuthController', () => {
             })
         })
 
-        describe('when signUp succeeds', () => {
-            it('calls signUp with the invite token from the session', async () => {
-                expressRequestMock.user = createOAuthUserProfileFixture()
-                authServiceMock.signUp.mockResolvedValue(createOAuthAuthResultFixture())
+        describe('when completeSignUp succeeds', () => {
+            it('calls completeSignUp with the invite token from the session and the OAuth profile', async () => {
+                authServiceMock.completeSignUp.mockResolvedValue(createOAuthAuthResultFixture())
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
-                expect(authServiceMock.signUp).toHaveBeenCalledWith('raw-token', expressRequestMock.user)
+                expect(authServiceMock.completeSignUp).toHaveBeenCalledWith('raw-token', expressRequestMock.user)
             })
 
             it('does not call authorize', async () => {
-                authServiceMock.signUp.mockResolvedValue(createOAuthAuthResultFixture())
+                authServiceMock.completeSignUp.mockResolvedValue(createOAuthAuthResultFixture())
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
                 expect(authServiceMock.authorize).not.toHaveBeenCalled()
             })
 
-            it('regenerates session and sets user data', async () => {
-                expressRequestMock.user = createOAuthUserProfileFixture()
+            it('clears the transaction, regenerates session and sets user data', async () => {
                 const result = createOAuthAuthResultFixture()
-                authServiceMock.signUp.mockResolvedValue(result)
+                authServiceMock.completeSignUp.mockResolvedValue(result)
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 
+                expect(expressRequestMock.session.oauthTransaction).toBeUndefined()
                 expect(expressRequestMock.session.regenerate).toHaveBeenCalled()
                 expect(expressRequestMock.session.save).toHaveBeenCalled()
                 expect(expressRequestMock.session.userId).toBe(result.id)
@@ -247,7 +260,7 @@ describe('AuthController', () => {
             })
 
             it('redirects to home', async () => {
-                authServiceMock.signUp.mockResolvedValue(createOAuthAuthResultFixture())
+                authServiceMock.completeSignUp.mockResolvedValue(createOAuthAuthResultFixture())
 
                 await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
 

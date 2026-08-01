@@ -1,16 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { Type } from 'class-transformer'
+import { Transform, Type } from 'class-transformer'
 import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator'
 import { Match } from '@/types/validators/match.validator'
+import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { UserAccountStatus } from '@/types/enums'
 
 export { UserAccountStatus }
 
-export class SubscriptionLoadRequestDto {
-    @ApiProperty({ type: String })
+export class SubscriptionParamsDto {
+    @ApiProperty({ type: String, format: 'uuid' })
     @IsUUID()
     @IsNotEmpty()
-    userId: string
+    id: string
 }
 
 export class SubscriptionCreateRequestDto {
@@ -47,62 +48,31 @@ export class SubscriptionCreateRequestDto {
 }
 
 export class SubscriptionDeleteRequestDto {
-    @ApiProperty({ type: String })
-    @Type(() => String)
-    @IsString()
-    userId: string
+    @ApiPropertyOptional({
+        type: Boolean,
+        description: 'Immediately delete the external account instead of cancelling auto-renew',
+    })
+    @IsOptional()
+    @Transform(({ value }) => value === true || value === 'true')
+    @IsBoolean()
+    immediate?: boolean
+}
 
-    @ApiProperty({ type: Number })
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    serviceId: number
+export class SubscriptionPatchRequestDto {
+    @ApiPropertyOptional({ type: Boolean })
+    @IsOptional()
+    @IsBoolean()
+    enabled?: boolean
 
     @ApiPropertyOptional({ type: Boolean })
     @IsOptional()
     @IsBoolean()
-    deleteImmediately?: boolean
+    autoRenew?: boolean
 }
 
-export class SubscriptionDisableRequestDto {
-    @ApiProperty({ type: String })
-    @Type(() => String)
-    @IsString()
-    userId: string
-
-    @ApiProperty({ type: Number })
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    serviceId: number
-}
-
-export class SubscriptionRenewRequestDto {
-    @ApiProperty({ type: String })
+export class SubscriptionListRequestDto extends PaginationRequestDto {
+    @ApiPropertyOptional({ type: String, description: 'Filter subscriptions by user id' })
+    @IsOptional()
     @IsUUID()
-    @IsNotEmpty()
-    userId: string
-
-    @ApiProperty({ type: Number })
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    serviceId: number
-}
-
-export class SubscriptionAutoRenewRequestDto {
-    @ApiProperty({ type: String })
-    @IsUUID()
-    @IsNotEmpty()
-    userId: string
-
-    @ApiProperty({ type: Number })
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    serviceId: number
-
-    @ApiProperty({ type: Boolean })
-    @IsBoolean()
-    autoRenew: boolean
+    userId?: string
 }

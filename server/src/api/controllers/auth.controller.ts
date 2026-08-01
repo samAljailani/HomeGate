@@ -1,7 +1,6 @@
 import { Controller, Post, Get, Request, Inject, Res, UseGuards, Query } from '@nestjs/common'
 import { ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { AuthService } from '@/api/services/auth.service'
-import { InviteService } from '@/api/services/invite.service'
 import { OAuthUserProfileDto } from '@/types/dtos/authDto'
 import { GoogleOAuthGuard } from '@/api/middleware/google-oauth.guard'
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
@@ -14,7 +13,6 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 export class AuthController {
     constructor(
         @Inject(AuthService) private readonly authService: AuthService,
-        @Inject(InviteService) private readonly inviteService: InviteService,
         @Inject(LoggingProvider) private readonly logger: LoggingProvider
     ) {
         this.logger.setContext(AuthController.name)
@@ -39,7 +37,7 @@ export class AuthController {
         }
 
         try {
-            const invite = await this.inviteService.validateToken(token)
+            const { inviteId, expiresAt } = await this.authService.beginSignUp(token)
 
             await new Promise<void>((resolve, reject) => {
                 req.session.regenerate((err) => {
@@ -47,15 +45,15 @@ export class AuthController {
 
                     req.session.oauthTransaction = {
                         inviteToken: token,
-                        inviteId: invite.id,
-                        expiresAt: invite.expiresAt,
+                        inviteId,
+                        expiresAt,
                     }
 
                     req.session.save((err) => (err ? reject(err) : resolve()))
                 })
             })
 
-            return res.redirect(routes.auth.google)
+            return res.redirect(clientRoutes.signIn)
         } catch {
             return res.redirect(`${clientRoutes.signIn}?error=invalid_invite`)
         }
@@ -67,6 +65,7 @@ export class AuthController {
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     async googleAuthRedirect(@Request() req: ExpressRequest, @Res() res: ExpressResponse) {
         return this.handleOAuthRedirect(req, res)
+        //TODO: remove invite token from session.
     }
 
     @Post(routes.auth.subPath.signOut)
@@ -75,6 +74,7 @@ export class AuthController {
         const username = req.session.username
 
         try {
+            //TODO: remove session
             await this.authService.signOut(userId, username)
             await new Promise<void>((resolve) => req.session.destroy(() => resolve()))
         } catch (error) {
@@ -90,12 +90,22 @@ export class AuthController {
         const body = req.user as OAuthUserProfileDto
         const transaction = req.session.oauthTransaction
 
+        if (transaction && new Date(transaction.expiresAt) < new Date()) {
+            delete req.session.oauthTransaction
+            this.logger.log('Invite sign-up window expired before OAuth completion')
+            return res.redirect(`${clientRoutes.signIn}?error=invite_expired`)
+        }
+
         let response
         try {
-            response = transaction
-                ? await this.authService.signUp(transaction.inviteToken, body)
-                : await this.authService.authorize(body)
+            if (transaction) {
+                response = await this.authService.completeSignUp(transaction.inviteToken, body)
+                delete req.session.oauthTransaction
+            } else {
+                response = await this.authService.authorize(body)
+            }
         } catch (error) {
+            delete req.session.oauthTransaction
             this.logger.error('OAuth callback failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
