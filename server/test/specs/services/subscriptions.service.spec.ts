@@ -19,7 +19,7 @@ import { createApplicationClientRegistryMock } from '../../mocks/applicationClie
 import { createApplicationClientMock } from '../../mocks/applicationClient.mock'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
-import { createUserAccountFixture } from '../../fixtures/userAccount.stub'
+import { createUserAccountFixture, toSubscriptionResponseDto } from '../../fixtures/userAccount.stub'
 import { createServiceFixture } from '../../fixtures/service.stub'
 import { SubscriptionCreateRequestDto } from '@/types/dtos/subscriptionsDto'
 
@@ -93,7 +93,7 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(createdAccount)
+            expect(result).toEqual(toSubscriptionResponseDto(createdAccount))
             expect(userAccountRepoMock.create).toHaveBeenCalledWith(
                 expect.objectContaining({ userId, status: UserAccountStatus.provisioning })
             )
@@ -158,7 +158,7 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(activeAccount)
+            expect(result).toEqual(toSubscriptionResponseDto(activeAccount))
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ status: UserAccountStatus.provisioning })
             )
@@ -186,7 +186,7 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(reactivatedAccount)
+            expect(result).toEqual(toSubscriptionResponseDto(reactivatedAccount))
             expect(client.enableUser).toHaveBeenCalledWith(
                 expect.objectContaining({ userServiceAccountId: 'old-ext-id' })
             )
@@ -215,7 +215,7 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(reactivatedAccount)
+            expect(result).toEqual(toSubscriptionResponseDto(reactivatedAccount))
             expect(client.enableUser).toHaveBeenCalledWith(
                 expect.objectContaining({ userServiceAccountId: 'old-ext-id' })
             )
@@ -247,7 +247,7 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(activeAccount)
+            expect(result).toEqual(toSubscriptionResponseDto(activeAccount))
             expect(client.createUser).toHaveBeenCalled()
         })
 
@@ -273,7 +273,7 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(activeAccount)
+            expect(result).toEqual(toSubscriptionResponseDto(activeAccount))
         })
 
         it.each([FailedOperation.cancellation, FailedOperation.expiration, FailedOperation.sync])(

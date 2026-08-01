@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common'
 import { UserService } from './user.service'
 import { IServiceRepository, IUserAccountRepository } from '@/data/repositories'
-import { SubscriptionCreateRequestDto, SubscriptionPatchRequestDto } from '@/types/dtos/subscriptionsDto'
+import { SubscriptionCreateRequestDto, SubscriptionPatchRequestDto, SubscriptionResponseDto } from '@/types/dtos/subscriptionsDto'
 import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
 import { ApplicationClientNames, FailedOperation, UserAccountStatus } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -39,7 +39,7 @@ export class SubscriptionService {
         this.logger.setContext(this.constructor.name)
     }
 
-    async subscribe(request: SubscriptionCreateRequestDto, userId: string): Promise<UserAccountModel> {
+    async subscribe(request: SubscriptionCreateRequestDto, userId: string): Promise<SubscriptionResponseDto> {
         const user = await this.userService.getUserById({ userId })
 
         if (!user) {
@@ -107,7 +107,7 @@ export class SubscriptionService {
 
                 this.logger.log(`User '${userId}' reactivated existing account on service '${service.id}'`)
 
-                return reactivatedAccount
+                return this.mapSubscription(reactivatedAccount)
             }
 
             // External account is gone — fall through to create a new one.
@@ -208,7 +208,7 @@ export class SubscriptionService {
 
             this.logger.log(`User '${userId}' successfully subscribed to service '${service.id}'`)
 
-            return activeUserAccount
+            return this.mapSubscription(activeUserAccount)
         } catch (error) {
             await this.markSubscriptionFailed(
                 userId,
@@ -222,7 +222,7 @@ export class SubscriptionService {
     }
 
     async delete(subscriptionId: string, currentUserId: string, deleteImmediately?: boolean): Promise<boolean> {
-        const existingUserServiceAccount = await this.getById(subscriptionId)
+        const existingUserServiceAccount = await this.getRawById(subscriptionId)
 
         const user = await this.userService.getUserById({ userId: existingUserServiceAccount.userId })
         const currentUser = await this.userService.getUserById({ userId: currentUserId })
@@ -356,7 +356,17 @@ export class SubscriptionService {
         this.logger.log(`Disabled ${accountsToDisable.length} subscription(s) for user ${userId}`)
     }
 
-    async getById(subscriptionId: string): Promise<UserAccountModel> {
+    async getById(subscriptionId: string): Promise<SubscriptionResponseDto> {
+        const account = await this.userAccountRepository.findById(subscriptionId)
+
+        if (!account) {
+            throw new NotFoundException('Subscription not found')
+        }
+
+        return this.mapSubscription(account)
+    }
+
+    private async getRawById(subscriptionId: string): Promise<UserAccountModel> {
         const account = await this.userAccountRepository.findById(subscriptionId)
 
         if (!account) {
@@ -371,12 +381,12 @@ export class SubscriptionService {
      * - `enabled` transitions the account between active and disabled (including the external service account).
      * - `autoRenew` toggles automatic renewal.
      */
-    async update(subscriptionId: string, patch: SubscriptionPatchRequestDto): Promise<UserAccountModel> {
+    async update(subscriptionId: string, patch: SubscriptionPatchRequestDto): Promise<SubscriptionResponseDto> {
         if (patch.enabled === undefined && patch.autoRenew === undefined) {
             throw new BadRequestException('No fields provided to update')
         }
 
-        const account = await this.getById(subscriptionId)
+        const account = await this.getRawById(subscriptionId)
 
         if (patch.enabled !== undefined) {
             const status = patch.enabled ? UserAccountStatus.active : UserAccountStatus.disabled
@@ -400,8 +410,8 @@ export class SubscriptionService {
         return this.getById(subscriptionId)
     }
 
-    async renew(subscriptionId: string): Promise<UserAccountModel> {
-        const account = await this.getById(subscriptionId)
+    async renew(subscriptionId: string): Promise<SubscriptionResponseDto> {
+        const account = await this.getRawById(subscriptionId)
 
         const baseDate = account.expiresAt && account.expiresAt.getTime() > Date.now() ? account.expiresAt : new Date()
         const newExpiresAt = this.getDefaultExpirationDate(baseDate)
@@ -421,15 +431,17 @@ export class SubscriptionService {
             `Admin renewed subscription '${subscriptionId}' for user '${account.userId}' on service '${account.serviceId}'. New expiry: ${newExpiresAt.toISOString()}`
         )
 
-        return updated
+        return this.mapSubscription(updated)
     }
 
-    async listAll(take?: number, skip?: number): Promise<UserAccountModel[]> {
-        return this.userAccountRepository.findMany({}, take, skip)
+    async listAll(take?: number, skip?: number): Promise<SubscriptionResponseDto[]> {
+        const accounts = await this.userAccountRepository.findMany({}, take, skip)
+        return accounts.map((a) => this.mapSubscription(a))
     }
 
-    async listByUser(userId: string, take?: number, skip?: number): Promise<UserAccountModel[]> {
-        return this.userAccountRepository.findMany({ userId }, take, skip)
+    async listByUser(userId: string, take?: number, skip?: number): Promise<SubscriptionResponseDto[]> {
+        const accounts = await this.userAccountRepository.findMany({ userId }, take, skip)
+        return accounts.map((a) => this.mapSubscription(a))
     }
 
     private async getServiceClient(serviceName: string) {
@@ -459,6 +471,26 @@ export class SubscriptionService {
             lastError,
         })
     }
+
+    // #region Mappers
+
+    private mapSubscription(model: UserAccountModel): SubscriptionResponseDto {
+        return {
+            id: model.id,
+            userId: model.userId,
+            serviceId: model.serviceId,
+            username: model.username,
+            status: model.status,
+            autoRenew: model.autoRenew,
+            createdAt: model.createdAt,
+            updatedAt: model.updatedAt,
+            expiresAt: model.expiresAt,
+            provisionedAt: model.provisionedAt,
+            cancelledAt: model.cancelledAt,
+        }
+    }
+
+    // #endregion Mappers
 
     private isCurrentlyActive(userAccount: UserAccountModel): boolean {
         return (

@@ -7,6 +7,41 @@ import { UserAccountStatus } from '@/types/enums'
 
 export { UserAccountStatus }
 
+export class SubscriptionResponseDto {
+    @ApiProperty({ type: String, format: 'uuid' })
+    id: string
+
+    @ApiProperty({ type: String, format: 'uuid' })
+    userId: string
+
+    @ApiProperty({ type: Number })
+    serviceId: number
+
+    @ApiProperty({ type: String })
+    username: string
+
+    @ApiProperty({ enum: UserAccountStatus })
+    status: UserAccountStatus
+
+    @ApiProperty({ type: Boolean })
+    autoRenew: boolean
+
+    @ApiProperty({ type: String, format: 'date-time' })
+    createdAt: Date
+
+    @ApiProperty({ type: String, format: 'date-time' })
+    updatedAt: Date
+
+    @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+    expiresAt: Date | null
+
+    @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+    provisionedAt: Date | null
+
+    @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+    cancelledAt: Date | null
+}
+
 export class SubscriptionParamsDto {
     @ApiProperty({ type: String, format: 'uuid' })
     @IsUUID()

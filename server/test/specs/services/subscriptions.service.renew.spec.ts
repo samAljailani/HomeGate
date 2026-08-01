@@ -7,7 +7,7 @@ import { UserService } from '@/api/services/user.service'
 import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
-import { createUserAccountFixture } from '../../fixtures/userAccount.stub'
+import { createUserAccountFixture, toSubscriptionResponseDto } from '../../fixtures/userAccount.stub'
 
 function createUserAccountRepositoryMock(): jest.Mocked<
     Pick<IUserAccountRepository, 'find' | 'findById' | 'findMany' | 'update'>
@@ -74,7 +74,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
 
             const newExpiry = userAccountRepositoryMock.update.mock.calls[0]![0]!.expiresAt!
             expect(newExpiry.getTime()).toBeGreaterThan(futureExpiry.getTime())
-            expect(result).toBe(updated)
+            expect(result).toEqual(toSubscriptionResponseDto(updated))
         })
 
         it('extends expiry from now when already expired', async () => {

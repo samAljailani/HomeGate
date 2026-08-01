@@ -18,6 +18,7 @@ import {
     ApiOkResponse,
     ApiOperation,
     ApiParam,
+    ApiQuery,
     ApiServiceUnavailableResponse,
     ApiTags,
 } from '@nestjs/swagger'
@@ -31,6 +32,7 @@ import {
     SubscriptionListRequestDto,
     SubscriptionParamsDto,
     SubscriptionPatchRequestDto,
+    SubscriptionResponseDto,
 } from '@/types/dtos/subscriptionsDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
@@ -47,26 +49,31 @@ export class SubscriptionController {
     @Throttle({ default: { ttl: 60_000, limit: 5 } })
     @ApiOperation({ summary: 'Subscribe to a service' })
     @ApiBody({ type: SubscriptionCreateRequestDto })
-    @ApiOkResponse({ description: 'Subscription created successfully' })
+    @ApiOkResponse({ description: 'Subscription created successfully', type: SubscriptionResponseDto })
     @ApiBadRequestResponse({ description: 'Invalid request or service unavailable' })
     @ApiConflictResponse({ description: 'Subscription already exists' })
     @ApiServiceUnavailableResponse({ description: 'External service unavailable' })
-    async subscribe(@Body() request: SubscriptionCreateRequestDto, @Request() req: ExpressRequest) {
+    async subscribe(@Body() request: SubscriptionCreateRequestDto, @Request() req: ExpressRequest) :  Promise<SubscriptionResponseDto> {
         return this.subscriptionService.subscribe(request, req.session.userId!)
     }
 
     @Get(routes.subscriptions.subPath.me)
     @ApiOperation({ summary: 'List subscriptions for the current user' })
-    @ApiOkResponse({ description: 'List of subscriptions for the authenticated user' })
-    async listMine(@Request() req: ExpressRequest, @Query() pagination: PaginationRequestDto) {
+    @ApiQuery({ name: 'take', type: Number, required: false })
+    @ApiQuery({ name: 'skip', type: Number, required: false })
+    @ApiOkResponse({ description: 'List of subscriptions for the authenticated user', type: [SubscriptionResponseDto] })
+    async listMine(@Request() req: ExpressRequest, @Query() pagination: PaginationRequestDto) : Promise<SubscriptionResponseDto[]> {
         return this.subscriptionService.listByUser(req.session.userId!, pagination.take, pagination.skip)
     }
 
     @Get(routes.subscriptions.subPath.list)
     @AdminRoute()
     @ApiOperation({ summary: 'List subscriptions, optionally filtered by user (admin only)' })
-    @ApiOkResponse({ description: 'List of subscriptions' })
-    async listAll(@Query() query: SubscriptionListRequestDto) {
+    @ApiQuery({ name: 'userId', type: String, required: false })
+    @ApiQuery({ name: 'take', type: Number, required: false })
+    @ApiQuery({ name: 'skip', type: Number, required: false })
+    @ApiOkResponse({ description: 'List of subscriptions', type: [SubscriptionResponseDto] })
+    async listAll(@Query() query: SubscriptionListRequestDto) : Promise<SubscriptionResponseDto[]> {
         if (query.userId) {
             return this.subscriptionService.listByUser(query.userId, query.take, query.skip)
         }
@@ -78,9 +85,9 @@ export class SubscriptionController {
     @AdminRoute()
     @ApiOperation({ summary: 'Get a subscription by id (admin only)' })
     @ApiParam({ name: 'id', type: String, format: 'uuid' })
-    @ApiOkResponse({ description: 'The subscription' })
+    @ApiOkResponse({ description: 'The subscription', type: SubscriptionResponseDto })
     @ApiNotFoundResponse({ description: 'Subscription not found' })
-    async getById(@Param() params: SubscriptionParamsDto) {
+    async getById(@Param() params: SubscriptionParamsDto) :  Promise<SubscriptionResponseDto>  {
         return this.subscriptionService.getById(params.id)
     }
 
@@ -90,11 +97,11 @@ export class SubscriptionController {
     @ApiOperation({ summary: 'Update subscription state — enabled and/or autoRenew (admin only)' })
     @ApiParam({ name: 'id', type: String, format: 'uuid' })
     @ApiBody({ type: SubscriptionPatchRequestDto })
-    @ApiOkResponse({ description: 'Subscription updated successfully' })
+    @ApiOkResponse({ description: 'Subscription updated successfully', type: SubscriptionResponseDto })
     @ApiBadRequestResponse({ description: 'No fields provided or invalid request' })
     @ApiNotFoundResponse({ description: 'Subscription not found' })
     @ApiConflictResponse({ description: 'Subscription is not in a valid state for the transition' })
-    async update(@Param() params: SubscriptionParamsDto, @Body() request: SubscriptionPatchRequestDto) {
+    async update(@Param() params: SubscriptionParamsDto, @Body() request: SubscriptionPatchRequestDto) :  Promise<SubscriptionResponseDto>  {
         return this.subscriptionService.update(params.id, request)
     }
 
@@ -102,9 +109,9 @@ export class SubscriptionController {
     @AdminRoute()
     @ApiOperation({ summary: 'Renew a subscription by 30 days (admin only)' })
     @ApiParam({ name: 'id', type: String, format: 'uuid' })
-    @ApiOkResponse({ description: 'Subscription renewed successfully' })
+    @ApiOkResponse({ description: 'Subscription renewed successfully', type: SubscriptionResponseDto })
     @ApiNotFoundResponse({ description: 'Subscription not found' })
-    async renew(@Param() params: SubscriptionParamsDto) {
+    async renew(@Param() params: SubscriptionParamsDto) :  Promise<SubscriptionResponseDto>  {
         return this.subscriptionService.renew(params.id)
     }
 
@@ -122,7 +129,7 @@ export class SubscriptionController {
         @Param() params: SubscriptionParamsDto,
         @Body() body: SubscriptionDeleteRequestDto,
         @Request() req: ExpressRequest
-    ) {
+    ): Promise<boolean> {
         return this.subscriptionService.delete(params.id, req.session.userId!, body?.immediate)
     }
 }

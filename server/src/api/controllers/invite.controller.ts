@@ -6,13 +6,20 @@ import {
     ApiOkResponse,
     ApiOperation,
     ApiParam,
+    ApiQuery,
     ApiTags,
 } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
 import { InviteService } from '@/api/services/invite.service'
-import { CreateInviteRequestDto, InviteParamsDto, InvitePatchRequestDto, InviteResponseDto } from '@/types/dtos/inviteDto'
+import {
+    CreateInviteRequestDto,
+    CreateInviteResponseDto,
+    InviteParamsDto,
+    InvitePatchRequestDto,
+    InviteResponseDto,
+} from '@/types/dtos/inviteDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
@@ -26,19 +33,25 @@ export class InviteController {
     @Throttle({ default: { ttl: 60_000, limit: 60 } })
     @ApiOperation({ summary: 'Generate an invite token (admin only)' })
     @ApiBody({ type: CreateInviteRequestDto })
-    @ApiOkResponse({ description: 'Invite token created successfully' })
+    @ApiOkResponse({ description: 'Invite token created successfully', type: CreateInviteResponseDto })
     @ApiBadRequestResponse({ description: 'Invalid request' })
-    async create(@Body() request: CreateInviteRequestDto, @Request() req: ExpressRequest) {
+    async create(
+        @Body() request: CreateInviteRequestDto,
+        @Request() req: ExpressRequest
+    ): Promise<CreateInviteResponseDto> {
         return this.inviteService.createToken(request, req.session.userId!)
     }
 
     @Get()
     @AdminRoute()
     @ApiOperation({ summary: 'List all invites (admin only)' })
-    @ApiOkResponse({ description: 'List of all invites' })
-    async list(@Query() pagination: PaginationRequestDto) {
+    @ApiQuery({ name: 'take', type: Number, required: false })
+    @ApiQuery({ name: 'skip', type: Number, required: false })
+    @ApiOkResponse({ description: 'List of all invites', type: [InviteResponseDto] })
+    async list(@Query() pagination: PaginationRequestDto): Promise<InviteResponseDto[]> {
         return this.inviteService.listInvites(pagination.take, pagination.skip)
     }
+
 
     @Patch(routes.invites.subPath.update)
     @AdminRoute()

@@ -1,5 +1,6 @@
 import { UserAccountModel } from '@/types/models/userAccount'
 import { UserAccountStatus } from '@/types/enums'
+import { SubscriptionResponseDto } from '@/types/dtos/subscriptionsDto'
 
 export function createUserAccountFixture(overrides: Partial<UserAccountModel> = {}): UserAccountModel {
     const now = new Date('2026-07-01T00:00:00Z')
@@ -23,5 +24,21 @@ export function createUserAccountFixture(overrides: Partial<UserAccountModel> = 
         lastError: null,
         retryCount: 0,
         ...overrides,
+    }
+}
+
+export function toSubscriptionResponseDto(model: UserAccountModel): SubscriptionResponseDto {
+    return {
+        id: model.id,
+        userId: model.userId,
+        serviceId: model.serviceId,
+        username: model.username,
+        status: model.status,
+        autoRenew: model.autoRenew,
+        createdAt: model.createdAt,
+        updatedAt: model.updatedAt,
+        expiresAt: model.expiresAt,
+        provisionedAt: model.provisionedAt,
+        cancelledAt: model.cancelledAt,
     }
 }
