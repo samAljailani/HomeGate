@@ -2,6 +2,7 @@ node_modules
 dist/
 *.tsbuildinfo
 coverage/
+openapi.json
 
 # Environment variables - keep .env.example for reference
 .env

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type JSX } from "react";
 import { classNames } from "@/utils/styles";
-import type { NavItem } from "@packages/types/client/ui";
+import type { NavItem } from "./NavBar.types";
 import { IconHamburger } from "@/components/ui/icons/IconHamburger";
 import { IconX } from "@/components/ui/icons/IconX";
 import { IconBell } from "@/components/ui/icons/IconBell";

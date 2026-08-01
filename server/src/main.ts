@@ -4,7 +4,7 @@ import 'reflect-metadata'
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { NestExpressApplication } from '@nestjs/platform-express'
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import { SwaggerModule } from '@nestjs/swagger'
 
 import session from 'express-session'
 
@@ -14,6 +14,7 @@ import { AppEnv } from '@/types/models/EnvData'
 import { PrismaSessionStore } from '@/infrastructure/prismaSession.store'
 import { EnvRepository } from '@/data/repositories/env.repository'
 import { csrfSynchronisedProtection } from '@/api/security/csrf'
+import { buildSwaggerConfig } from '@/swagger.config'
 
 import { ApplicationClientRegistry } from './core/clients/applicationClientRegistry'
 import { clients } from './core/clients'
@@ -84,21 +85,7 @@ async function configureApplicationClients(app: NestExpressApplication) {
 }
 
 function configureSwagger(app: NestExpressApplication) {
-    const config = new DocumentBuilder()
-        .setTitle('HomeGate API')
-        .setDescription('API documentation for HomeGate')
-        .setVersion('1.0')
-        .addApiKey(
-            {
-                type: 'apiKey',
-                name: 'X-CSRF-Token',
-                in: 'header',
-                description: 'CSRF token from GET /api/csrf',
-            },
-            'csrf-token'
-        )
-        .addSecurityRequirements('csrf-token')
-        .build()
+    const config = buildSwaggerConfig()
 
     const document = SwaggerModule.createDocument(app, config)
     SwaggerModule.setup('api', app, document, {

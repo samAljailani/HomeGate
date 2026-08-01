@@ -26,9 +26,18 @@ export class UpdateTaskConfigDto {
 }
 
 export class TaskConfigResponseDto {
+    @ApiProperty({ type: String })
     name!: string
+
+    @ApiProperty({ type: Boolean })
     enabled!: boolean
+
+    @ApiProperty({ type: Boolean })
     runOnStartup!: boolean
+
+    @ApiProperty({ type: String })
     cronExpression!: string
+
+    @ApiProperty({ type: Boolean })
     isActive!: boolean
 }
