@@ -101,41 +101,54 @@ jobs:
 
       - name: Read published versions
         shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
-          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          node <<'NODE'
+          const fs = require("node:fs");
 
-          # Use "@*" instead of the bare package name so npm resolves by
-          # version range instead of the "latest" dist-tag. Packages that
-          # have only ever been published under a non-latest tag (e.g.
-          # "dev") have no "latest" tag, and some npm versions silently
-          # return empty output in that case instead of erroring.
-          if npm view "${PACKAGE_NAME}@*" versions \
-            --json \
-            --registry="$REGISTRY_URL" \
-            > published-versions.json \
-            2> npm-view-error.log; then
+          const packageName = require("./package.json").name;
+          const registryUrl = process.env.REGISTRY_URL.replace(/\/$/, "");
+          const packageUrl =
+            `${registryUrl}/${encodeURIComponent(packageName)}`;
 
-            if [ ! -s published-versions.json ]; then
-              echo "No published versions found." \
-                "Treating as not yet published."
-              echo "[]" > published-versions.json
-            else
-              echo "Retrieved published package versions."
-            fi
+          (async () => {
+            const response = await fetch(packageUrl, {
+              headers: {
+                Authorization: `Bearer ${process.env.NODE_AUTH_TOKEN}`,
+                Accept: "application/json"
+              }
+            });
 
-          elif grep -qiE "E404|404 Not Found" npm-view-error.log; then
+            if (response.status === 404) {
+              console.log("Package has not been published yet.");
+              fs.writeFileSync("published-versions.json", "[]");
+              return;
+            }
 
-            echo "Package has not been published yet."
-            echo "[]" > published-versions.json
+            if (!response.ok) {
+              throw new Error(
+                `Failed to read package metadata: ` +
+                `${response.status} ${response.statusText}`
+              );
+            }
 
-          else
+            const packument = await response.json();
+            const versions = Object.keys(packument.versions ?? {});
 
-            cat npm-view-error.log
-            exit 1
+            fs.writeFileSync(
+              "published-versions.json",
+              JSON.stringify(versions)
+            );
 
-          fi
+            console.log(`Found ${versions.length} published version(s).`);
+          })().catch(error => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
 
       - name: Calculate next version
         id: version
