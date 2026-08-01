@@ -54,14 +54,17 @@ export class UserController {
     @ApiOperation({ summary: 'Update a user account state — enabled (admin only)' })
     @ApiParam({ name: 'id', type: String, format: 'uuid' })
     @ApiBody({ type: UserPatchRequestDto })
-    @ApiOkResponse({ description: 'User updated successfully' })
-    async updateUser(@Param() params: UserParamsDto, @Body() request: UserPatchRequestDto): Promise<void> {
-        if (request.enabled === undefined) return
+    @ApiOkResponse({ description: 'User updated successfully', type: UserResponseForAdminDto })
+    async updateUser(
+        @Param() params: UserParamsDto,
+        @Body() request: UserPatchRequestDto
+    ): Promise<UserResponseForAdminDto | null> {
+        if (request.enabled === undefined) return this.userService.getUserByIdForAdmin(params.id)
 
         if (request.enabled) {
-            await this.userService.enableUser(params.id)
+            return this.userService.enableUser(params.id)
         } else {
-            await this.userService.disableUser(params.id)
+            return this.userService.disableUser(params.id)
         }
     }
 
@@ -70,24 +73,23 @@ export class UserController {
     @ApiOperation({ summary: 'Delete a user account (soft or hard)' })
     @ApiParam({ name: 'id', type: String, format: 'uuid' })
     @ApiBody({ type: UserDeleteRequestDto, required: false })
-    @ApiOkResponse({ description: 'User deleted successfully' })
+    @ApiOkResponse({ description: 'User deleted successfully', type: Boolean })
     @ApiForbiddenResponse({ description: 'Insufficient permissions' })
     async deleteUser(
         @Param() params: UserParamsDto,
         @Body() body: UserDeleteRequestDto,
         @Request() req: ExpressRequest
-    ): Promise<void> {
+    ): Promise<boolean> {
         const sessionUserId = req.session.userId!
         const sessionIsAdmin = req.session.isAdmin ?? false
 
         // Non-admins may only soft-delete their own account; the hard flag is ignored for them.
         if (body?.hard && sessionIsAdmin) {
-            await this.userService.hardDeleteUser(params.id)
-            return
+            return this.userService.hardDeleteUser(params.id)
         }
 
         this.assertSelfOrAdmin(sessionUserId, params.id, sessionIsAdmin)
-        await this.userService.softDeleteUser(params.id)
+        return this.userService.softDeleteUser(params.id)
     }
 
     private assertSelfOrAdmin(sessionUserId: string, targetUserId: string, isAdmin: boolean): void {

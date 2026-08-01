@@ -141,7 +141,7 @@ describe('UserController', () => {
         const userId = 'user-uuid-1'
 
         it('enables the user when enabled is true', async () => {
-            userServiceMock.enableUser.mockResolvedValue(undefined)
+            userServiceMock.enableUser.mockResolvedValue(null)
 
             await controller.updateUser({ id: userId }, { enabled: true })
 
@@ -150,7 +150,7 @@ describe('UserController', () => {
         })
 
         it('disables the user when enabled is false', async () => {
-            userServiceMock.disableUser.mockResolvedValue(undefined)
+            userServiceMock.disableUser.mockResolvedValue(null)
 
             await controller.updateUser({ id: userId }, { enabled: false })
 
@@ -159,10 +159,14 @@ describe('UserController', () => {
         })
 
         it('does nothing when enabled is not provided', async () => {
-            await controller.updateUser({ id: userId }, {})
+            const userId2 = userId
+            userServiceMock.getUserByIdForAdmin.mockResolvedValue(null)
+
+            await controller.updateUser({ id: userId2 }, {})
 
             expect(userServiceMock.enableUser).not.toHaveBeenCalled()
             expect(userServiceMock.disableUser).not.toHaveBeenCalled()
+            expect(userServiceMock.getUserByIdForAdmin).toHaveBeenCalledWith(userId2)
         })
     })
 

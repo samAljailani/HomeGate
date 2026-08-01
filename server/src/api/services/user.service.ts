@@ -148,27 +148,31 @@ export class UserService extends BaseService {
 
     // #region Delete Methods
 
-    async softDeleteUser(userId: string): Promise<void> {
+    async softDeleteUser(userId: string): Promise<boolean> {
         await this.subscriptionService.disableAllForUser(userId)
         await this.cleanupUserSessions(userId)
-        await this.userRepository.softDelete(userId)
+        const success = await this.userRepository.softDelete(userId)
         this.logger.log(`User ${userId} soft deleted`)
+        return success
     }
 
-    async hardDeleteUser(userId: string): Promise<void> {
+    async hardDeleteUser(userId: string): Promise<boolean> {
         // Cascade in schema handles related records
-        await this.userRepository.hardDelete(userId)
+        const success = await this.userRepository.hardDelete(userId)
         this.logger.log(`User ${userId} hard deleted`)
+        return success
     }
 
-    async disableUser(userId: string): Promise<void> {
-        await this.userRepository.setEnabled(userId, false)
+    async disableUser(userId: string): Promise<UserResponseForAdminDto | null> {
+        const user = await this.userRepository.setEnabled(userId, false)
         this.logger.log(`User ${userId} disabled`)
+        return user ? this.userModelToLoadRequestForAdmin(user) : null
     }
 
-    async enableUser(userId: string): Promise<void> {
-        await this.userRepository.setEnabled(userId, true)
+    async enableUser(userId: string): Promise<UserResponseForAdminDto | null> {
+        const user = await this.userRepository.setEnabled(userId, true)
         this.logger.log(`User ${userId} enabled`)
+        return user ? this.userModelToLoadRequestForAdmin(user) : null
     }
 
     async listUsers(take?: number, skip?: number): Promise<UserResponseForAdminDto[]> {

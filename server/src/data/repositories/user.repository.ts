@@ -185,31 +185,40 @@ export class UserRepository extends BaseRepository implements IUserRepository {
         }
     }
 
-    async softDelete(id: string): Promise<void> {
+    async softDelete(id: string): Promise<boolean> {
         try {
             await this.db.user.update({ where: { id }, data: { isDeleted: true, isEnabled: false } })
+            return true
         } catch (error) {
             this.logger.error(`softDelete failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            mapPrismaError(error, repositoryErrorMessages.user)
+            // TODO: mapPrismaError always throws (never returns), so this currently just swallows
+            // the error and reports failure via `false`. Revisit whether callers need to
+            // distinguish error types (e.g. not found vs. conflict) rather than a plain boolean.
+            return false
         }
     }
 
-    async hardDelete(id: string): Promise<void> {
+    async hardDelete(id: string): Promise<boolean> {
         try {
             await this.db.user.delete({ where: { id } })
+            return true
         } catch (error) {
             this.logger.error(`hardDelete failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
-            mapPrismaError(error, repositoryErrorMessages.user)
+            // TODO: mapPrismaError always throws (never returns), so this currently just swallows
+            // the error and reports failure via `false`. Revisit whether callers need to
+            // distinguish error types (e.g. not found vs. conflict) rather than a plain boolean.
+            return false
         }
     }
 
-    async setEnabled(id: string, enabled: boolean): Promise<void> {
+    async setEnabled(id: string, enabled: boolean): Promise<UserModel | null> {
         try {
-            await this.db.user.update({ where: { id }, data: { isEnabled: enabled } })
+            const user = await this.db.user.update({ where: { id }, data: { isEnabled: enabled } })
+            return this.mapUser(user)
         } catch (error) {
             this.logger.error(`setEnabled failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,

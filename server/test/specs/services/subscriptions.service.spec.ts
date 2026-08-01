@@ -411,9 +411,9 @@ describe('SubscriptionService', () => {
             client.deleteUser.mockResolvedValue(false)
             userAccountRepoMock.update.mockResolvedValue(activeAccount)
 
-            await expect(service.delete(subscriptionId, currentUserId, true)).rejects.toThrow(
-                ServiceUnavailableException
-            )
+            const result = await service.delete(subscriptionId, currentUserId, true)
+
+            expect(result).toBe(false)
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ status: UserAccountStatus.failed })
             )

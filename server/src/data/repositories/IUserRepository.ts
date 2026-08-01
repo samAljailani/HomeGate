@@ -15,7 +15,7 @@ export interface IUserRepository {
     createWithOAuthIdentity(request: CreateUserModel, providerId: number, profileId: string): Promise<UserModel>
     update(request: UpdateUserModel): Promise<UserModel | null>
     usernameExists(username: string): Promise<boolean>
-    softDelete(id: string): Promise<void>
-    hardDelete(id: string): Promise<void>
-    setEnabled(id: string, enabled: boolean): Promise<void>
+    softDelete(id: string): Promise<boolean>
+    hardDelete(id: string): Promise<boolean>
+    setEnabled(id: string, enabled: boolean): Promise<UserModel | null>
 }

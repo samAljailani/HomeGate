@@ -373,6 +373,18 @@ export interface components {
         InvitePatchRequestDto: {
             revoked?: boolean;
         };
+        InviteResponseDto: {
+            id: string;
+            email?: string;
+            expiresAt: string;
+            createdAt: string;
+            usedAt?: string;
+            revokedAt?: string;
+            revokedReason?: string;
+            createdByUserId?: string;
+            usedByUserId?: string;
+            revokedByUserId?: string;
+        };
         UserResponseForAdminDto: {
             id: string;
             email: string;
@@ -826,7 +838,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["InviteResponseDto"];
+                };
             };
             /** @description Invite not found */
             404: {
@@ -897,7 +911,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": boolean;
+                };
             };
             /** @description Insufficient permissions */
             403: {
@@ -928,7 +944,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UserResponseForAdminDto"];
+                };
             };
         };
     };

@@ -317,7 +317,10 @@ export class SubscriptionService {
                 FailedOperation.cancellation
             )
 
-            throw error
+            // TODO: previously rethrew here, but the boolean return type can't ever be false
+            // if every failure is thrown instead. Revisit whether callers need to distinguish
+            // error types (e.g. bad request vs. service unavailable) rather than a plain boolean.
+            return false
         }
     }
 

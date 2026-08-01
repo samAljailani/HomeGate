@@ -116,7 +116,7 @@ export class InviteService extends BaseService {
         return invite
     }
 
-    async revokeToken(id: string, revokedByUserId: string): Promise<void> {
+    async revokeToken(id: string, revokedByUserId: string): Promise<InviteResponseDto> {
         const invite = await this.inviteRepository.findById(id)
 
         if (invite == null) {
@@ -129,12 +129,14 @@ export class InviteService extends BaseService {
 
         if (invite.revokedAt != null || invite.expiresAt < new Date()) {
             // Already terminal (revoked or expired) — revoking is an idempotent no-op.
-            return
+            return this.mapInvite(invite)
         }
 
-        await this.inviteRepository.revoke(id, InviteRevokedReason.ADMIN, revokedByUserId)
+        const revoked = await this.inviteRepository.revoke(id, InviteRevokedReason.ADMIN, revokedByUserId)
 
         this.logger.log(`Invite ${id} revoked by user ${revokedByUserId}`)
+
+        return this.mapInvite(revoked ?? invite)
     }
 
     /**

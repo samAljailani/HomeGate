@@ -12,7 +12,7 @@ import { Throttle } from '@nestjs/throttler'
 import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
 import { InviteService } from '@/api/services/invite.service'
-import { CreateInviteRequestDto, InviteParamsDto, InvitePatchRequestDto } from '@/types/dtos/inviteDto'
+import { CreateInviteRequestDto, InviteParamsDto, InvitePatchRequestDto, InviteResponseDto } from '@/types/dtos/inviteDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
@@ -46,13 +46,13 @@ export class InviteController {
     @ApiOperation({ summary: 'Revoke an invite (admin only)' })
     @ApiParam({ name: 'id', type: String })
     @ApiBody({ type: InvitePatchRequestDto })
-    @ApiOkResponse({ description: 'Invite revoked successfully' })
+    @ApiOkResponse({ description: 'Invite revoked successfully', type: InviteResponseDto })
     @ApiNotFoundResponse({ description: 'Invite not found' })
     async update(
         @Param() params: InviteParamsDto,
         @Body() request: InvitePatchRequestDto,
         @Request() req: ExpressRequest
-    ) {
+    ): Promise<InviteResponseDto> {
         if (request.revoked !== true) {
             throw new BadRequestException('Only revoking an invite is supported (revoked: true)')
         }
