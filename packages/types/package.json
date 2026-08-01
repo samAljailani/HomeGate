@@ -22,8 +22,7 @@
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "generate:schema": "openapi-typescript ../../server/openapi.json -o src/schema.ts",
-    "build": "npm run clean && npm run generate:schema && tsc",
-    "build:ci": "npm run clean && tsc"
+    "build": "npm run clean && npm run generate:schema && tsc"
   },
   "dependencies": {
     "openapi-fetch": "^0.17.0"
