@@ -305,7 +305,7 @@ jobs:
             --no-git-tag-version \
             --allow-same-version
 
-      - name: Build package
+      - name: Clean build package
         run: npm run build:ci --if-present
 
       - name: Validate package contents
