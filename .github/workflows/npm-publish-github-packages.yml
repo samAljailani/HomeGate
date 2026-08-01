@@ -152,9 +152,14 @@ jobs:
           const releaseType = process.env.RELEASE_TYPE;
           const channel = process.env.CHANNEL;
 
-          const rawVersions = JSON.parse(
-            fs.readFileSync("published-versions.json", "utf8")
-          );
+          const publishedVersionsContent = fs
+            .readFileSync("published-versions.json", "utf8")
+            .trim();
+
+          const rawVersions =
+            publishedVersionsContent === ""
+              ? []
+              : JSON.parse(publishedVersionsContent);
 
           const versions = Array.isArray(rawVersions)
             ? rawVersions
