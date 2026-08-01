@@ -358,6 +358,27 @@ export interface components {
             confirmServicePassword: string;
             autoRenew: boolean;
         };
+        SubscriptionResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            serviceId: number;
+            username: string;
+            /** @enum {string} */
+            status: "provisioning" | "active" | "failed" | "cancelling" | "cancelled" | "expired" | "disabling" | "disabled" | "enabling";
+            autoRenew: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: date-time */
+            provisionedAt?: string | null;
+            /** Format: date-time */
+            cancelledAt?: string | null;
+        };
         SubscriptionPatchRequestDto: {
             enabled?: boolean;
             autoRenew?: boolean;
@@ -370,9 +391,6 @@ export interface components {
             email?: string;
             expiresInDays: number;
         };
-        InvitePatchRequestDto: {
-            revoked?: boolean;
-        };
         InviteResponseDto: {
             id: string;
             email?: string;
@@ -384,6 +402,13 @@ export interface components {
             createdByUserId?: string;
             usedByUserId?: string;
             revokedByUserId?: string;
+        };
+        CreateInviteResponseDto: {
+            rawToken: string;
+            invite: components["schemas"]["InviteResponseDto"];
+        };
+        InvitePatchRequestDto: {
+            revoked?: boolean;
         };
         UserResponseForAdminDto: {
             id: string;
@@ -443,6 +468,17 @@ export interface components {
             runOnStartup: boolean;
             cronExpression: string;
             isActive: boolean;
+        };
+        UpdateTaskConfigDto: {
+            enabled?: boolean;
+            runOnStartup?: boolean;
+            cronExpression?: string;
+        };
+        PaginationRequestDto: {
+            /** @default 50 */
+            take: number;
+            /** @default 0 */
+            skip: number;
         };
     };
     responses: never;
@@ -543,7 +579,11 @@ export interface operations {
     };
     SubscriptionController_listAll: {
         parameters: {
-            query?: never;
+            query?: {
+                skip?: number;
+                take?: number;
+                userId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -555,7 +595,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SubscriptionResponseDto"][];
+                };
             };
         };
     };
@@ -577,7 +619,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SubscriptionResponseDto"];
+                };
             };
             /** @description Invalid request or service unavailable */
             400: {
@@ -604,7 +648,10 @@ export interface operations {
     };
     SubscriptionController_listMine: {
         parameters: {
-            query?: never;
+            query?: {
+                skip?: number;
+                take?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -616,7 +663,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SubscriptionResponseDto"][];
+                };
             };
         };
     };
@@ -636,7 +685,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SubscriptionResponseDto"];
+                };
             };
             /** @description Subscription not found */
             404: {
@@ -719,7 +770,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SubscriptionResponseDto"];
+                };
             };
             /** @description No fields provided or invalid request */
             400: {
@@ -760,7 +813,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SubscriptionResponseDto"];
+                };
             };
             /** @description Subscription not found */
             404: {
@@ -773,7 +828,10 @@ export interface operations {
     };
     InviteController_list: {
         parameters: {
-            query?: never;
+            query?: {
+                skip?: number;
+                take?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -785,7 +843,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["InviteResponseDto"][];
+                };
             };
         };
     };
@@ -807,7 +867,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["CreateInviteResponseDto"];
+                };
             };
             /** @description Invalid request */
             400: {
@@ -853,7 +915,10 @@ export interface operations {
     };
     UserController_listUsers: {
         parameters: {
-            query?: never;
+            query?: {
+                skip?: number;
+                take?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -952,7 +1017,10 @@ export interface operations {
     };
     ServiceController_list: {
         parameters: {
-            query?: never;
+            query?: {
+                skip?: number;
+                take?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -996,7 +1064,10 @@ export interface operations {
     };
     OAuthProviderController_list: {
         parameters: {
-            query?: never;
+            query?: {
+                skip?: number;
+                take?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1040,7 +1111,12 @@ export interface operations {
     };
     LogController_list: {
         parameters: {
-            query?: never;
+            query?: {
+                skip?: number;
+                take?: number;
+                logLevel?: "verbose" | "debug" | "log" | "warn" | "error" | "fatal";
+                userId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1085,7 +1161,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskConfigDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
