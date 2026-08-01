@@ -1,0 +1,374 @@
+name: Release HomeGate Types Node Package
+
+run-name: ${{ inputs.channel }} ${{ inputs.release_type }} package release (${{ inputs.branch }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: Semantic version increment
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+      channel:
+        description: Release channel
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - stable
+
+      branch:
+        description: Branch to release from (defaults to the repository's default branch)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+# Prevent simultaneous releases from calculating the same version.
+concurrency:
+  group: ${{ github.repository }}-types-package-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Version and publish package
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: packages/types
+
+    env:
+      REGISTRY_URL: ${{ vars.NPM_REGISTRY_URL }}
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_BRANCH: ${{ inputs.branch || github.event.repository.default_branch }}
+
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: ${{ vars.NPM_REGISTRY_URL }}
+          scope: '@samaljailani'
+          cache: npm
+
+      - name: Validate package configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PACKAGE_NAME=$(node -p "require('./package.json').name ?? ''")
+
+          if [ -z "$PACKAGE_NAME" ]; then
+            echo "package.json must contain a package name."
+            exit 1
+          fi
+
+          if [[ "$PACKAGE_NAME" != @*/* ]]; then
+            echo "GitHub npm packages must use a scoped name."
+            echo "Example: @${{ github.repository_owner }}/my-package"
+            exit 1
+          fi
+
+          echo "Package: $PACKAGE_NAME"
+
+      - name: Install dependencies
+        working-directory: .
+        run: npm ci
+
+      - name: Run lint
+        working-directory: .
+        run: npm run lint --workspace packages/types --if-present
+
+      - name: Run tests
+        working-directory: .
+        run: npm test --workspace packages/types --if-present
+
+      - name: Read published versions
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+
+          if npm view "$PACKAGE_NAME" versions \
+            --json \
+            --registry="$REGISTRY_URL" \
+            > published-versions.json \
+            2> npm-view-error.log; then
+
+            echo "Retrieved published package versions."
+
+          elif grep -qiE "E404|404 Not Found" npm-view-error.log; then
+
+            echo "Package has not been published yet."
+            echo "[]" > published-versions.json
+
+          else
+
+            cat npm-view-error.log
+            exit 1
+
+          fi
+
+      - name: Calculate next version
+        id: version
+        shell: bash
+        env:
+          RELEASE_TYPE: ${{ inputs.release_type }}
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs = require("node:fs");
+
+          const releaseType = process.env.RELEASE_TYPE;
+          const channel = process.env.CHANNEL;
+
+          const rawVersions = JSON.parse(
+            fs.readFileSync("published-versions.json", "utf8")
+          );
+
+          const versions = Array.isArray(rawVersions)
+            ? rawVersions
+            : rawVersions
+              ? [rawVersions]
+              : [];
+
+          const stablePattern = /^(\d+)\.(\d+)\.(\d+)$/;
+          const devPattern = /^(\d+)\.(\d+)\.(\d+)-dev\.(\d+)$/;
+
+          const stableVersions = versions
+            .map(version => {
+              const match = version.match(stablePattern);
+
+              if (!match) {
+                return null;
+              }
+
+              return {
+                major: Number(match[1]),
+                minor: Number(match[2]),
+                patch: Number(match[3])
+              };
+            })
+            .filter(Boolean)
+            .sort((left, right) =>
+              left.major - right.major ||
+              left.minor - right.minor ||
+              left.patch - right.patch
+            );
+
+          const latestStable = stableVersions.at(-1) ?? {
+            major: 0,
+            minor: 0,
+            patch: 0
+          };
+
+          let major = latestStable.major;
+          let minor = latestStable.minor;
+          let patch = latestStable.patch;
+
+          switch (releaseType) {
+            case "major":
+              major += 1;
+              minor = 0;
+              patch = 0;
+              break;
+
+            case "minor":
+              minor += 1;
+              patch = 0;
+              break;
+
+            case "patch":
+              patch += 1;
+              break;
+
+            default:
+              throw new Error(
+                `Unsupported release type: ${releaseType}`
+              );
+          }
+
+          const baseVersion = `${major}.${minor}.${patch}`;
+
+          let version;
+          let distTag;
+          let prerelease;
+
+          if (channel === "stable") {
+            version = baseVersion;
+            distTag = "latest";
+            prerelease = false;
+
+            if (versions.includes(version)) {
+              throw new Error(
+                `Version ${version} has already been published`
+              );
+            }
+          } else if (channel === "dev") {
+            const existingDevNumbers = versions
+              .map(publishedVersion => {
+                const match = publishedVersion.match(devPattern);
+
+                if (!match) {
+                  return null;
+                }
+
+                const publishedBase =
+                  `${match[1]}.${match[2]}.${match[3]}`;
+
+                if (publishedBase !== baseVersion) {
+                  return null;
+                }
+
+                return Number(match[4]);
+              })
+              .filter(value => value !== null);
+
+            const nextDevNumber =
+              existingDevNumbers.length === 0
+                ? 1
+                : Math.max(...existingDevNumbers) + 1;
+
+            version = `${baseVersion}-dev.${nextDevNumber}`;
+            distTag = "dev";
+            prerelease = true;
+          } else {
+            throw new Error(`Unsupported channel: ${channel}`);
+          }
+
+          const packageName =
+            require("./package.json").name;
+
+          const outputs = [
+            `package_name=${packageName}`,
+            `version=${version}`,
+            `tag=homegate-types-v${version}`,
+            `dist_tag=${distTag}`,
+            `prerelease=${prerelease}`
+          ];
+
+          fs.appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `${outputs.join("\n")}\n`
+          );
+
+          console.log(`Latest stable: ${
+            latestStable.major
+          }.${latestStable.minor}.${latestStable.patch}`);
+
+          console.log(`Next version: ${version}`);
+          console.log(`npm tag: ${distTag}`);
+          NODE
+
+      - name: Verify tag does not exist
+        shell: bash
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          if git ls-remote \
+            --exit-code \
+            --tags origin \
+            "refs/tags/$TAG" > /dev/null 2>&1; then
+
+            echo "Git tag $TAG already exists."
+            exit 1
+
+          fi
+
+      - name: Update package version
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          npm version "$VERSION" \
+            --no-git-tag-version \
+            --allow-same-version
+
+      - name: Build package
+        run: npm run build:ci --if-present
+
+      - name: Validate package contents
+        run: npm pack --dry-run
+
+      - name: Commit version and create tag
+        working-directory: .
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add packages/types/package.json package-lock.json
+
+          if git diff --cached --quiet; then
+            echo "Package files already contain version $VERSION."
+          else
+            git commit -m "chore(release): $TAG"
+          fi
+
+          git tag "$TAG"
+
+          git push origin "HEAD:$RELEASE_BRANCH"
+          git push origin "$TAG"
+
+      - name: Publish package
+        shell: bash
+        env:
+          DIST_TAG: ${{ steps.version.outputs.dist_tag }}
+        run: |
+          npm publish --tag "$DIST_TAG" --registry="$REGISTRY_URL"
+
+      - name: Create stable GitHub release
+        if: inputs.channel == 'stable'
+        working-directory: .
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "$TAG" \
+            --verify-tag \
+            --title "$TAG" \
+            --generate-notes \
+            --latest
+
+      - name: Create development GitHub prerelease
+        if: inputs.channel == 'dev'
+        working-directory: .
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "$TAG" \
+            --verify-tag \
+            --title "$TAG" \
+            --generate-notes \
+            --prerelease \
+            --latest=false
