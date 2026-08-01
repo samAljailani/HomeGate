@@ -11,7 +11,7 @@ import {
     Query,
     Request,
 } from '@nestjs/common'
-import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
@@ -66,6 +66,12 @@ export class UserController {
     @Delete(routes.users.subPath.delete)
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @ApiOperation({ summary: 'Delete a user account (soft or hard)' })
+    @ApiQuery({
+        name: 'hard',
+        type: Boolean,
+        required: false,
+        description: 'Permanently delete the account. Ignored for non-admin callers.',
+    })
     @ApiOkResponse({ description: 'User deleted successfully' })
     @ApiForbiddenResponse({ description: 'Insufficient permissions' })
     async deleteUser(

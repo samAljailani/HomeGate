@@ -17,6 +17,7 @@ import {
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
+    ApiQuery,
     ApiServiceUnavailableResponse,
     ApiTags,
 } from '@nestjs/swagger'
@@ -107,6 +108,12 @@ export class SubscriptionController {
     @Delete(routes.subscriptions.subPath.delete)
     @Throttle({ default: { ttl: 60_000, limit: 5 } })
     @ApiOperation({ summary: 'Cancel a subscription' })
+    @ApiQuery({
+        name: 'immediate',
+        type: Boolean,
+        required: false,
+        description: 'Immediately delete the external account instead of cancelling auto-renew',
+    })
     @ApiOkResponse({ description: 'Subscription cancelled successfully' })
     @ApiBadRequestResponse({ description: 'Invalid request or unauthorized' })
     @ApiNotFoundResponse({ description: 'Subscription not found' })

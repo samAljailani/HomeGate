@@ -627,7 +627,10 @@ export interface operations {
     };
     SubscriptionController_delete: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Immediately delete the external account instead of cancelling auto-renew */
+                immediate?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -857,7 +860,10 @@ export interface operations {
     };
     UserController_deleteUser: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Permanently delete the account. Ignored for non-admin callers. */
+                hard?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
