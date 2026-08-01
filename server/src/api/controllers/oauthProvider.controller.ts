@@ -8,7 +8,7 @@ import {
     Patch,
     Query,
 } from '@nestjs/common'
-import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
 import {
@@ -39,6 +39,7 @@ export class OAuthProviderController {
     @Patch(routes.oauthProviders.subPath.update)
     @AdminRoute()
     @ApiOperation({ summary: 'Update OAuth provider state — enabled (admin only)' })
+    @ApiParam({ name: 'id', type: Number })
     @ApiBody({ type: OAuthProviderPatchRequestDto })
     @ApiOkResponse({ type: OAuthProviderResponseDto })
     async update(

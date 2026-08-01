@@ -17,7 +17,7 @@ import {
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
-    ApiQuery,
+    ApiParam,
     ApiServiceUnavailableResponse,
     ApiTags,
 } from '@nestjs/swagger'
@@ -77,6 +77,7 @@ export class SubscriptionController {
     @Get(routes.subscriptions.subPath.get)
     @AdminRoute()
     @ApiOperation({ summary: 'Get a subscription by id (admin only)' })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
     @ApiOkResponse({ description: 'The subscription' })
     @ApiNotFoundResponse({ description: 'Subscription not found' })
     async getById(@Param() params: SubscriptionParamsDto) {
@@ -87,6 +88,7 @@ export class SubscriptionController {
     @AdminRoute()
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @ApiOperation({ summary: 'Update subscription state — enabled and/or autoRenew (admin only)' })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
     @ApiBody({ type: SubscriptionPatchRequestDto })
     @ApiOkResponse({ description: 'Subscription updated successfully' })
     @ApiBadRequestResponse({ description: 'No fields provided or invalid request' })
@@ -99,6 +101,7 @@ export class SubscriptionController {
     @Post(routes.subscriptions.subPath.renew)
     @AdminRoute()
     @ApiOperation({ summary: 'Renew a subscription by 30 days (admin only)' })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
     @ApiOkResponse({ description: 'Subscription renewed successfully' })
     @ApiNotFoundResponse({ description: 'Subscription not found' })
     async renew(@Param() params: SubscriptionParamsDto) {
@@ -108,12 +111,8 @@ export class SubscriptionController {
     @Delete(routes.subscriptions.subPath.delete)
     @Throttle({ default: { ttl: 60_000, limit: 5 } })
     @ApiOperation({ summary: 'Cancel a subscription' })
-    @ApiQuery({
-        name: 'immediate',
-        type: Boolean,
-        required: false,
-        description: 'Immediately delete the external account instead of cancelling auto-renew',
-    })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
+    @ApiBody({ type: SubscriptionDeleteRequestDto, required: false })
     @ApiOkResponse({ description: 'Subscription cancelled successfully' })
     @ApiBadRequestResponse({ description: 'Invalid request or unauthorized' })
     @ApiNotFoundResponse({ description: 'Subscription not found' })
@@ -121,9 +120,9 @@ export class SubscriptionController {
     @ApiServiceUnavailableResponse({ description: 'Failed to delete external account' })
     async delete(
         @Param() params: SubscriptionParamsDto,
-        @Query() query: SubscriptionDeleteRequestDto,
+        @Body() body: SubscriptionDeleteRequestDto,
         @Request() req: ExpressRequest
     ) {
-        return this.subscriptionService.delete(params.id, req.session.userId!, query.immediate)
+        return this.subscriptionService.delete(params.id, req.session.userId!, body?.immediate)
     }
 }

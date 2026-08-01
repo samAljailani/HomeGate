@@ -11,7 +11,7 @@ import {
     Query,
     Request,
 } from '@nestjs/common'
-import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
@@ -41,6 +41,7 @@ export class UserController {
     @Get(routes.users.subPath.get)
     @AdminRoute()
     @ApiOperation({ summary: 'Get a user by ID' })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
     @ApiOkResponse({ type: UserResponseForAdminDto })
     async getUser(@Param() params: UserParamsDto): Promise<UserResponseForAdminDto> {
         const user = await this.userService.getUserByIdForAdmin(params.id)
@@ -51,6 +52,7 @@ export class UserController {
     @Patch(routes.users.subPath.update)
     @AdminRoute()
     @ApiOperation({ summary: 'Update a user account state — enabled (admin only)' })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
     @ApiBody({ type: UserPatchRequestDto })
     @ApiOkResponse({ description: 'User updated successfully' })
     async updateUser(@Param() params: UserParamsDto, @Body() request: UserPatchRequestDto): Promise<void> {
@@ -66,24 +68,20 @@ export class UserController {
     @Delete(routes.users.subPath.delete)
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @ApiOperation({ summary: 'Delete a user account (soft or hard)' })
-    @ApiQuery({
-        name: 'hard',
-        type: Boolean,
-        required: false,
-        description: 'Permanently delete the account. Ignored for non-admin callers.',
-    })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
+    @ApiBody({ type: UserDeleteRequestDto, required: false })
     @ApiOkResponse({ description: 'User deleted successfully' })
     @ApiForbiddenResponse({ description: 'Insufficient permissions' })
     async deleteUser(
         @Param() params: UserParamsDto,
-        @Query() query: UserDeleteRequestDto,
+        @Body() body: UserDeleteRequestDto,
         @Request() req: ExpressRequest
     ): Promise<void> {
         const sessionUserId = req.session.userId!
         const sessionIsAdmin = req.session.isAdmin ?? false
 
         // Non-admins may only soft-delete their own account; the hard flag is ignored for them.
-        if (query.hard && sessionIsAdmin) {
+        if (body?.hard && sessionIsAdmin) {
             await this.userService.hardDeleteUser(params.id)
             return
         }

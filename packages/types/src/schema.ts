@@ -362,6 +362,10 @@ export interface components {
             enabled?: boolean;
             autoRenew?: boolean;
         };
+        SubscriptionDeleteRequestDto: {
+            /** @description Immediately delete the external account instead of cancelling auto-renew */
+            immediate?: boolean;
+        };
         CreateInviteRequestDto: {
             email?: string;
             expiresInDays: number;
@@ -385,6 +389,10 @@ export interface components {
         };
         UserPatchRequestDto: {
             enabled?: boolean;
+        };
+        UserDeleteRequestDto: {
+            /** @description Permanently delete the account. Ignored for non-admin callers. */
+            hard?: boolean;
         };
         ServiceResponseDto: {
             id: number;
@@ -604,7 +612,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -627,15 +637,18 @@ export interface operations {
     };
     SubscriptionController_delete: {
         parameters: {
-            query?: {
-                /** @description Immediately delete the external account instead of cancelling auto-renew */
-                immediate?: boolean;
-            };
+            query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionDeleteRequestDto"];
+            };
+        };
         responses: {
             /** @description Subscription cancelled successfully */
             200: {
@@ -678,7 +691,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -721,7 +736,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -843,7 +860,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -860,15 +879,18 @@ export interface operations {
     };
     UserController_deleteUser: {
         parameters: {
-            query?: {
-                /** @description Permanently delete the account. Ignored for non-admin callers. */
-                hard?: boolean;
-            };
+            query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UserDeleteRequestDto"];
+            };
+        };
         responses: {
             /** @description User deleted successfully */
             200: {
@@ -890,7 +912,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -931,7 +955,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                name: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -973,7 +999,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: number;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -1034,7 +1062,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                name: string;
+            };
             cookie?: never;
         };
         requestBody?: never;

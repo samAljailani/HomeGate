@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Inject, NotFoundException, Param, Patch } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { routes } from '@/types/dtos/routes'
 import { SchedulerService } from '@/api/services/scheduler.service'
@@ -22,6 +22,7 @@ export class TaskController {
     @Patch(routes.tasks.subPath.update)
     @AdminRoute()
     @ApiOperation({ summary: 'Update task configuration (hot-reloads immediately)' })
+    @ApiParam({ name: 'name', type: String })
     @ApiOkResponse({ type: TaskConfigResponseDto })
     async updateTask(@Param() params: TaskParamsDto, @Body() dto: UpdateTaskConfigDto): Promise<TaskConfigResponseDto> {
         if (!Object.values(ScheduledTasks).includes(params.name as ScheduledTasks)) {
