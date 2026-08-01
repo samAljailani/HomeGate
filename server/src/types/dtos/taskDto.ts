@@ -9,17 +9,17 @@ export class TaskParamsDto {
 }
 
 export class UpdateTaskConfigDto {
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({ type: Boolean })
     @IsOptional()
     @IsBoolean()
     enabled?: boolean
 
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({ type: Boolean })
     @IsOptional()
     @IsBoolean()
     runOnStartup?: boolean
 
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({ type: String })
     @IsOptional()
     @IsString()
     cronExpression?: string
