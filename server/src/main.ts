@@ -15,6 +15,7 @@ import { PrismaSessionStore } from '@/infrastructure/prismaSession.store'
 import { EnvRepository } from '@/data/repositories/env.repository'
 import { csrfSynchronisedProtection } from '@/api/security/csrf'
 import { buildSwaggerConfig } from '@/swagger.config'
+import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 
 import { ApplicationClientRegistry } from './core/clients/applicationClientRegistry'
 import { clients } from './core/clients'
@@ -87,7 +88,7 @@ async function configureApplicationClients(app: NestExpressApplication) {
 function configureSwagger(app: NestExpressApplication) {
     const config = buildSwaggerConfig()
 
-    const document = SwaggerModule.createDocument(app, config)
+    const document = SwaggerModule.createDocument(app, config, { extraModels: [PaginationRequestDto] })
     SwaggerModule.setup('api', app, document, {
         swaggerOptions: {
             withCredentials: true,
