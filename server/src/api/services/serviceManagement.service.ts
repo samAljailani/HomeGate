@@ -1,9 +1,10 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common'
+import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common'
 import { IServiceRepository } from '@/data/repositories'
 import { ServiceModel } from '@/types/models/service'
-import { ServiceResponseDto } from '@/types/dtos/serviceDto'
+import { ExternalAccountResponseDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
 import { ApplicationClientNames } from '@/types/enums'
 import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
+import { ApplicationUserModel } from '@/types/params/application.client'
 
 @Injectable()
 export class ServiceManagementService {
@@ -22,6 +23,24 @@ export class ServiceManagementService {
         }
 
         return dto
+    }
+
+    applicationUserModelToResponseDto(user: ApplicationUserModel): ExternalAccountResponseDto {
+        return {
+            id: user.id,
+            username: user.username,
+            isActive: user.isActive,
+            isAdmin: user.isAdmin,
+        }
+    }
+
+    async listExternalAccounts(name: ApplicationClientNames): Promise<ExternalAccountResponseDto[]> {
+        if (!this.clientRegistry.has(name)) {
+            throw new BadRequestException(`Service '${name}' is not an integrated external client`)
+        }
+
+        const users = await this.clientRegistry.get(name).getAllUsers()
+        return (users ?? []).map((u) => this.applicationUserModelToResponseDto(u))
     }
 
     async list(take?: number, skip?: number): Promise<ServiceResponseDto[]> {

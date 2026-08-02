@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { NotFoundException } from '@nestjs/common'
+import { NotFoundException, BadRequestException } from '@nestjs/common'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
 import { IServiceRepository } from '@/data/repositories'
 import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
@@ -17,11 +17,12 @@ function createServiceRepositoryMock(): jest.Mocked<
     }
 }
 
-function createClientRegistryMock(): jest.Mocked<Pick<ApplicationClientRegistry, 'has' | 'enable' | 'disable'>> {
+function createClientRegistryMock(): jest.Mocked<Pick<ApplicationClientRegistry, 'has' | 'enable' | 'disable' | 'get'>> {
     return {
         has: jest.fn(),
         enable: jest.fn(),
         disable: jest.fn(),
+        get: jest.fn(),
     }
 }
 
@@ -179,4 +180,40 @@ describe('ServiceManagementService', () => {
     })
 
     // #endregion updateImageUrl
+
+    // #region listExternalAccounts
+
+    describe('listExternalAccounts', () => {
+        const name = ApplicationClientNames.Jellyfin
+
+        it('throws BadRequestException when the service is not a registered client', async () => {
+            clientRegistryMock.has.mockReturnValue(false)
+
+            await expect(service.listExternalAccounts(name)).rejects.toThrow(BadRequestException)
+        })
+
+        it('returns mapped external accounts from the client', async () => {
+            const users = [
+                { id: 'ext-1', username: 'alice', isActive: true, isAdmin: false },
+                { id: 'ext-2', username: 'bob', isActive: false, isAdmin: true },
+            ]
+            clientRegistryMock.has.mockReturnValue(true)
+            clientRegistryMock.get.mockReturnValue({ getAllUsers: jest.fn().mockResolvedValue(users) } as any)
+
+            const result = await service.listExternalAccounts(name)
+
+            expect(result).toEqual(users)
+        })
+
+        it('returns an empty array when the client returns null', async () => {
+            clientRegistryMock.has.mockReturnValue(true)
+            clientRegistryMock.get.mockReturnValue({ getAllUsers: jest.fn().mockResolvedValue(null) } as any)
+
+            const result = await service.listExternalAccounts(name)
+
+            expect(result).toEqual([])
+        })
+    })
+
+    // #endregion listExternalAccounts
 })
