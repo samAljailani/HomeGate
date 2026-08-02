@@ -28,18 +28,28 @@ import { classNames } from '@/utils/styles'
 //   }
 // )
 // export function CardTopImage({isLocked = true, size = "default" }: { isLocked: boolean } & VariantProps<typeof CardTopImageVariants>) {
-export interface CardTopImageProps {
+export interface ServiceCardProps {
   isLocked: boolean
   className?: string
   /** Service display name, shown as the card title and used for image alt text / fallback initial. */
   name?: string
   /** Admin-configured thumbnail URL for the service (`ServiceResponseDto.imageUrl`), loaded dynamically. */
   imageUrl?: string | null
+  /** Admin-configured url to the corresponding service */
+  url?: string | null
 }
 
-export function CardTopImage({ isLocked = true, className, name = 'Service', imageUrl }: CardTopImageProps) {
+export function ServiceCard({ isLocked = true, className, name = 'Service', imageUrl, url }: ServiceCardProps) {
   const [imageFailed, setImageFailed] = React.useState(false)
   const showImage = !!imageUrl && !imageFailed
+
+  let footerButton: React.ReactNode
+  
+  if(isLocked){
+    footerButton = <Button className="h-8 px-3 text-xs md:h-9 md:px-4 md:text-sm lg:h-10 lg:px-6 z-20">Sign Up</Button>
+  }else{
+      footerButton = <Button className="h-8 px-3 text-xs md:h-9 md:px-4 md:text-sm lg:h-10 lg:px-6 z-20" onClick={() => { if (url) window.open(url, '_blank', 'noopener,noreferrer') }}>Launch</Button>
+  }
 
   return (
     <div className={classNames("p-2 w-full", className)}>
@@ -81,11 +91,11 @@ export function CardTopImage({ isLocked = true, className, name = 'Service', ima
           {/* <CardDescription className="line-clamp-2">Smooth, flowing gradients blending rich reds and blues in an abstract swirl.</CardDescription> */}
         </CardHeader>
         <CardFooter className="gap-3 max-sm:flex-col max-sm:items-stretch justify-end">
-          <Button className="h-8 px-3 text-xs md:h-9 md:px-4 md:text-sm lg:h-10 lg:px-6 z-20">{isLocked ? "Sign Up" : "Launch"}</Button>
+          {footerButton}
         </CardFooter>
       </Card>
     </div>
   )
 }
 
-export default CardTopImage
+export default ServiceCard
