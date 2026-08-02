@@ -7,12 +7,13 @@ import { createServiceFixture } from '../../fixtures/service.stub'
 import { ApplicationClientNames } from '@/types/enums'
 
 function createServiceRepositoryMock(): jest.Mocked<
-    Pick<IServiceRepository, 'findMany' | 'setEnabled' | 'findByName'>
+    Pick<IServiceRepository, 'findMany' | 'setEnabled' | 'findByName' | 'setImageUrl'>
 > {
     return {
         findMany: jest.fn(),
         setEnabled: jest.fn(),
         findByName: jest.fn(),
+        setImageUrl: jest.fn(),
     }
 }
 
@@ -63,7 +64,7 @@ describe('ServiceManagementService', () => {
     // #region enable
 
     describe('enable', () => {
-        const name = ApplicationClientNames.jellyfin
+        const name = ApplicationClientNames.Jellyfin
 
         it('uses registry.enable when client is registered', async () => {
             const svc = createServiceFixture({ name, enabled: true })
@@ -97,7 +98,7 @@ describe('ServiceManagementService', () => {
 
             const result = await service.enable(name)
 
-            expect(result).toBe(svc)
+            expect(result).toEqual({ id: svc.id, name: svc.name, enabled: svc.enabled, url: svc.url, imageUrl: svc.imageUrl })
         })
 
         it('throws NotFoundException when service record is not found after update', async () => {
@@ -114,7 +115,7 @@ describe('ServiceManagementService', () => {
     // #region disable
 
     describe('disable', () => {
-        const name = ApplicationClientNames.jellyfin
+        const name = ApplicationClientNames.Jellyfin
 
         it('uses registry.disable when client is registered', async () => {
             const svc = createServiceFixture({ name, enabled: false })
@@ -147,9 +148,35 @@ describe('ServiceManagementService', () => {
 
             const result = await service.disable(name)
 
-            expect(result).toBe(svc)
+            expect(result).toEqual({ id: svc.id, name: svc.name, enabled: svc.enabled, url: svc.url, imageUrl: svc.imageUrl })
         })
     })
 
     // #endregion disable
+
+    // #region updateImageUrl
+
+    describe('updateImageUrl', () => {
+        const name = ApplicationClientNames.Jellyfin
+
+        it('sets the image URL via the repository', async () => {
+            const svc = createServiceFixture({ name, imageUrl: 'https://example.com/logo.png' })
+            serviceRepositoryMock.setImageUrl.mockResolvedValue(svc)
+
+            const result = await service.updateImageUrl(name, 'https://example.com/logo.png')
+
+            expect(serviceRepositoryMock.setImageUrl).toHaveBeenCalledWith(name, 'https://example.com/logo.png')
+            expect(result).toEqual({ id: svc.id, name: svc.name, enabled: svc.enabled, url: svc.url, imageUrl: svc.imageUrl })
+        })
+
+        it('throws NotFoundException when service record is not found', async () => {
+            serviceRepositoryMock.setImageUrl.mockResolvedValue(null)
+
+            await expect(service.updateImageUrl(name, 'https://example.com/logo.png')).rejects.toThrow(
+                NotFoundException
+            )
+        })
+    })
+
+    // #endregion updateImageUrl
 })

@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { IconLock} from '@/components/ui/icons/IconLock'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
@@ -27,7 +28,19 @@ import { classNames } from '@/utils/styles'
 //   }
 // )
 // export function CardTopImage({isLocked = true, size = "default" }: { isLocked: boolean } & VariantProps<typeof CardTopImageVariants>) {
-export function CardTopImage({isLocked = true, className }: { isLocked: boolean, className?: string }) {
+export interface CardTopImageProps {
+  isLocked: boolean
+  className?: string
+  /** Service display name, shown as the card title and used for image alt text / fallback initial. */
+  name?: string
+  /** Admin-configured thumbnail URL for the service (`ServiceResponseDto.imageUrl`), loaded dynamically. */
+  imageUrl?: string | null
+}
+
+export function CardTopImage({ isLocked = true, className, name = 'Service', imageUrl }: CardTopImageProps) {
+  const [imageFailed, setImageFailed] = React.useState(false)
+  const showImage = !!imageUrl && !imageFailed
+
   return (
     <div className={classNames("p-2 w-full", className)}>
       <Card className='relative text-muted w-full pt-0 flex flex-col'>
@@ -38,11 +51,19 @@ export function CardTopImage({isLocked = true, className }: { isLocked: boolean,
           </div>
         }
         <CardContent className='relative px-0 flex-1 basis-1/4 min-h-0 pt-0 overflow-hidden rounded-t-xl'>
-          <img
-            src='https://cdn.shadcnstudio.com/ss-assets/components/card/image-2.png?height=280&format=auto'
-            alt='Banner'
-            className={`w-full h-45 object-cover`}
-          />
+          {showImage ? (
+            <img
+              src={imageUrl}
+              alt={`${name} logo`}
+              loading="lazy"
+              className="w-full h-45 object-cover"
+              onError={() => setImageFailed(true)}
+            />
+          ) : (
+            <div className="w-full h-45 flex items-center justify-center bg-muted text-muted-foreground text-2xl font-semibold uppercase">
+              {name.charAt(0)}
+            </div>
+          )}
         </CardContent>
         <CardHeader className="mt-0">
           <DropdownMenu
@@ -56,7 +77,7 @@ export function CardTopImage({isLocked = true, className }: { isLocked: boolean,
               { label: "Sign out", onClick: () => console.log("Sign out") },
             ]}
           />
-          <CardTitle className="line-clamp-1 text-center text-secondary">Jellyfin</CardTitle>
+          <CardTitle className="line-clamp-1 text-center text-secondary">{name}</CardTitle>
           {/* <CardDescription className="line-clamp-2">Smooth, flowing gradients blending rich reds and blues in an abstract swirl.</CardDescription> */}
         </CardHeader>
         <CardFooter className="gap-3 max-sm:flex-col max-sm:items-stretch justify-end">

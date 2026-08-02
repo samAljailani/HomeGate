@@ -64,6 +64,9 @@ export class ServiceResponseDto {
 
     @ApiPropertyOptional({ type: String, nullable: true })
     url: string | null
+
+    @ApiPropertyOptional({ type: String, nullable: true })
+    imageUrl: string | null
 }
 
 export class ServicePatchRequestDto {
@@ -71,4 +74,9 @@ export class ServicePatchRequestDto {
     @IsOptional()
     @IsBoolean()
     enabled?: boolean
+
+    @ApiPropertyOptional({ type: String, nullable: true })
+    @IsOptional()
+    @IsString()
+    imageUrl?: string | null
 }

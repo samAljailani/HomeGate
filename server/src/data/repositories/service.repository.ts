@@ -25,6 +25,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
             name: service.name as ApplicationClientNames,
             enabled: service.enabled,
             url: service.url ?? null,
+            imageUrl: service.url ?? null,
         }
     }
 
@@ -123,6 +124,23 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
             return this.mapService(service)
         } catch (error) {
             this.logger.error(`setApplicationClientEnabled failed for name: ${name}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+
+            mapPrismaError(error, repositoryErrorMessages.service)
+        }
+    }
+
+    async setImageUrl(name: ApplicationClientNames, imageUrl: string | null): Promise<ServiceModel | null> {
+        try {
+            const service = await this.db.service.update({
+                where: { name },
+                data: { imageUrl },
+            })
+
+            return this.mapService(service)
+        } catch (error) {
+            this.logger.error(`setImageUrl failed for name: ${name}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
 

@@ -257,7 +257,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update service state — enabled (admin only) */
+        /** Update service state — enabled, imageUrl (admin only) */
         patch: operations["ServiceController_update"];
         trace?: never;
     };
@@ -436,9 +436,11 @@ export interface components {
             name: string;
             enabled: boolean;
             url?: string | null;
+            imageUrl?: string | null;
         };
         ServicePatchRequestDto: {
             enabled?: boolean;
+            imageUrl?: string | null;
         };
         OAuthProviderResponseDto: {
             id: number;
