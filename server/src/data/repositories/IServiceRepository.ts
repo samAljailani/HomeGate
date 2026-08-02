@@ -10,6 +10,7 @@ export interface IServiceRepository {
     findEnabled(): Promise<ServiceModel[]>
     isEnabled(name: ApplicationClientNames): Promise<boolean>
     setEnabled(name: ApplicationClientNames, enabled: boolean): Promise<ServiceModel | null>
+    setImageUrl(name: ApplicationClientNames, imageUrl: string | null): Promise<ServiceModel | null>
     create(request: CreateServiceModel): Promise<ServiceModel | null>
     update(request: UpdateServiceModel): Promise<ServiceModel | null>
     delete(id: number): Promise<void>

@@ -6,12 +6,13 @@ import { createServiceFixture } from '../../fixtures/service.stub'
 import { ApplicationClientNames } from '@/types/enums'
 
 function createServiceManagementServiceMock(): jest.Mocked<
-    Pick<ServiceManagementService, 'list' | 'enable' | 'disable'>
+    Pick<ServiceManagementService, 'list' | 'enable' | 'disable' | 'updateImageUrl'>
 > {
     return {
         list: jest.fn(),
         enable: jest.fn(),
         disable: jest.fn(),
+        updateImageUrl: jest.fn(),
     }
 }
 
@@ -48,8 +49,8 @@ describe('ServiceController', () => {
 
             expect(serviceManagementMock.list).toHaveBeenCalled()
             expect(result).toHaveLength(2)
-            expect(result[0]).toEqual({ id: 1, name: services[0]!.name, enabled: true, url: null })
-            expect(result[1]).toEqual({ id: 2, name: services[1]!.name, enabled: false, url: null })
+            expect(result[0]).toEqual({ id: 1, name: services[0]!.name, enabled: true, url: null, imageUrl: null })
+            expect(result[1]).toEqual({ id: 2, name: services[1]!.name, enabled: false, url: null, imageUrl: null })
         })
     })
 
@@ -86,7 +87,19 @@ describe('ServiceController', () => {
 
             const result = await controller.update({ name }, { enabled: true })
 
-            expect(result).toEqual({ id: 1, name: svc.name, enabled: true, url: null })
+            expect(result).toEqual({ id: 1, name: svc.name, enabled: true, url: null, imageUrl: null })
+        })
+
+        it('updates the imageUrl when provided', async () => {
+            const svc = createServiceFixture({ id: 1, imageUrl: 'https://example.com/logo.png' })
+            serviceManagementMock.updateImageUrl.mockResolvedValue(svc)
+
+            const result = await controller.update({ name }, { imageUrl: 'https://example.com/logo.png' })
+
+            expect(serviceManagementMock.updateImageUrl).toHaveBeenCalledWith(name, 'https://example.com/logo.png')
+            expect(serviceManagementMock.enable).not.toHaveBeenCalled()
+            expect(serviceManagementMock.disable).not.toHaveBeenCalled()
+            expect(result).toEqual({ id: 1, name: svc.name, enabled: true, url: null, imageUrl: 'https://example.com/logo.png' })
         })
 
         it('throws BadRequestException when no fields provided', async () => {

@@ -3,6 +3,7 @@ export type ServiceModel = {
     name: string
     enabled: boolean
     url: string | null
+    imageUrl: string | null
 }
 
 export type CreateServiceModel = Omit<ServiceModel, 'id'>

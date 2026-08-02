@@ -21,25 +21,33 @@ export class ServiceController {
     @ApiQuery({ name: 'skip', type: Number, required: false })
     @ApiOkResponse({ type: [ServiceResponseDto] })
     async list(@Query() pagination: PaginationRequestDto): Promise<ServiceResponseDto[]> {
-        const services = await this.serviceManagementService.list(pagination.take, pagination.skip)
-        return services.map((s) => ({ id: s.id, name: s.name, enabled: s.enabled, url: s.url }))
+        return this.serviceManagementService.list(pagination.take, pagination.skip)
     }
 
     @Patch(routes.services.subPath.update)
     @AdminRoute()
-    @ApiOperation({ summary: 'Update service state — enabled (admin only)' })
+    @ApiOperation({ summary: 'Update service state — enabled, imageUrl (admin only)' })
     @ApiParam({ name: 'name', type: String })
     @ApiBody({ type: ServicePatchRequestDto })
     @ApiOkResponse({ type: ServiceResponseDto })
     async update(@Param() params: ServiceParamsDto, @Body() request: ServicePatchRequestDto): Promise<ServiceResponseDto> {
-        if (request.enabled === undefined) {
+        if (request.enabled === undefined && request.imageUrl === undefined) {
             throw new BadRequestException('No fields provided to update')
         }
 
-        const service = request.enabled
-            ? await this.serviceManagementService.enable(params.name as ApplicationClientNames)
-            : await this.serviceManagementService.disable(params.name as ApplicationClientNames)
+        const name = params.name as ApplicationClientNames
+        let service: ServiceResponseDto | undefined
 
-        return { id: service.id, name: service.name, enabled: service.enabled, url: service.url }
+        if (request.enabled !== undefined) {
+            service = request.enabled
+                ? await this.serviceManagementService.enable(name)
+                : await this.serviceManagementService.disable(name)
+        }
+
+        if (request.imageUrl !== undefined) {
+            service = await this.serviceManagementService.updateImageUrl(name, request.imageUrl)
+        }
+
+        return service!
     }
 }
