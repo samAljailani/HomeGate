@@ -2,7 +2,7 @@ import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Query
 import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
-import { ServiceParamsDto, ServicePatchRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
+import { ExternalAccountResponseDto, ServiceParamsDto, ServicePatchRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 import { ApplicationClientNames } from '@/types/enums'
@@ -49,5 +49,15 @@ export class ServiceController {
         }
 
         return service!
+    }
+
+    @Get(routes.services.subPath.accounts)
+    @AdminRoute()
+    @ApiOperation({ summary: 'List external accounts for an integrated service (admin only)' })
+    @ApiParam({ name: 'name', type: String })
+    @ApiOkResponse({ type: [ExternalAccountResponseDto] })
+    async listAccounts(@Param() params: ServiceParamsDto): Promise<ExternalAccountResponseDto[]> {
+        const name = params.name as ApplicationClientNames
+        return this.serviceManagementService.listExternalAccounts(name)
     }
 }

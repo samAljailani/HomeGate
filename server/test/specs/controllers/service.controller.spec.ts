@@ -6,13 +6,14 @@ import { createServiceFixture } from '../../fixtures/service.stub'
 import { ApplicationClientNames } from '@/types/enums'
 
 function createServiceManagementServiceMock(): jest.Mocked<
-    Pick<ServiceManagementService, 'list' | 'enable' | 'disable' | 'updateImageUrl'>
+    Pick<ServiceManagementService, 'list' | 'enable' | 'disable' | 'updateImageUrl' | 'listExternalAccounts'>
 > {
     return {
         list: jest.fn(),
         enable: jest.fn(),
         disable: jest.fn(),
         updateImageUrl: jest.fn(),
+        listExternalAccounts: jest.fn(),
     }
 }
 
@@ -108,4 +109,22 @@ describe('ServiceController', () => {
     })
 
     // #endregion update
+
+    // #region listAccounts
+
+    describe('listAccounts', () => {
+        const name = ApplicationClientNames.Jellyfin
+
+        it('returns the accounts from the service', async () => {
+            const accounts = [{ id: 'ext-1', username: 'alice', isActive: true, isAdmin: false }]
+            serviceManagementMock.listExternalAccounts.mockResolvedValue(accounts)
+
+            const result = await controller.listAccounts({ name })
+
+            expect(serviceManagementMock.listExternalAccounts).toHaveBeenCalledWith(name)
+            expect(result).toEqual(accounts)
+        })
+    })
+
+    // #endregion listAccounts
 })
