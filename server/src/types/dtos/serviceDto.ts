@@ -80,3 +80,21 @@ export class ServicePatchRequestDto {
     @IsString()
     imageUrl?: string | null
 }
+
+export class ExternalAccountResponseDto {
+    @ApiProperty({ type: String })
+    @IsString()
+    @IsNotEmpty()
+    id: string
+
+    @ApiProperty({ type: String })
+    @IsString()
+    @IsNotEmpty()
+    username: string
+
+    @ApiProperty({ type: Boolean })
+    isActive: boolean
+
+    @ApiProperty({ type: Boolean })
+    isAdmin: boolean
+}
