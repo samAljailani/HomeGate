@@ -11,13 +11,13 @@ import { Label } from "@/components/ui/label"
 import { SubscriptionCreateRequestDto, subscriptionService} from "@/services/subscription.service"
 import { serviceSignUpConstants } from "@/constants/forms"
 
-interface DrawerDialogDemoProps {
+interface SignUpFormProps {
   open: boolean
   setOpen: React.Dispatch<React.SetStateAction<boolean>>
   serviceId: number
 }
 
-export function SignUpForm({ open, setOpen, serviceId }: DrawerDialogDemoProps) {
+export function SignUpForm({ open, setOpen, serviceId }: SignUpFormProps) {
   return (
     <ResponsiveModal
       open={open}
