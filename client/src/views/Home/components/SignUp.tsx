@@ -49,7 +49,7 @@ function Form({ className, serviceId, setOpen }: React.ComponentProps<"form"> & 
     }catch(error){
       const message = "failed to create subscription. Verify the validity of the inserted information."
       setError('root', { message })
-      addToastMessage('error', "failed to create subscription. Verify the validity of the inserted information.")
+      //addToastMessage('error', "failed to create subscription. Verify the validity of the inserted information.")
     }
   }
 
