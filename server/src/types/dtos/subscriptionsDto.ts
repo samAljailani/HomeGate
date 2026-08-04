@@ -54,6 +54,7 @@ export class SubscriptionCreateRequestDto {
     @Type(() => Number)
     @IsInt()
     @Min(1)
+    @IsNotEmpty()
     serviceId: number
 
     @ApiProperty({ type: String })
@@ -79,6 +80,7 @@ export class SubscriptionCreateRequestDto {
 
     @ApiProperty({ type: Boolean })
     @IsBoolean()
+    @IsNotEmpty()
     autoRenew: boolean
 }
 

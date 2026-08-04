@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import NavBar from '@/layouts/NavBar'
+import { Toaster } from '@/components/ui/toast'
 import '@/styles/index.css'
 
 export const metadata = {
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             {children}
           </main>
         </div>
+        <Toaster />
       </body>
     </html>
   )

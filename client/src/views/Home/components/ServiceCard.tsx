@@ -8,8 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { IconMoreOptions } from '../../../components/ui/icons/IconMoreOptions'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import { classNames } from '@/utils/styles'
+import { DrawerDialogDemo } from '@/views/Home/components/SignUp'
 
-// const CardTopImageVariants = cva(
+// const ServiceCardsVariants = cva(
 //   "",
 //   {
 //     variants: {
@@ -37,18 +38,21 @@ export interface ServiceCardProps {
   imageUrl?: string | null
   /** Admin-configured url to the corresponding service */
   url?: string | null
+  /** Id of the service, needed for the Sign Up form submission */
+  serviceId: number
 }
 
-export function ServiceCard({ isLocked = true, className, name = 'Service', imageUrl, url }: ServiceCardProps) {
+export function ServiceCard({ isLocked = true, className, name = 'Service', imageUrl, url, serviceId }: ServiceCardProps) {
   const [imageFailed, setImageFailed] = React.useState(false)
+  const [signUpOpen, setSignUpOpen] = React.useState(false)
   const showImage = !!imageUrl && !imageFailed
 
   let footerButton: React.ReactNode
   
   if(isLocked){
-    footerButton = <Button className="h-8 px-3 text-xs md:h-9 md:px-4 md:text-sm lg:h-10 lg:px-6 z-20">Sign Up</Button>
+    footerButton = <Button className="h-8 px-3 text-xs md:h-9 md:px-4 md:text-sm lg:h-10 lg:px-6 z-20" onClick={() => setSignUpOpen(true)}>Sign Up</Button>
   }else{
-      footerButton = <Button className="h-8 px-3 text-xs md:h-9 md:px-4 md:text-sm lg:h-10 lg:px-6 z-20" onClick={() => { if (url) window.open(url, '_blank', 'noopener,noreferrer') }}>Launch</Button>
+    footerButton = <Button className="h-8 px-3 text-xs md:h-9 md:px-4 md:text-sm lg:h-10 lg:px-6 z-20" onClick={() => { if (url) window.open(url, '_blank', 'noopener,noreferrer') }}>Launch</Button>
   }
 
   return (
@@ -94,6 +98,7 @@ export function ServiceCard({ isLocked = true, className, name = 'Service', imag
           {footerButton}
         </CardFooter>
       </Card>
+      <DrawerDialogDemo open={signUpOpen} setOpen={setSignUpOpen} serviceId={serviceId} />
     </div>
   )
 }

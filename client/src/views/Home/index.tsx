@@ -42,7 +42,15 @@ export function Home() {
                             return null
                         }
 
-                        return <ServiceCard key={service.id} name={service.name} isLocked={!subscribedServiceIds.includes(service.id)} imageUrl={service.imageUrl} url={service.url} className="sm:basis-1/3 lg:basis-1/4" />
+                        return <ServiceCard 
+                                key={service.id} 
+                                serviceId={service.id}
+                                name={service.name} 
+                                isLocked={!subscribedServiceIds.includes(service.id)} 
+                                imageUrl={service.imageUrl} 
+                                url={service.url} 
+                                className="sm:basis-1/3 lg:basis-1/4"
+                            />
                     }
                 )}
             </div>
