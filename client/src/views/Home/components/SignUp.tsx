@@ -4,22 +4,8 @@ import * as React from "react"
 
 import { useForm, SubmitHandler, UseFormRegister, UseFormWatch } from "react-hook-form"
 import { addToastMessage, cn } from "@/lib/utils"
-import { useMediaQuery } from "@/hooks/use-media-query"
+import { ResponsiveModal } from "@/components/ResponsiveModal"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SubscriptionCreateRequestDto, subscriptionService} from "@/services/subscription.service"
@@ -31,41 +17,20 @@ interface DrawerDialogDemoProps {
   serviceId: number
 }
 
-export function DrawerDialogDemo({ open, setOpen, serviceId }: DrawerDialogDemoProps) {
-  const isDesktop = useMediaQuery("(min-width: 768px)")
-
-  if (isDesktop) {
-    return (
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Sign Up</DialogTitle>
-            <DialogDescription>
-              Create your account credentials for this service.
-            </DialogDescription>
-          </DialogHeader>
-          <ProfileForm serviceId={serviceId} setOpen={setOpen} />
-        </DialogContent>
-      </Dialog>
-    )
-  }
-
+export function SignUpForm({ open, setOpen, serviceId }: DrawerDialogDemoProps) {
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerContent>
-        <DrawerHeader className="text-left">
-          <DrawerTitle>Sign Up</DrawerTitle>
-          <DrawerDescription>
-            Create your account credentials for this service.
-          </DrawerDescription>
-        </DrawerHeader>
-        <ProfileForm className="p-4" serviceId={serviceId} setOpen={setOpen} />
-      </DrawerContent>
-    </Drawer>
+    <ResponsiveModal
+      open={open}
+      setOpen={setOpen}
+      title="Sign Up"
+      description="Create your account credentials for this service."
+    >
+      <Form serviceId={serviceId} setOpen={setOpen} />
+    </ResponsiveModal>
   )
 }
 
-function ProfileForm({ className, serviceId, setOpen }: React.ComponentProps<"form"> & { serviceId: number, setOpen: React.Dispatch<React.SetStateAction<boolean>> }) {
+function Form({ className, serviceId, setOpen }: React.ComponentProps<"form"> & { serviceId: number, setOpen: React.Dispatch<React.SetStateAction<boolean>> }) {
   const {
     register,
     handleSubmit,
@@ -74,7 +39,8 @@ function ProfileForm({ className, serviceId, setOpen }: React.ComponentProps<"fo
     formState: { errors },
   } = useForm<SubscriptionCreateRequestDto>({ defaultValues: { serviceId } })
 
-  const signUpForm = useSignUpForm(register, watch)
+  const signUpForm = signUpFormValidator(register, watch)
+
   const onSubmit: SubmitHandler<SubscriptionCreateRequestDto> = async (data) => {
     try{
       await subscriptionService.subscribe(data)
@@ -85,7 +51,6 @@ function ProfileForm({ className, serviceId, setOpen }: React.ComponentProps<"fo
       setError('root', { message })
       addToastMessage('error', "failed to create subscription. Verify the validity of the inserted information.")
     }
-
   }
 
   return (
@@ -124,7 +89,7 @@ function ProfileForm({ className, serviceId, setOpen }: React.ComponentProps<"fo
 
 const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i
 
-function useSignUpForm(
+function signUpFormValidator(
   register: UseFormRegister<SubscriptionCreateRequestDto>,
   watch: UseFormWatch<SubscriptionCreateRequestDto>
 ){

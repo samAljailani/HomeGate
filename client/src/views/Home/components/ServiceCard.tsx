@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { IconMoreOptions } from '../../../components/ui/icons/IconMoreOptions'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import { classNames } from '@/utils/styles'
-import { DrawerDialogDemo } from '@/views/Home/components/SignUp'
+import { SignUpForm } from '@/views/Home/components/SignUp'
 
 // const ServiceCardsVariants = cva(
 //   "",
@@ -98,7 +98,7 @@ export function ServiceCard({ isLocked = true, className, name = 'Service', imag
           {footerButton}
         </CardFooter>
       </Card>
-      <DrawerDialogDemo open={signUpOpen} setOpen={setSignUpOpen} serviceId={serviceId} />
+      <SignUpForm open={signUpOpen} setOpen={setSignUpOpen} serviceId={serviceId} />
     </div>
   )
 }
