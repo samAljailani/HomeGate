@@ -24,6 +24,9 @@ const env = configRepository.getEnv()
         DiscoveryModule,
         ServeStaticModule.forRoot({
             rootPath: resolve(process.cwd(), env.client.buildPath),
+            serveStaticOptions: {
+                extensions: ['html'],
+            },
         }),
         ClsModule.forRoot(env.cls.config),
         ThrottlerModule.forRoot([

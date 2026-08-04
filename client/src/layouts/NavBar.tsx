@@ -12,7 +12,8 @@ const navigation: NavItem[] = [
   { name: "Dashboard", href: "#", current: true },
   { name: "Team", href: "#", current: false },
   { name: "Projects", href: "#", current: false },
-  { name: "Sign-up", href: "/signin", current: false },
+  { name: "Sign-up", href: "/signin.html", current: false },
+  { name: "Admin", href: "/admin.html", current: false },
 ];
 
 export default function NavBar(): JSX.Element {
