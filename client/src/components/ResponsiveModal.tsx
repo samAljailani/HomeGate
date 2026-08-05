@@ -25,16 +25,17 @@ interface ResponsiveModalProps {
   title: React.ReactNode
   description?: React.ReactNode
   className?: string
+  showCloseButton?: boolean
   children: React.ReactNode
 }
 
-export function ResponsiveModal({ open, setOpen, title, description, className, children }: ResponsiveModalProps) {
+export function ResponsiveModal({ open, setOpen, title, description, className, showCloseButton, children }: ResponsiveModalProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className={cn("sm:max-w-[425px]", className)}>
+        <DialogContent className={cn("sm:max-w-[425px]", className)} showCloseButton={showCloseButton}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}

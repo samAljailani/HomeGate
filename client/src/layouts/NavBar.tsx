@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type JSX } from "react";
+import { useState, type JSX } from "react";
 import { classNames } from "@/utils/styles";
 import type { NavItem } from "./NavBar.types";
 import { IconHamburger } from "@/components/ui/icons/IconHamburger";
@@ -18,21 +18,6 @@ const navigation: NavItem[] = [
 
 export default function NavBar(): JSX.Element {
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setMobileOpen(false);
-      }
-
-      if (e.key === "9"){
-        document.getElementsByTagName("html")[0].classList.toggle("dark");
-      }
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
 
   return (
     <nav className="relative bg-nav after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-divider">

@@ -4,6 +4,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes letter-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(-32px);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
