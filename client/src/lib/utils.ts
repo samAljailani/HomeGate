@@ -16,3 +16,7 @@ export function addToastMessage(type: 'success'| 'info' | 'warning' | 'error', m
 export function capitalizeFirstLetter(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+export async function copyToClipboard(text: string) {
+  await navigator.clipboard.writeText(text)
+}

@@ -9,7 +9,7 @@ import { IconMoreOptions } from '../../../components/ui/icons/IconMoreOptions'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import { classNames } from '@/utils/styles'
 import { SignUpForm } from '@/views/Home/components/SignUp'
-import { capitalizeFirstLetter } from '@/lib/utils'
+import { addToastMessage, capitalizeFirstLetter, copyToClipboard } from '@/lib/utils'
 
 // const ServiceCardsVariants = cva(
 //   "",
@@ -47,6 +47,24 @@ export function ServiceCard({ isLocked = true, className, name = 'Service', imag
   const [imageFailed, setImageFailed] = React.useState(false)
   const [signUpOpen, setSignUpOpen] = React.useState(false)
   const showImage = !!imageUrl && !imageFailed
+
+  async function copyServiceLink() {
+      if (!url) return
+
+      try {
+        await copyToClipboard(url)
+        addToastMessage('success', 'Link copied to clipboard')
+      } catch {
+        addToastMessage('error', 'Failed to copy link')
+      }
+  }
+  const dropDownMenuItems = [
+      { label: "Manage subscription", href: "#" },
+      {
+        label: "Copy link", onClick: copyServiceLink
+      },
+      // { label: "Sign out", onClick: () => console.log("Sign out") },
+  ]
 
   let footerButton: React.ReactNode
   
@@ -86,11 +104,7 @@ export function ServiceCard({ isLocked = true, className, name = 'Service', imag
             trigger={
               <IconMoreOptions className="size-5 cursor-pointer text-primary absolute right-2" />
             }
-            items={[
-              { label: "Manage subscription", href: "#" },
-              { label: "Copy link", href: "#" },
-              { label: "Sign out", onClick: () => console.log("Sign out") },
-            ]}
+            items={dropDownMenuItems}
           />
           <CardTitle className="line-clamp-1 text-center text-secondary">{capitalizeFirstLetter(name)}</CardTitle>
           {/* <CardDescription className="line-clamp-2">Smooth, flowing gradients blending rich reds and blues in an abstract swirl.</CardDescription> */}
