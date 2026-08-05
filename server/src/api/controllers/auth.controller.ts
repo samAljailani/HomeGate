@@ -8,14 +8,19 @@ import { routes, clientRoutes } from '../../types/dtos/routes'
 import { Public } from '@/decorators'
 import { Throttle } from '@nestjs/throttler'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { EnvRepository } from '@/data/repositories/env.repository'
 
 @Controller(routes.auth.basePath)
 export class AuthController {
+    private readonly cookieName: string
+
     constructor(
         @Inject(AuthService) private readonly authService: AuthService,
-        @Inject(LoggingProvider) private readonly logger: LoggingProvider
+        @Inject(LoggingProvider) private readonly logger: LoggingProvider,
+        @Inject(EnvRepository) private readonly envRepository: EnvRepository,
     ) {
         this.logger.setContext(AuthController.name)
+        this.cookieName = this.envRepository.getEnv().session.cookieName
     }
 
     @Public()
@@ -74,16 +79,16 @@ export class AuthController {
         const username = req.session.username
 
         try {
-            //TODO: remove session
             await this.authService.signOut(userId, username)
             await new Promise<void>((resolve) => req.session.destroy(() => resolve()))
+            res.clearCookie(this.cookieName)
         } catch (error) {
             this.logger.error(`Failed to sign out user ${userId ?? 'unknown'}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
         }
 
-        return res.redirect(clientRoutes.signIn)
+        return res.status(204).send()
     }
 
     private async handleOAuthRedirect(req: ExpressRequest, res: ExpressResponse) {

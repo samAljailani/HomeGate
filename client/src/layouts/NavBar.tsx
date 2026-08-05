@@ -7,13 +7,12 @@ import { IconHamburger } from "@/components/ui/icons/IconHamburger";
 import { IconX } from "@/components/ui/icons/IconX";
 import { IconBell } from "@/components/ui/icons/IconBell";
 import { DropdownMenu } from "@/components/ui/DropdownMenu";
+import { authService } from "@/services/auth.service";
+import { config } from "@/constants/app";
 
 const navigation: NavItem[] = [
-  { name: "Dashboard", href: "#", current: true },
-  { name: "Team", href: "#", current: false },
-  { name: "Projects", href: "#", current: false },
-  { name: "Sign-up", href: "/signin.html", current: false },
-  { name: "Admin", href: "/admin.html", current: false },
+  { name: "Dashboard", href: config.routes.home, current: true },
+  { name: "Admin", href: config.routes.admin, current: false },
 ];
 
 export default function NavBar(): JSX.Element {
@@ -101,7 +100,10 @@ export default function NavBar(): JSX.Element {
               items={[
                 { label: "Your profile", href: "/profile" },
                 { label: "Settings", href: "/settings" },
-                { label: "Sign out", onClick: () => console.log("Sign out") },
+                { label: "Sign out", onClick: async () => {
+                  await authService.logout()
+                  window.location.href = config.routes.signIn
+                }},
               ]}
             />
           </div>
