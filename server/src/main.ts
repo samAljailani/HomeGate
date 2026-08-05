@@ -16,6 +16,7 @@ import { EnvRepository } from '@/data/repositories/env.repository'
 import { csrfSynchronisedProtection } from '@/api/security/csrf'
 import { buildSwaggerConfig } from '@/swagger.config'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
+import { ClientRouteGuard } from '@/api/middleware/client-route.guard'
 
 import { ApplicationClientRegistry } from './core/clients/applicationClientRegistry'
 import { clients } from './core/clients'
@@ -56,6 +57,9 @@ async function bootstrap() {
 
     app.use(session(sessionOptions))
     app.use(csrfSynchronisedProtection)
+
+    const clientRouteGuard = new ClientRouteGuard()
+    app.use(clientRouteGuard.use.bind(clientRouteGuard))
 
     app.useGlobalPipes(
         new ValidationPipe({

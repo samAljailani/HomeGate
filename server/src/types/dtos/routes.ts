@@ -77,6 +77,7 @@ export const routes = {
 
 export const clientRoutes = {
     home: '/',
-    signIn: '/signIn',
+    signIn: '/signin',
     signout: '/signOut',
+    admin: '/admin',
 } as const
