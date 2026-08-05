@@ -72,7 +72,7 @@ background tasks, and more), see [server/docs](server/docs).
 4. **Run in development** (from the repo root, in separate terminals):
 
    ```sh
-   cd client
+   cd ../client
    npm run build
    cd ..
    npm run start:dev:server
