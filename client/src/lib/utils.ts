@@ -12,3 +12,7 @@ export function addToastMessage(type: 'success'| 'info' | 'warning' | 'error', m
     description: message
   })
 }
+
+export function capitalizeFirstLetter(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}

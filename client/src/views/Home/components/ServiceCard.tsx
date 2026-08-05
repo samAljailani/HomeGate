@@ -9,6 +9,7 @@ import { IconMoreOptions } from '../../../components/ui/icons/IconMoreOptions'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import { classNames } from '@/utils/styles'
 import { SignUpForm } from '@/views/Home/components/SignUp'
+import { capitalizeFirstLetter } from '@/lib/utils'
 
 // const ServiceCardsVariants = cva(
 //   "",
@@ -68,14 +69,14 @@ export function ServiceCard({ isLocked = true, className, name = 'Service', imag
           {showImage ? (
             <img
               src={imageUrl}
-              alt={`${name} logo`}
+              alt={`${capitalizeFirstLetter(name)} logo`}
               loading="lazy"
               className="w-full h-45 object-cover"
               onError={() => setImageFailed(true)}
             />
           ) : (
-            <div className="w-full h-45 flex items-center justify-center bg-muted text-muted-foreground text-2xl font-semibold uppercase">
-              {name.charAt(0)}
+            <div className="w-full h-45 flex items-center justify-center bg-muted text-muted-foreground text-2xl font-semibold">
+              {capitalizeFirstLetter(name)}
             </div>
           )}
         </CardContent>
@@ -91,7 +92,7 @@ export function ServiceCard({ isLocked = true, className, name = 'Service', imag
               { label: "Sign out", onClick: () => console.log("Sign out") },
             ]}
           />
-          <CardTitle className="line-clamp-1 text-center text-secondary">{name}</CardTitle>
+          <CardTitle className="line-clamp-1 text-center text-secondary">{capitalizeFirstLetter(name)}</CardTitle>
           {/* <CardDescription className="line-clamp-2">Smooth, flowing gradients blending rich reds and blues in an abstract swirl.</CardDescription> */}
         </CardHeader>
         <CardFooter className="gap-3 max-sm:flex-col max-sm:items-stretch justify-end">

@@ -20,8 +20,6 @@ export function Home() {
             if (cancelled) return
             setAllServices(services)
             setSubscribedServiceIds(userSubscriptions.map((s) => s.serviceId))
-            console.log(`services.length: ${services.length}`)
-            console.log(`userSubscriptions.length: ${userSubscriptions}`)
         }
 
         loadServices()
