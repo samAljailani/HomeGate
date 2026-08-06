@@ -1,23 +1,44 @@
 'use client'
 
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { classNames } from "@/utils/styles";
-import type { NavItem } from "./NavBar.types";
 import { IconHamburger } from "@/components/ui/icons/IconHamburger";
 import { IconX } from "@/components/ui/icons/IconX";
 import { IconBell } from "@/components/ui/icons/IconBell";
 import { DropdownMenu } from "@/components/ui/DropdownMenu";
 import { authService } from "@/services/auth.service";
 import { config } from "@/constants/app";
+import { NavItem, NavItemLink } from "./navItem";
 
-const navigation: NavItem[] = [
+const navigationDefaults: NavItem[] = [
   { name: "Dashboard", href: config.routes.home, current: true },
-  { name: "Admin", href: config.routes.admin, current: false },
+  { name: "Admin", current: false, 
+    dropdownItems: [
+      {label: "invites", href: '/admin/invites.html'}
+    ]
+   },
 ];
 
 export default function NavBar(): JSX.Element {
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
+  const [navigation, setNavigation] = useState(navigationDefaults)
 
+  useEffect(() => {
+    const path = window.location.pathname.replace(/\.html$/, '')
+    setNavigation(items => items.map(item => {
+      const href = item.href?.replace(/\.html$/, '')
+      // Also highlight parent if any dropdown child matches the current path
+      const childMatch = item.dropdownItems?.some(child => {
+        const childHref = child.href?.replace(/\.html$/, '')
+        return childHref && path.startsWith(childHref)
+      })
+      if (!href && !childMatch) return item
+      const current = childMatch || (href === '/' ? path === '/' : !!href && path.startsWith(href))
+      return { ...item, current }
+    }))
+  }, [])
+  
+  
   return (
     <nav className="relative bg-nav after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-divider">
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
@@ -55,19 +76,7 @@ export default function NavBar(): JSX.Element {
             <div className="hidden sm:ml-6 sm:block">
               <div className="flex space-x-4">
                 {navigation.map((item: NavItem) => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    aria-current={item.current ? "page" : undefined}
-                    className={classNames(
-                      item.current
-                        ? "bg-nav-active text-nav-active"
-                        : "text-nav hover:bg-nav hover:text-nav",
-                      "rounded-md px-3 py-2 text-sm font-medium"
-                    )}
-                  >
-                    {item.name}
-                  </a>
+                  <NavItemLink item={item} />
                 ))}
               </div>
             </div>
@@ -100,9 +109,10 @@ export default function NavBar(): JSX.Element {
               items={[
                 { label: "Your profile", href: "/profile" },
                 { label: "Settings", href: "/settings" },
-                { label: "Sign out", onClick: async () => {
-                  await authService.logout()
-                  window.location.href = config.routes.signIn
+                { label: "Sign out", className: "text-error",
+                  onClick: async () => {
+                    await authService.logout()
+                    window.location.href = config.routes.signIn
                 }},
               ]}
             />
@@ -114,20 +124,7 @@ export default function NavBar(): JSX.Element {
       <div id="mobile-menu" className={classNames("sm:hidden", mobileOpen ? "block" : "hidden")}>
         <div className="space-y-1 px-2 pt-2 pb-3">
           {navigation.map((item: NavItem) => (
-            <a
-              key={item.name}
-              href={item.href}
-              aria-current={item.current ? "page" : undefined}
-              onClick={() => setMobileOpen(false)}
-              className={classNames(
-                item.current
-                  ? "bg-nav-active text-nav-active"
-                  : "text-nav hover:bg-nav hover:text-nav",
-                "block rounded-md px-3 py-2 text-base font-medium"
-              )}
-            >
-              {item.name}
-            </a>
+            <NavItemLink key={item.name} item={item} className="block rounded-md px-3 py-2 text-base font-medium" />
           ))}
         </div>
       </div>

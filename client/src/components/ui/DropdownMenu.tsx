@@ -8,6 +8,7 @@ export interface DropdownMenuItem {
   label: string;
   href?: string;
   onClick?: () => void;
+  className?: string;
 }
 
 interface DropdownMenuProps {
@@ -68,7 +69,7 @@ export function DropdownMenu({
             key={index}
             role="menuitem"
             href={item.href ?? "#"}
-            className="block px-4 py-2 text-sm text-secondary hover:bg-dropdown-hover focus:outline-hidden"
+            className={cn("block px-4 py-2 text-sm text-secondary hover:bg-dropdown-hover focus:outline-hidden", item.className)}
             onClick={(e) => {
               if (!item.href) e.preventDefault();
               handleItemClick(item);
