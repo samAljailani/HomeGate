@@ -79,5 +79,7 @@ export const clientRoutes = {
     home: '/',
     signIn: '/signin',
     admin: '/admin',
+    adminInvites: '/admin/invites',
     error: '/error',
 } as const
+

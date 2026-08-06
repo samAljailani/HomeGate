@@ -7,7 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { createOAuthUserProfileFixture } from '../../fixtures/auth.stub'
 import { createRequestMock, createResponseMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
-import { clientRoutes } from '@/types/dtos/routes'
+import { clientRoutes } from '@/api/controllers/client-routes'
 import { NotFoundException } from '@nestjs/common'
 import { OAuthAuthModel } from '@/types/models/oauthAuth'
 

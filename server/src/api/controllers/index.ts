@@ -1,4 +1,5 @@
 import { AuthController } from './auth.controller'
+import { ClientRouteController } from './client-routes'
 import { CsrfController } from './csrf.controller'
 import { InviteController } from './invite.controller'
 import { LogController } from './log.controller'
@@ -10,6 +11,7 @@ import { UserController } from './user.controller'
 
 export const controllers = [
     AuthController,
+    ClientRouteController,
     CsrfController,
     SubscriptionController,
     InviteController,

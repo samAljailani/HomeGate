@@ -25,7 +25,7 @@ const env = configRepository.getEnv()
         ServeStaticModule.forRoot({
             rootPath: resolve(process.cwd(), env.client.buildPath),
             serveStaticOptions: {
-                extensions: ['html'],
+                index: false,
             },
         }),
         ClsModule.forRoot(env.cls.config),
