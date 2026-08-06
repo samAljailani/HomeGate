@@ -16,6 +16,7 @@ import { EnvRepository } from '@/data/repositories/env.repository'
 import { csrfSynchronisedProtection } from '@/api/security/csrf'
 import { buildSwaggerConfig } from '@/swagger.config'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
+import { resolve } from 'path'
 
 import { ApplicationClientRegistry } from './core/clients/applicationClientRegistry'
 import { clients } from './core/clients'
@@ -29,6 +30,10 @@ async function bootstrap() {
     const configRepository = app.get(EnvRepository)
 
     const env = configRepository.getEnv()
+
+    const clientBuildPath = resolve(process.cwd(), env.client.buildPath)
+    app.useStaticAssets(resolve(clientBuildPath, '_next'), { prefix: '/_next', index: false })
+    app.useStaticAssets(resolve(clientBuildPath, 'images'), { prefix: '/images', index: false })
 
     await configureApplicationClients(app)
 

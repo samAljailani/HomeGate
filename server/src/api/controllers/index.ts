@@ -11,7 +11,6 @@ import { UserController } from './user.controller'
 
 export const controllers = [
     AuthController,
-    ClientRouteController,
     CsrfController,
     SubscriptionController,
     InviteController,
@@ -20,4 +19,5 @@ export const controllers = [
     OAuthProviderController,
     LogController,
     TaskController,
+    ClientRouteController, //must be registered last due to its generatlized pattern matching
 ]

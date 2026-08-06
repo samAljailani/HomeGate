@@ -1,11 +1,13 @@
-import { Controller, Get, Inject, Res, Req } from '@nestjs/common'
+import { Controller, Get, Inject, Res, Req, UseFilters } from '@nestjs/common'
 import type { Response, Request } from 'express'
 import { resolve } from 'path'
 import { Public, AdminRoute } from '@/decorators'
 import { EnvRepository } from '@/data/repositories/env.repository'
 import { clientRoutes } from '@/types/dtos/routes'
+import { ClientRouteExceptionFilter } from './client-route-exception.filter'
 
 @Controller()
+@UseFilters(ClientRouteExceptionFilter)
 export class ClientRouteController {
     private readonly staticRoot: string
 
@@ -41,6 +43,12 @@ export class ClientRouteController {
     @Get(clientRoutes.adminInvites)
     adminInvites(@Res() res: Response) {
         return this.sendPage(res, 'admin/invites')
+    }
+
+    @Public()
+    @Get('*path')
+    notFound(@Res() res: Response) {
+        return res.redirect(`${clientRoutes.error}?status=404`)
     }
 
     private sendPage(res: Response, page: string) {

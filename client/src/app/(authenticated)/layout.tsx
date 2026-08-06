@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import NavBar from '@/layouts/NavBar'
+import NavBar from '@/components/layouts/NavBar'
 import '@/styles/index.css'
 
 export const metadata = {
