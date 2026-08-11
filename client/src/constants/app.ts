@@ -2,8 +2,8 @@ export const config = Object.freeze({
     appName: "HomeGate",
     routes: {
         home: '/',
-        signIn: '/signin.html',
-        admin: '/admin.html',
+        signIn: '/signin',
+        admin: '/admin',
+        invites: '/admin/invites'
     },
 })
-

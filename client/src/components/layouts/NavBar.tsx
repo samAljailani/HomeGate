@@ -14,7 +14,7 @@ const navigationDefaults: NavItem[] = [
   { name: "Dashboard", href: config.routes.home, current: true },
   { name: "Admin", current: false, 
     dropdownItems: [
-      {label: "invites", href: '/admin/invites.html'}
+      {label: "invites", href: config.routes.invites}
     ]
    },
 ];

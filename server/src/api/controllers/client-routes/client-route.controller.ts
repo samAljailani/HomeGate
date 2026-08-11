@@ -49,7 +49,7 @@ export class ClientRouteController {
     @Get('*path')
     notFound(@Res() res: Response) {
         return res.redirect(`${clientRoutes.error}?status=404`)
-    }
+    } //IMPORTANT: this must be the last route in this controller due to its genearlized matching.
 
     private sendPage(res: Response, page: string) {
         return res.sendFile(resolve(this.staticRoot, `${page}.html`))
