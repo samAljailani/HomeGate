@@ -4,1431 +4,1421 @@
  */
 
 export interface paths {
-    '/api/auth/google': {
+    "/api/auth/google": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get: operations['AuthController_googleAuth']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/auth/join': {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AuthController_googleAuth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/join": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Begin OAuth sign-up flow via invite token */
-        get: operations['AuthController_join']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/auth/google/redirect': {
+        get: operations["AuthController_join"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/google/redirect": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get: operations['AuthController_googleAuthRedirect']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/auth/signOut': {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AuthController_googleAuthRedirect"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/signOut": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get?: never
-        put?: never
-        post: operations['AuthController_logout']
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/csrf': {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/csrf": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get: operations['CsrfController_getCsrfToken']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/subscriptions': {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CsrfController_getCsrfToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subscriptions": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** List subscriptions, optionally filtered by user (admin only) */
-        get: operations['SubscriptionController_listAll']
-        put?: never
+        get: operations["SubscriptionController_listAll"];
+        put?: never;
         /** Subscribe to a service */
-        post: operations['SubscriptionController_subscribe']
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/subscriptions/me': {
+        post: operations["SubscriptionController_subscribe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subscriptions/me": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** List subscriptions for the current user */
-        get: operations['SubscriptionController_listMine']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/subscriptions/{id}': {
+        get: operations["SubscriptionController_listMine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subscriptions/{id}": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get a subscription by id (admin only) */
-        get: operations['SubscriptionController_getById']
-        put?: never
-        post?: never
+        get: operations["SubscriptionController_getById"];
+        put?: never;
+        post?: never;
         /** Cancel a subscription */
-        delete: operations['SubscriptionController_delete']
-        options?: never
-        head?: never
+        delete: operations["SubscriptionController_delete"];
+        options?: never;
+        head?: never;
         /** Update subscription state — enabled and/or autoRenew (admin only) */
-        patch: operations['SubscriptionController_update']
-        trace?: never
-    }
-    '/api/subscriptions/{id}/renew': {
+        patch: operations["SubscriptionController_update"];
+        trace?: never;
+    };
+    "/api/subscriptions/{id}/renew": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get?: never
-        put?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Renew a subscription by 30 days (admin only) */
-        post: operations['SubscriptionController_renew']
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/invites': {
+        post: operations["SubscriptionController_renew"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invites": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** List all invites (admin only) */
-        get: operations['InviteController_list']
-        put?: never
+        get: operations["InviteController_list"];
+        put?: never;
         /** Generate an invite token (admin only) */
-        post: operations['InviteController_create']
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/invites/{id}': {
+        post: operations["InviteController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invites/{id}": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get?: never
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         /** Revoke an invite (admin only) */
-        patch: operations['InviteController_update']
-        trace?: never
-    }
-    '/api/users': {
+        patch: operations["InviteController_update"];
+        trace?: never;
+    };
+    "/api/users": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** List all users */
-        get: operations['UserController_listUsers']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/users/{id}': {
+        get: operations["UserController_listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get a user by ID */
-        get: operations['UserController_getUser']
-        put?: never
-        post?: never
+        get: operations["UserController_getUser"];
+        put?: never;
+        post?: never;
         /** Delete a user account (soft or hard) */
-        delete: operations['UserController_deleteUser']
-        options?: never
-        head?: never
+        delete: operations["UserController_deleteUser"];
+        options?: never;
+        head?: never;
         /** Update a user account state — enabled (admin only) */
-        patch: operations['UserController_updateUser']
-        trace?: never
-    }
-    '/api/services': {
+        patch: operations["UserController_updateUser"];
+        trace?: never;
+    };
+    "/api/services": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** List all services (admin only) */
-        get: operations['ServiceController_list']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/services/{name}': {
+        get: operations["ServiceController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/services/{name}": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get?: never
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         /** Update service state — enabled, imageUrl (admin only) */
-        patch: operations['ServiceController_update']
-        trace?: never
-    }
-    '/api/services/{name}/accounts': {
+        patch: operations["ServiceController_update"];
+        trace?: never;
+    };
+    "/api/services/{name}/accounts": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** List external accounts for an integrated service (admin only) */
-        get: operations['ServiceController_listAccounts']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/oauth-providers': {
+        get: operations["ServiceController_listAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/oauth-providers": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** List all OAuth providers (admin only) */
-        get: operations['OAuthProviderController_list']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/oauth-providers/{id}': {
+        get: operations["OAuthProviderController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/oauth-providers/{id}": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get?: never
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         /** Update OAuth provider state — enabled (admin only) */
-        patch: operations['OAuthProviderController_update']
-        trace?: never
-    }
-    '/api/logs': {
+        patch: operations["OAuthProviderController_update"];
+        trace?: never;
+    };
+    "/api/logs": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** List application logs (admin only) */
-        get: operations['LogController_list']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/tasks': {
+        get: operations["LogController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** List all task configurations with current status */
-        get: operations['TaskController_listTasks']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/api/tasks/{name}': {
+        get: operations["TaskController_listTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{name}": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get?: never
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         /** Update task configuration (hot-reloads immediately) */
-        patch: operations['TaskController_updateTask']
-        trace?: never
-    }
-    '/signin': {
+        patch: operations["TaskController_updateTask"];
+        trace?: never;
+    };
+    "/signin": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get: operations['ClientRouteController_signIn']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/error': {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_signIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/error": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get: operations['ClientRouteController_error']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/': {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_error"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get: operations['ClientRouteController_home']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/admin': {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_home"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get: operations['ClientRouteController_admin']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/admin/invites': {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_admin"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/invites": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get: operations['ClientRouteController_adminInvites']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
-    '/{path}': {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminInvites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/{path}": {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get: operations['ClientRouteController_notFound']
-        put?: never
-        post?: never
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_notFound"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
-export type webhooks = Record<string, never>
+export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         SubscriptionCreateRequestDto: {
-            serviceId: number
-            serviceUsername: string
-            email?: string
-            servicePassword: string
-            confirmServicePassword: string
-            autoRenew: boolean
-        }
+            serviceId: number;
+            serviceUsername: string;
+            email?: string;
+            servicePassword: string;
+            confirmServicePassword: string;
+            autoRenew: boolean;
+        };
         SubscriptionResponseDto: {
             /** Format: uuid */
-            id: string
+            id: string;
             /** Format: uuid */
-            userId: string
-            serviceId: number
-            username: string
+            userId: string;
+            serviceId: number;
+            username: string;
             /** @enum {string} */
-            status:
-                | 'provisioning'
-                | 'active'
-                | 'failed'
-                | 'cancelling'
-                | 'cancelled'
-                | 'expired'
-                | 'disabling'
-                | 'disabled'
-                | 'enabling'
-            autoRenew: boolean
+            status: "provisioning" | "active" | "failed" | "cancelling" | "cancelled" | "expired" | "disabling" | "disabled" | "enabling";
+            autoRenew: boolean;
             /** Format: date-time */
-            createdAt: string
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: string
+            updatedAt: string;
             /** Format: date-time */
-            expiresAt?: string | null
+            expiresAt?: string | null;
             /** Format: date-time */
-            provisionedAt?: string | null
+            provisionedAt?: string | null;
             /** Format: date-time */
-            cancelledAt?: string | null
-        }
+            cancelledAt?: string | null;
+        };
         SubscriptionPatchRequestDto: {
-            enabled?: boolean
-            autoRenew?: boolean
-        }
+            enabled?: boolean;
+            autoRenew?: boolean;
+        };
         SubscriptionDeleteRequestDto: {
             /** @description Immediately delete the external account instead of cancelling auto-renew */
-            immediate?: boolean
-        }
+            immediate?: boolean;
+        };
         CreateInviteRequestDto: {
-            email?: string
-            expiresInDays: number
-        }
+            email?: string;
+            expiresInDays: number;
+        };
         InviteResponseDto: {
-            id: string
-            email?: string
-            expiresAt: string
-            createdAt: string
-            usedAt?: string
-            revokedAt?: string
-            revokedReason?: string
-            createdByUserId?: string
-            usedByUserId?: string
-            revokedByUserId?: string
-        }
+            id: string;
+            email?: string;
+            expiresAt: string;
+            createdAt: string;
+            usedAt?: string;
+            revokedAt?: string;
+            revokedReason?: string;
+            createdByUserId?: string;
+            usedByUserId?: string;
+            revokedByUserId?: string;
+        };
         CreateInviteResponseDto: {
-            rawToken: string
-            invite: components['schemas']['InviteResponseDto']
-        }
+            rawToken: string;
+            invite: components["schemas"]["InviteResponseDto"];
+        };
         InvitePatchRequestDto: {
-            revoked?: boolean
-        }
+            revoked?: boolean;
+        };
         UserResponseForAdminDto: {
-            id: string
-            email: string
-            username: string
-            firstName: string
-            lastName: string
-            isAdmin: boolean
-            isDeleted: boolean
-            isEnabled: boolean
+            id: string;
+            email: string;
+            username: string;
+            firstName: string;
+            lastName: string;
+            isAdmin: boolean;
+            isDeleted: boolean;
+            isEnabled: boolean;
             /** @enum {string} */
-            status: 'PENDING' | 'ACTIVE'
+            status: "PENDING" | "ACTIVE";
             /** Format: date-time */
-            createdAt: string
-        }
+            createdAt: string;
+        };
         UserPatchRequestDto: {
-            enabled?: boolean
-        }
+            enabled?: boolean;
+        };
         UserDeleteRequestDto: {
             /** @description Permanently delete the account. Ignored for non-admin callers. */
-            hard?: boolean
-        }
+            hard?: boolean;
+        };
         ServiceResponseDto: {
-            id: number
-            name: string
-            enabled: boolean
-            url?: string | null
-            imageUrl?: string | null
-        }
+            id: number;
+            name: string;
+            enabled: boolean;
+            url?: string | null;
+            imageUrl?: string | null;
+        };
         ServicePatchRequestDto: {
-            enabled?: boolean
-            imageUrl?: string | null
-        }
+            enabled?: boolean;
+            imageUrl?: string | null;
+        };
         ExternalAccountResponseDto: {
-            id: string
-            username: string
-            isActive: boolean
-            isAdmin: boolean
-        }
+            id: string;
+            username: string;
+            isActive: boolean;
+            isAdmin: boolean;
+        };
         OAuthProviderResponseDto: {
-            id: number
+            id: number;
             /** @enum {string} */
-            name: 'google'
-            enabled: boolean
-        }
+            name: "google";
+            enabled: boolean;
+        };
         OAuthProviderPatchRequestDto: {
-            enabled?: boolean
-        }
+            enabled?: boolean;
+        };
         LogResponseDto: {
-            id: number
-            userId?: string
-            sessionId?: string
-            correlationId?: string
+            id: number;
+            userId?: string;
+            sessionId?: string;
+            correlationId?: string;
             /** @enum {string} */
-            logLevel: 'verbose' | 'debug' | 'log' | 'warn' | 'error' | 'fatal'
-            context?: string
-            message: string
-            stackTrace?: string
+            logLevel: "verbose" | "debug" | "log" | "warn" | "error" | "fatal";
+            context?: string;
+            message: string;
+            stackTrace?: string;
             /** Format: date-time */
-            createdAt: string
-        }
+            createdAt: string;
+        };
         TaskConfigResponseDto: {
-            name: string
-            enabled: boolean
-            runOnStartup: boolean
-            cronExpression: string
-            isActive: boolean
-        }
+            name: string;
+            enabled: boolean;
+            runOnStartup: boolean;
+            cronExpression: string;
+            isActive: boolean;
+        };
         UpdateTaskConfigDto: {
-            enabled?: boolean
-            runOnStartup?: boolean
-            cronExpression?: string
-        }
+            enabled?: boolean;
+            runOnStartup?: boolean;
+            cronExpression?: string;
+        };
         PaginationRequestDto: {
             /** @default 50 */
-            take: number
+            take: number;
             /** @default 0 */
-            skip: number
-        }
-    }
-    responses: never
-    parameters: never
-    requestBodies: never
-    headers: never
-    pathItems: never
+            skip: number;
+        };
+    };
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
-export type $defs = Record<string, never>
+export type $defs = Record<string, never>;
 export interface operations {
     AuthController_googleAuth: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AuthController_join: {
         parameters: {
             query: {
                 /** @description Raw invite token from the invite link */
-                token: string
-            }
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AuthController_googleAuthRedirect: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AuthController_logout: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             201: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     CsrfController_getCsrfToken: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SubscriptionController_listAll: {
         parameters: {
             query?: {
-                skip?: number
-                take?: number
-                userId?: string
-            }
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+                skip?: number;
+                take?: number;
+                userId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description List of subscriptions */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['SubscriptionResponseDto'][]
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["SubscriptionResponseDto"][];
+                };
+            };
+        };
+    };
     SubscriptionController_subscribe: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         requestBody: {
             content: {
-                'application/json': components['schemas']['SubscriptionCreateRequestDto']
-            }
-        }
+                "application/json": components["schemas"]["SubscriptionCreateRequestDto"];
+            };
+        };
         responses: {
             /** @description Subscription created successfully */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['SubscriptionResponseDto']
-                }
-            }
+                    "application/json": components["schemas"]["SubscriptionResponseDto"];
+                };
+            };
             /** @description Invalid request or service unavailable */
             400: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Subscription already exists */
             409: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description External service unavailable */
             503: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SubscriptionController_listMine: {
         parameters: {
             query?: {
-                skip?: number
-                take?: number
-            }
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+                skip?: number;
+                take?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description List of subscriptions for the authenticated user */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['SubscriptionResponseDto'][]
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["SubscriptionResponseDto"][];
+                };
+            };
+        };
+    };
     SubscriptionController_getById: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                id: string
-            }
-            cookie?: never
-        }
-        requestBody?: never
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description The subscription */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['SubscriptionResponseDto']
-                }
-            }
+                    "application/json": components["schemas"]["SubscriptionResponseDto"];
+                };
+            };
             /** @description Subscription not found */
             404: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SubscriptionController_delete: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                id: string
-            }
-            cookie?: never
-        }
+                id: string;
+            };
+            cookie?: never;
+        };
         requestBody?: {
             content: {
-                'application/json': components['schemas']['SubscriptionDeleteRequestDto']
-            }
-        }
+                "application/json": components["schemas"]["SubscriptionDeleteRequestDto"];
+            };
+        };
         responses: {
             /** @description Subscription cancelled successfully */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Invalid request or unauthorized */
             400: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Subscription not found */
             404: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description User is not subscribed to the service */
             409: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Failed to delete external account */
             503: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SubscriptionController_update: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                id: string
-            }
-            cookie?: never
-        }
+                id: string;
+            };
+            cookie?: never;
+        };
         requestBody: {
             content: {
-                'application/json': components['schemas']['SubscriptionPatchRequestDto']
-            }
-        }
+                "application/json": components["schemas"]["SubscriptionPatchRequestDto"];
+            };
+        };
         responses: {
             /** @description Subscription updated successfully */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['SubscriptionResponseDto']
-                }
-            }
+                    "application/json": components["schemas"]["SubscriptionResponseDto"];
+                };
+            };
             /** @description No fields provided or invalid request */
             400: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Subscription not found */
             404: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Subscription is not in a valid state for the transition */
             409: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SubscriptionController_renew: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                id: string
-            }
-            cookie?: never
-        }
-        requestBody?: never
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Subscription renewed successfully */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['SubscriptionResponseDto']
-                }
-            }
+                    "application/json": components["schemas"]["SubscriptionResponseDto"];
+                };
+            };
             /** @description Subscription not found */
             404: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     InviteController_list: {
         parameters: {
             query?: {
-                skip?: number
-                take?: number
-            }
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+                skip?: number;
+                take?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description List of all invites */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['InviteResponseDto'][]
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["InviteResponseDto"][];
+                };
+            };
+        };
+    };
     InviteController_create: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         requestBody: {
             content: {
-                'application/json': components['schemas']['CreateInviteRequestDto']
-            }
-        }
+                "application/json": components["schemas"]["CreateInviteRequestDto"];
+            };
+        };
         responses: {
             /** @description Invite token created successfully */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['CreateInviteResponseDto']
-                }
-            }
+                    "application/json": components["schemas"]["CreateInviteResponseDto"];
+                };
+            };
             /** @description Invalid request */
             400: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     InviteController_update: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                id: string
-            }
-            cookie?: never
-        }
+                id: string;
+            };
+            cookie?: never;
+        };
         requestBody: {
             content: {
-                'application/json': components['schemas']['InvitePatchRequestDto']
-            }
-        }
+                "application/json": components["schemas"]["InvitePatchRequestDto"];
+            };
+        };
         responses: {
             /** @description Invite revoked successfully */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['InviteResponseDto']
-                }
-            }
+                    "application/json": components["schemas"]["InviteResponseDto"];
+                };
+            };
             /** @description Invite not found */
             404: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     UserController_listUsers: {
         parameters: {
             query?: {
-                skip?: number
-                take?: number
-            }
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+                skip?: number;
+                take?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['UserResponseForAdminDto'][]
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["UserResponseForAdminDto"][];
+                };
+            };
+        };
+    };
     UserController_getUser: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                id: string
-            }
-            cookie?: never
-        }
-        requestBody?: never
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['UserResponseForAdminDto']
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["UserResponseForAdminDto"];
+                };
+            };
+        };
+    };
     UserController_deleteUser: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                id: string
-            }
-            cookie?: never
-        }
+                id: string;
+            };
+            cookie?: never;
+        };
         requestBody?: {
             content: {
-                'application/json': components['schemas']['UserDeleteRequestDto']
-            }
-        }
+                "application/json": components["schemas"]["UserDeleteRequestDto"];
+            };
+        };
         responses: {
             /** @description User deleted successfully */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': boolean
-                }
-            }
+                    "application/json": boolean;
+                };
+            };
             /** @description Insufficient permissions */
             403: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     UserController_updateUser: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                id: string
-            }
-            cookie?: never
-        }
+                id: string;
+            };
+            cookie?: never;
+        };
         requestBody: {
             content: {
-                'application/json': components['schemas']['UserPatchRequestDto']
-            }
-        }
+                "application/json": components["schemas"]["UserPatchRequestDto"];
+            };
+        };
         responses: {
             /** @description User updated successfully */
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['UserResponseForAdminDto']
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["UserResponseForAdminDto"];
+                };
+            };
+        };
+    };
     ServiceController_list: {
         parameters: {
             query?: {
-                skip?: number
-                take?: number
-            }
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+                skip?: number;
+                take?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['ServiceResponseDto'][]
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["ServiceResponseDto"][];
+                };
+            };
+        };
+    };
     ServiceController_update: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                name: string
-            }
-            cookie?: never
-        }
+                name: string;
+            };
+            cookie?: never;
+        };
         requestBody: {
             content: {
-                'application/json': components['schemas']['ServicePatchRequestDto']
-            }
-        }
+                "application/json": components["schemas"]["ServicePatchRequestDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['ServiceResponseDto']
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["ServiceResponseDto"];
+                };
+            };
+        };
+    };
     ServiceController_listAccounts: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                name: string
-            }
-            cookie?: never
-        }
-        requestBody?: never
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['ExternalAccountResponseDto'][]
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["ExternalAccountResponseDto"][];
+                };
+            };
+        };
+    };
     OAuthProviderController_list: {
         parameters: {
             query?: {
-                skip?: number
-                take?: number
-            }
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+                skip?: number;
+                take?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['OAuthProviderResponseDto'][]
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["OAuthProviderResponseDto"][];
+                };
+            };
+        };
+    };
     OAuthProviderController_update: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                id: number
-            }
-            cookie?: never
-        }
+                id: number;
+            };
+            cookie?: never;
+        };
         requestBody: {
             content: {
-                'application/json': components['schemas']['OAuthProviderPatchRequestDto']
-            }
-        }
+                "application/json": components["schemas"]["OAuthProviderPatchRequestDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['OAuthProviderResponseDto']
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["OAuthProviderResponseDto"];
+                };
+            };
+        };
+    };
     LogController_list: {
         parameters: {
             query?: {
-                skip?: number
-                take?: number
-                logLevel?:
-                    'verbose' | 'debug' | 'log' | 'warn' | 'error' | 'fatal'
-                userId?: string
-            }
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+                skip?: number;
+                take?: number;
+                logLevel?: "verbose" | "debug" | "log" | "warn" | "error" | "fatal";
+                userId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['LogResponseDto'][]
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["LogResponseDto"][];
+                };
+            };
+        };
+    };
     TaskController_listTasks: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['TaskConfigResponseDto'][]
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["TaskConfigResponseDto"][];
+                };
+            };
+        };
+    };
     TaskController_updateTask: {
         parameters: {
-            query?: never
-            header?: never
+            query?: never;
+            header?: never;
             path: {
-                name: string
-            }
-            cookie?: never
-        }
+                name: string;
+            };
+            cookie?: never;
+        };
         requestBody: {
             content: {
-                'application/json': components['schemas']['UpdateTaskConfigDto']
-            }
-        }
+                "application/json": components["schemas"]["UpdateTaskConfigDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
+                    [name: string]: unknown;
+                };
                 content: {
-                    'application/json': components['schemas']['TaskConfigResponseDto']
-                }
-            }
-        }
-    }
+                    "application/json": components["schemas"]["TaskConfigResponseDto"];
+                };
+            };
+        };
+    };
     ClientRouteController_signIn: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ClientRouteController_error: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ClientRouteController_home: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ClientRouteController_admin: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ClientRouteController_adminInvites: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ClientRouteController_notFound: {
         parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
-                    [name: string]: unknown
-                }
-                content?: never
-            }
-        }
-    }
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
 }

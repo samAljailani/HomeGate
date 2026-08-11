@@ -30,7 +30,7 @@ export default tseslint.config(
     },
     {
         // Allow Prisma imports only in the data-access layer
-        files: ['src/repositories/**', 'src/types/models/**', 'src/infrastructure/**'],
+        files: ['src/data/repositories/**', 'src/types/models/**', 'src/infrastructure/**'],
         rules: {
             'no-restricted-imports': 'off',
         },
