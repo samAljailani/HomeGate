@@ -400,7 +400,7 @@ export class ImmichClient implements IApplicationManager {
 
             const users = (await allUsersResponse.json()) as ImmichUserResponse[]
 
-            for (let user of users) {
+            for (const user of users) {
                 if (!user.id || (!user.email && !user.name)) {
                     this.logger.error(`Immich api returned an invalid user account`)
                     return null

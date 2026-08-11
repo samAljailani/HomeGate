@@ -107,7 +107,7 @@ export class JellyfinClient implements IApplicationManager {
 
             const data = (await response.json()) as JellyfinUserResponse[]
 
-            for (let user of data) {
+            for (const user of data) {
                 if (!user.Id || !user.Name) {
                     this.logger.error(`Jellyfin user returned a user with missing information. user:${user}'.`)
                 }
@@ -231,7 +231,7 @@ export class JellyfinClient implements IApplicationManager {
         let userServiceAccountId = null
 
         if (filters.userServiceAccountId == undefined) {
-            let user = await this.getUserByUsername(filters.username!)
+            const user = await this.getUserByUsername(filters.username!)
 
             if (user != null) {
                 userServiceAccountId = user.id
@@ -296,7 +296,7 @@ export class JellyfinClient implements IApplicationManager {
         let userServiceAccountId = filters.userServiceAccountId
 
         if (filters.userServiceAccountId == undefined) {
-            let user = await this.getUserByUsername(filters.username!)
+            const user = await this.getUserByUsername(filters.username!)
 
             if (user != null) {
                 userServiceAccountId = user.id
@@ -416,7 +416,7 @@ export class JellyfinClient implements IApplicationManager {
 
             const users = (await allUsersResponse.json()) as JellyfinUserResponse[]
 
-            for (let user of users) {
+            for (const user of users) {
                 if (!user.Id || !user.Name) {
                     this.logger.error(`Jellyfin api returned an invalid user account`)
                     return null

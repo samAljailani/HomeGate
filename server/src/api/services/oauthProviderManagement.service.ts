@@ -1,8 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common'
 import { IOAuthProviderRepository } from '@/data/repositories/IOAuthProviderRepository'
 import { ISessionRepository } from '@/data/repositories/ISessionRepository'
-import { OAuthProviderModel } from '@/types/models/oauthProvider'
-import { OAuthProviderName } from '@prisma/generated'
+import { OAuthProviderModel, OAuthProviderName } from '@/types/models/oauthProvider'
 
 @Injectable()
 export class OAuthProviderManagementService {

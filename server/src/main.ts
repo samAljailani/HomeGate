@@ -85,7 +85,7 @@ async function bootstrap() {
 async function configureApplicationClients(app: NestExpressApplication) {
     const applicationClientRegistry = app.get(ApplicationClientRegistry)
 
-    for (let client of clients) {
+    for (const client of clients) {
         await applicationClientRegistry.register(app.get(client))
     }
 }
