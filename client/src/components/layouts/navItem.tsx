@@ -19,7 +19,7 @@ export function NavItemLink({
     item,
     className,
 }: NavItemLinkProps): JSX.Element {
-    let linkItem = (
+    const linkItem = (
         <a
             key={item.name}
             href={item.href}

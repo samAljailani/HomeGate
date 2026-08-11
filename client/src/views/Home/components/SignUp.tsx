@@ -63,7 +63,7 @@ function Form({
             await subscriptionService.subscribe(data)
             addToastMessage('success', 'subscription successfully created.')
             setOpen(false)
-        } catch (error) {
+        } catch {
             const message =
                 'failed to create subscription. Verify the validity of the inserted information.'
             setError('root', { message })
