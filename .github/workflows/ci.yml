@@ -107,6 +107,10 @@ jobs:
         needs: [validate, prisma]
 
         steps:
+            - name: Set build label
+              id: label
+              run: echo "value=$(date +'%Y%m%d').${{ github.run_number }}" >> $GITHUB_OUTPUT
+
             - name: Checkout
               uses: actions/checkout@v4
 
@@ -138,14 +142,14 @@ jobs:
             - name: Upload server artifact
               uses: actions/upload-artifact@v4
               with:
-                  name: server-build
+                  name: server-build-${{ steps.label.outputs.value }}
                   path: server/dist
                   retention-days: 7
 
             - name: Upload client artifact
               uses: actions/upload-artifact@v4
               with:
-                  name: client-build
+                  name: client-build-${{ steps.label.outputs.value }}
                   path: client/out
                   retention-days: 7
 
@@ -186,5 +190,5 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                   name: coverage-report
-                  path: server/coverage/
+                  path: coverage/
                   retention-days: 14
