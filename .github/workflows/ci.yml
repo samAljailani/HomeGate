@@ -143,7 +143,10 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                   name: server-build-${{ steps.label.outputs.value }}
-                  path: server/dist
+                  path: |
+                      server/dist
+                      !server/dist/**/*.d.ts
+                      !server/dist/**/*.map
                   retention-days: 7
 
             - name: Upload client artifact
