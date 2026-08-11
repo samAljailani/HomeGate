@@ -34,7 +34,15 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check formatting
+      - name: Check formatting (root & packages)
+        run: npx prettier --check "*.{json,md,yml,yaml}" ".github/**" "packages/**"
+
+      - name: Check formatting (server)
+        working-directory: server
+        run: npx prettier --check .
+
+      - name: Check formatting (client)
+        working-directory: client
         run: npx prettier --check .
 
       - name: Lint server
