@@ -179,23 +179,12 @@ jobs:
 
             - name: Run unit tests
               working-directory: server
-              run: npx jest --coverage --ci --reporters=default --reporters=jest-junit
-              env:
-                  JEST_JUNIT_OUTPUT_DIR: ../test-results
-                  JEST_JUNIT_OUTPUT_NAME: junit.xml
-
-            - name: Upload test results
-              if: always()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: test-results
-                  path: test-results/
-                  retention-days: 14
+              run: npm run test:cov -- --ci
 
             - name: Upload coverage report
               if: always()
               uses: actions/upload-artifact@v4
               with:
                   name: coverage-report
-                  path: coverage/
+                  path: server/coverage/
                   retention-days: 14
