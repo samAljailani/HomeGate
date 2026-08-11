@@ -59,7 +59,7 @@ jobs:
               run: npx prisma generate
 
             - name: Build types package
-              run: npm run build:types
+              run: npm --workspace packages/types run build:ci
 
             - name: Typecheck server
               working-directory: server
@@ -127,7 +127,7 @@ jobs:
               run: npx prisma generate
 
             - name: Build types package
-              run: npm run build:types
+              run: npm --workspace packages/types run build:ci
 
             - name: Build server
               run: npm run build:server
@@ -175,7 +175,7 @@ jobs:
               run: npx prisma generate
 
             - name: Build types package
-              run: npm run build:types
+              run: npm --workspace packages/types run build:ci
 
             - name: Run unit tests
               working-directory: server
