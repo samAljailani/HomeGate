@@ -54,6 +54,13 @@ jobs:
               working-directory: client
               run: npm run lint
 
+            - name: Generate Prisma client
+              working-directory: server
+              run: npx prisma generate
+
+            - name: Build types package
+              run: npm run build:types
+
             - name: Typecheck server
               working-directory: server
               run: npx tsc --noEmit
