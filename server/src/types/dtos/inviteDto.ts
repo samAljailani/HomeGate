@@ -65,6 +65,11 @@ export class CreateInviteRequestDto {
     @Max(MAX_INVITE_EXPIRY_DAYS)
     expiresInDays: number
 
+    @ApiPropertyOptional({ type: Boolean })
+    @IsOptional()
+    @IsBoolean()
+    isAdmin?: boolean
+
     @ApiPropertyOptional({ type: [InviteAccountDto] })
     @IsOptional()
     @IsArray()

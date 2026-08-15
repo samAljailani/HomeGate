@@ -73,7 +73,7 @@ export class InviteService extends BaseService {
             await this.supersedePendingInvite(options.email)
         }
 
-        const rawToken = this.cryptography.GenerateRandomToken()
+        const rawToken = this.cryptography.GenerateRandomToken(4).toUpperCase()
         const token = this.hashToken(rawToken)
 
         const expiresAt = new Date()
@@ -83,7 +83,7 @@ export class InviteService extends BaseService {
             {
                 token,
                 email: options.email ?? null,
-                isAdmin: false,
+                isAdmin: options.isAdmin ?? false,
                 expiresAt,
                 createdByUserId,
             },
@@ -96,7 +96,7 @@ export class InviteService extends BaseService {
     }
 
     async validateToken(rawToken: string, email?: string): Promise<InviteModel> {
-        const token = this.hashToken(rawToken)
+        const token = this.hashToken(rawToken.toUpperCase())
         const invite = await this.inviteRepository.findByToken(token)
 
         if (invite == null) {
