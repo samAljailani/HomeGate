@@ -386,16 +386,29 @@ describe('InviteService', () => {
     })
 
     describe('listInvites', () => {
-        it('returns mapped invites', async () => {
+        it('returns paginated response with hasMore=false when all fetched', async () => {
             const invites = [createInviteFixture({ id: 'a' }), createInviteFixture({ id: 'b' })]
             inviteRepositoryMock.findAll.mockResolvedValue(invites)
+            inviteRepositoryMock.count.mockResolvedValue(2)
 
             const result = await service.listInvites(10, 0)
 
             expect(inviteRepositoryMock.findAll).toHaveBeenCalledWith(10, 0)
-            expect(result).toHaveLength(2)
-            expect(result[0]!.id).toBe('a')
-            expect(result[1]!.id).toBe('b')
+            expect(result.data).toHaveLength(2)
+            expect(result.total).toBe(2)
+            expect(result.hasMore).toBe(false)
+        })
+
+        it('returns hasMore=true when more records exist', async () => {
+            const invites = [createInviteFixture({ id: 'a' })]
+            inviteRepositoryMock.findAll.mockResolvedValue(invites)
+            inviteRepositoryMock.count.mockResolvedValue(5)
+
+            const result = await service.listInvites(1, 0)
+
+            expect(result.data).toHaveLength(1)
+            expect(result.total).toBe(5)
+            expect(result.hasMore).toBe(true)
         })
     })
 })

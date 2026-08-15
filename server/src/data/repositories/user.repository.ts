@@ -69,6 +69,10 @@ export class UserRepository extends BaseRepository implements IUserRepository {
         }
     }
 
+    async count(filter: UserFilterOptions): Promise<number> {
+        return this.db.user.count({ where: { ...filter } })
+    }
+
     async create(request: CreateUserModel): Promise<UserModel | null> {
         try {
             const user = await this.db.user.create({ data: request })

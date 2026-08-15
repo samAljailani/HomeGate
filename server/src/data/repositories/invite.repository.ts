@@ -222,4 +222,15 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
             mapPrismaError(error, repositoryErrorMessages.invite)
         }
     }
+
+    async count(): Promise<number> {
+        try {
+            return await this.db.invite.count()
+        } catch (error) {
+            this.logger.error('count failed', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.invite)
+        }
+    }
 }

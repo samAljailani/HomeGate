@@ -15,6 +15,7 @@ import {
     InvitePatchRequestDto,
     InviteResponseDto,
 } from '@/types/dtos/inviteDto'
+import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 import { CryptographyProvider } from '@/infrastructure/cryptography.provider'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -219,9 +220,12 @@ export class InviteService extends BaseService {
         this.logger.log(`Invite ${id} deleted`)
     }
 
-    async listInvites(take?: number, skip?: number): Promise<InviteResponseDto[]> {
-        const invites = await this.inviteRepository.findAll(take, skip)
-        return invites.map((invite) => this.mapInvite(invite))
+    async listInvites(take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<InviteResponseDto>> {
+        const [invites, total] = await Promise.all([
+            this.inviteRepository.findAll(take, skip),
+            this.inviteRepository.count(),
+        ])
+        return new PaginatedResponseDto(invites.map((invite) => this.mapInvite(invite)), total, take, skip)
     }
 
     private async supersedePendingInvite(email: string): Promise<void> {

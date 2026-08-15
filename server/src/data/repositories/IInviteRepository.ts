@@ -7,6 +7,7 @@ export interface IInviteRepository {
     findByToken(token: string): Promise<InviteModel | null>
     findActivePendingByEmail(email: string): Promise<InviteModel | null>
     findAll(take?: number, skip?: number): Promise<InviteModel[]>
+    count(): Promise<number>
     create(request: CreateInviteModel, accounts?: CreateInviteAccountModel[]): Promise<InviteModel>
     update(id: string, data: UpdateInviteModel): Promise<InviteModel | null>
     delete(id: string): Promise<void>
