@@ -179,7 +179,7 @@ export class AuthService extends BaseService {
         if (invite.accounts.length > 0) {
             this.eventEmitter.emit(
                 AppEvent.INVITE_CLAIMED,
-                { userId: account.id, username: account.username, accounts: invite.accounts } satisfies InviteClaimedEvent
+                { userId: account.id, accounts: invite.accounts } satisfies InviteClaimedEvent
             )
         }
 

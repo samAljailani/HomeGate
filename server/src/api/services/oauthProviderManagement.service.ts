@@ -16,7 +16,7 @@ export class OAuthProviderManagementService {
             this.oauthProviderRepository.findMany({}, take, skip),
             this.oauthProviderRepository.count({}),
         ])
-        return new PaginatedResponseDto(providers, total, take, skip)
+        return new PaginatedResponseDto(providers, total, skip)
     }
 
     async enable(name: OAuthProviderName): Promise<OAuthProviderModel> {

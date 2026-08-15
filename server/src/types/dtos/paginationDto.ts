@@ -28,7 +28,7 @@ export class PaginatedResponseDto<T> {
     @ApiProperty()
     hasMore: boolean
 
-    constructor(data: T[], total: number, take: number, skip: number) {
+    constructor(data: T[], total: number, skip: number) {
         this.data = data
         this.total = total
         this.hasMore = skip + data.length < total

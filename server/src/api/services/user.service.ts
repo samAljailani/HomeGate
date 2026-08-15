@@ -181,7 +181,7 @@ export class UserService extends BaseService {
             this.userRepository.findMany({}, take, skip),
             this.userRepository.count({}),
         ])
-        return new PaginatedResponseDto(users.map((u) => this.userModelToLoadRequestForAdmin(u)), total, take, skip)
+        return new PaginatedResponseDto(users.map((u) => this.userModelToLoadRequestForAdmin(u)), total, skip)
     }
 
     async getUserByIdForAdmin(userId: string): Promise<UserResponseForAdminDto | null> {

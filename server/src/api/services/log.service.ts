@@ -12,6 +12,6 @@ export class LogService {
             this.loggingRepository.findMany(filter, take, skip),
             this.loggingRepository.count(filter),
         ])
-        return new PaginatedResponseDto(logs, total, take, skip)
+        return new PaginatedResponseDto(logs, total, skip)
     }
 }

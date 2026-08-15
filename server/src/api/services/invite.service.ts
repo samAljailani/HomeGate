@@ -225,7 +225,7 @@ export class InviteService extends BaseService {
             this.inviteRepository.findAll(take, skip),
             this.inviteRepository.count(),
         ])
-        return new PaginatedResponseDto(invites.map((invite) => this.mapInvite(invite)), total, take, skip)
+        return new PaginatedResponseDto(invites.map((invite) => this.mapInvite(invite)), total, skip)
     }
 
     private async supersedePendingInvite(email: string): Promise<void> {

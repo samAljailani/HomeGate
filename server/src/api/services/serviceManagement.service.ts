@@ -49,7 +49,7 @@ export class ServiceManagementService {
             this.serviceRepository.findMany({}, take, skip),
             this.serviceRepository.count({}),
         ])
-        return new PaginatedResponseDto(services.map((s) => this.serviceModelToResponseDto(s)), total, take, skip)
+        return new PaginatedResponseDto(services.map((s) => this.serviceModelToResponseDto(s)), total, skip)
     }
 
     async enable(name: ApplicationClientNames): Promise<ServiceResponseDto> {

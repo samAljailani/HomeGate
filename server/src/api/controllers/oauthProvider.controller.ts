@@ -32,13 +32,12 @@ export class OAuthProviderController {
     @ApiOperation({ summary: 'List all OAuth providers (admin only)' })
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
-    @ApiOkResponse({ description: 'List of OAuth providers' })
+    @ApiOkResponse({ type: [OAuthProviderResponseDto] })
     async list(@Query() pagination: PaginationRequestDto): Promise<PaginatedResponseDto<OAuthProviderResponseDto>> {
         const result = await this.oauthProviderManagementService.list(pagination.take, pagination.skip)
         return new PaginatedResponseDto(
             result.data.map((p) => ({ id: p.id, name: p.name, enabled: p.enabled })),
             result.total,
-            pagination.take ?? 50,
             pagination.skip ?? 0
         )
     }

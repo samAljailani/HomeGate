@@ -19,10 +19,10 @@ export class InviteAccountLinkingService extends BaseService {
 
     @OnEvent(AppEvent.INVITE_CLAIMED, { async: true })
     async handleInviteClaimed(event: unknown): Promise<void> {
-        const { accounts, userId, username } = event as InviteClaimedEvent
+        const { accounts, userId } = event as InviteClaimedEvent
         for (const inviteAccount of accounts) {
             try {
-                await this.linkAccount(userId, username, inviteAccount)
+                await this.linkAccount(userId, inviteAccount)
             } catch (error) {
                 this.logger.error(
                     `Failed to link invite account for service ${inviteAccount.serviceName} to user ${userId}`,
@@ -34,7 +34,6 @@ export class InviteAccountLinkingService extends BaseService {
 
     private async linkAccount(
         userId: string,
-        username: string,
         inviteAccount: InviteClaimedEvent['accounts'][number]
     ): Promise<void> {
         const serviceName = inviteAccount.serviceName as ApplicationClientNames
