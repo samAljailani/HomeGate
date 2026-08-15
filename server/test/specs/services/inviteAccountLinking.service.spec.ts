@@ -50,7 +50,7 @@ describe('InviteAccountLinkingService', () => {
         registryMock.get.mockReturnValue(clientMock as never)
         userAccountRepoMock.create.mockResolvedValue(null)
 
-        const event = { userId: 'user-1', username: 'homeuser', accounts: [account] }
+        const event = { userId: 'user-1', accounts: [account] }
         await service.handleInviteClaimed(event)
 
         expect(clientMock.getUser).toHaveBeenCalledWith({
@@ -65,19 +65,6 @@ describe('InviteAccountLinkingService', () => {
             userServiceAccountId: 'ext-1',
             status: UserAccountStatus.active,
         })
-    })
-
-    it('uses the user username when invite account has no username', async () => {
-        const account = makeAccount({ username: null })
-        const clientMock = { getUser: jest.fn().mockResolvedValue({ ok: true, user: { id: 'ext-2', username: 'homeuser' } }) }
-        registryMock.has.mockReturnValue(true)
-        registryMock.get.mockReturnValue(clientMock as never)
-        userAccountRepoMock.create.mockResolvedValue(null)
-
-        const event = { userId: 'user-1', username: 'homeuser', accounts: [account] }
-        await service.handleInviteClaimed(event)
-
-        expect(clientMock.getUser).toHaveBeenCalledWith(expect.objectContaining({ username: 'homeuser' }))
     })
 
     it('logs and skips when external account does not exist', async () => {
