@@ -1,6 +1,7 @@
 import { OAuthUserProfileDto } from '@/types/dtos/authDto'
 import { OAuthAuthModel } from '@/types/models/oauthAuth'
 import { Injectable, Inject, forwardRef, BadRequestException, InternalServerErrorException } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { UserService } from './user.service'
 import { IOAuthProviderRepository } from '@/data/repositories'
 import { OAuthProviderModel } from '@/types/models/oauthProvider'
@@ -10,6 +11,8 @@ import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { EnvRepository } from '@/data/repositories/env.repository'
 import { InviteService } from './invite.service'
+import { InviteClaimedEvent } from '@/types/events/invite-claimed.event'
+import { AppEvent } from '@/types/enums'
 
 /** Context handed back to the controller after an invite sign-up is initiated. */
 export type BeginSignUpResult = {
@@ -27,6 +30,7 @@ export class AuthService extends BaseService {
         @Inject(IOAuthProviderRepository) private oauthProviderRepository: IOAuthProviderRepository,
         @Inject(InviteService) private inviteService: InviteService,
         @Inject(EnvRepository) envRepository: EnvRepository,
+        private eventEmitter: EventEmitter2,
     ) {
         super(logger)
         this.cookieName = envRepository.getEnv().session.cookieName
@@ -171,6 +175,13 @@ export class AuthService extends BaseService {
         })
 
         await this.inviteService.claimToken(invite.id, account.id)
+
+        if (invite.accounts.length > 0) {
+            this.eventEmitter.emit(
+                AppEvent.INVITE_CLAIMED,
+                { userId: account.id, username: account.username, accounts: invite.accounts } satisfies InviteClaimedEvent
+            )
+        }
 
         if (wasProvisional) {
             await this.userService.activateUser(account.id)

@@ -65,3 +65,7 @@ export enum ScheduledTasks {
     SYNC_CLIENT_ACCOUNTS = 'sync_client_accounts',
     CLEANUP_PENDING_USERS = 'cleanup_pending_users',
 }
+
+export enum AppEvent {
+    INVITE_CLAIMED = 'invite.claimed',
+}

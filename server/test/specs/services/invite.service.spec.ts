@@ -394,8 +394,8 @@ describe('InviteService', () => {
 
             expect(inviteRepositoryMock.findAll).toHaveBeenCalledWith(10, 0)
             expect(result).toHaveLength(2)
-            expect(result[0].id).toBe('a')
-            expect(result[1].id).toBe('b')
+            expect(result[0]!.id).toBe('a')
+            expect(result[1]!.id).toBe('b')
         })
     })
 })
