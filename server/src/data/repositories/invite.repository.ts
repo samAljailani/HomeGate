@@ -3,10 +3,28 @@ import { PrismaProvider } from '@/infrastructure/prisma.provider'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { BaseRepository } from './base.repository'
 import { IInviteRepository } from './IInviteRepository'
-import type { InviteModel as PrismaInvite } from '@prisma/generated/models'
-import { CreateInviteModel, InviteModel, InviteRevokedReason } from '@/types/models/invite'
+import { CreateInviteAccountModel, CreateInviteModel, InviteModel, InviteRevokedReason, UpdateInviteModel } from '@/types/models/invite'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
+
+type InviteWithAccounts = {
+    id: string
+    token: string
+    email: string | null
+    isAdmin: boolean
+    expiresAt: Date
+    createdAt: Date
+    usedAt: Date | null
+    revokedAt: Date | null
+    revokedReason: string | null
+    failedAttempts: number
+    createdByUserId: string | null
+    usedByUserId: string | null
+    revokedByUserId: string | null
+    accounts: { id: string; inviteId: string; serviceId: number; username: string | null; email: string | null; accountId: string | null; service: { name: string } }[]
+}
+
+const includeAccounts = { accounts: { include: { service: { select: { name: true } } } } } as const
 
 @Injectable()
 export class InviteRepository extends BaseRepository implements IInviteRepository {
@@ -14,26 +32,36 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
         super(db, logger)
     }
 
-    private mapInvite(invite: PrismaInvite): InviteModel {
+    private mapInvite(invite: InviteWithAccounts): InviteModel {
         return {
             id: invite.id,
             token: invite.token,
             email: invite.email,
+            isAdmin: invite.isAdmin,
             expiresAt: invite.expiresAt,
             createdAt: invite.createdAt,
             usedAt: invite.usedAt,
             revokedAt: invite.revokedAt,
-            revokedReason: invite.revokedReason,
+            revokedReason: invite.revokedReason as InviteRevokedReason | null,
             failedAttempts: invite.failedAttempts,
             createdByUserId: invite.createdByUserId,
             usedByUserId: invite.usedByUserId,
             revokedByUserId: invite.revokedByUserId,
+            accounts: invite.accounts.map((a) => ({
+                id: a.id,
+                inviteId: a.inviteId,
+                serviceId: a.serviceId,
+                serviceName: a.service.name,
+                username: a.username,
+                email: a.email,
+                accountId: a.accountId,
+            })),
         }
     }
 
     async findById(id: string): Promise<InviteModel | null> {
         try {
-            const invite = await this.db.invite.findUnique({ where: { id } })
+            const invite = await this.db.invite.findUnique({ where: { id }, include: includeAccounts })
             return invite ? this.mapInvite(invite) : null
         } catch (error) {
             this.logger.error(`findById failed for id: ${id}`, {
@@ -45,7 +73,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
 
     async findByToken(token: string): Promise<InviteModel | null> {
         try {
-            const invite = await this.db.invite.findUnique({ where: { token } })
+            const invite = await this.db.invite.findUnique({ where: { token }, include: includeAccounts })
             return invite ? this.mapInvite(invite) : null
         } catch (error) {
             this.logger.error(`findByToken failed`, {
@@ -65,6 +93,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
                     expiresAt: { gt: new Date() },
                 },
                 orderBy: { createdAt: 'desc' },
+                include: includeAccounts,
             })
             return invite ? this.mapInvite(invite) : null
         } catch (error) {
@@ -75,12 +104,46 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
         }
     }
 
-    async create(request: CreateInviteModel): Promise<InviteModel> {
+    async create(request: CreateInviteModel, accounts?: CreateInviteAccountModel[]): Promise<InviteModel> {
         try {
-            const invite = await this.db.invite.create({ data: request })
+            const data: Parameters<typeof this.db.invite.create>[0]['data'] = { ...request }
+            if (accounts?.length) {
+                data.accounts = { create: accounts }
+            }
+            const invite = await this.db.invite.create({
+                data,
+                include: includeAccounts,
+            })
             return this.mapInvite(invite)
         } catch (error) {
             this.logger.error(`create failed`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.invite)
+        }
+    }
+
+    async update(id: string, data: UpdateInviteModel): Promise<InviteModel | null> {
+        try {
+            const invite = await this.db.invite.update({
+                where: { id },
+                data,
+                include: includeAccounts,
+            })
+            return this.mapInvite(invite)
+        } catch (error) {
+            this.logger.error(`update failed for id: ${id}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.invite)
+        }
+    }
+
+    async delete(id: string): Promise<void> {
+        try {
+            await this.db.invite.delete({ where: { id } })
+        } catch (error) {
+            this.logger.error(`delete failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.invite)
@@ -103,7 +166,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
                 return null
             }
 
-            const invite = await this.db.invite.findUnique({ where: { id } })
+            const invite = await this.db.invite.findUnique({ where: { id }, include: includeAccounts })
             return invite ? this.mapInvite(invite) : null
         } catch (error) {
             this.logger.error(`claim failed for id: ${id}`, {
@@ -137,6 +200,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
             const invite = await this.db.invite.update({
                 where: { id },
                 data: { revokedAt: new Date(), revokedReason: reason, revokedByUserId: revokedByUserId ?? null },
+                include: includeAccounts,
             })
             return this.mapInvite(invite)
         } catch (error) {
@@ -149,10 +213,21 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
 
     async findAll(take: number = 50, skip: number = 0): Promise<InviteModel[]> {
         try {
-            const invites = await this.db.invite.findMany({ orderBy: { createdAt: 'desc' }, take, skip })
+            const invites = await this.db.invite.findMany({ orderBy: { createdAt: 'desc' }, take, skip, include: includeAccounts })
             return invites.map((invite) => this.mapInvite(invite))
         } catch (error) {
             this.logger.error('findAll failed', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.invite)
+        }
+    }
+
+    async count(): Promise<number> {
+        try {
+            return await this.db.invite.count()
+        } catch (error) {
+            this.logger.error('count failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.invite)

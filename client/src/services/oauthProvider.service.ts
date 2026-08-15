@@ -24,7 +24,7 @@ class OAuthProviderService {
             params: { query: pagination },
         })
         if (error) throw error
-        return data
+        return data.data
     }
 
     async updateOAuthProvider(

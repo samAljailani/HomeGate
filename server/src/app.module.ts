@@ -3,6 +3,7 @@ import { controllers } from '@/api/controllers'
 import { strategies } from '@/api/middleware/strategies'
 import { EnvRepository } from '@/data/repositories/env.repository'
 import { ThrottlerModule } from '@nestjs/throttler'
+import { EventEmitterModule } from '@nestjs/event-emitter'
 import { services } from '@/api/services'
 import { middleware } from '@/api/middleware'
 import { repositories } from '@/data/repositories'
@@ -19,6 +20,7 @@ const env = configRepository.getEnv()
 @Module({
     imports: [
         ScheduleModule.forRoot(),
+        EventEmitterModule.forRoot(),
         DiscoveryModule,
         ClsModule.forRoot(env.cls.config),
         ThrottlerModule.forRoot([

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Post, Query, Request } from '@nestjs/common'
+import { Body, BadRequestException, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post, Query, Request } from '@nestjs/common'
 import {
     ApiBadRequestResponse,
     ApiBody,
@@ -20,7 +20,7 @@ import {
     InvitePatchRequestDto,
     InviteResponseDto,
 } from '@/types/dtos/inviteDto'
-import { PaginationRequestDto } from '@/types/dtos/paginationDto'
+import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
 @ApiTags('Invites')
@@ -47,8 +47,8 @@ export class InviteController {
     @ApiOperation({ summary: 'List all invites (admin only)' })
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
-    @ApiOkResponse({ description: 'List of all invites', type: [InviteResponseDto] })
-    async list(@Query() pagination: PaginationRequestDto): Promise<InviteResponseDto[]> {
+    @ApiPaginatedResponse(InviteResponseDto)
+    async list(@Query() pagination: PaginationRequestDto): Promise<PaginatedResponseDto<InviteResponseDto>> {
         return this.inviteService.listInvites(pagination.take, pagination.skip)
     }
 
@@ -71,5 +71,15 @@ export class InviteController {
         }
 
         return this.inviteService.revokeToken(params.id, req.session.userId!)
+    }
+
+    @Delete(routes.invites.subPath.delete)
+    @AdminRoute()
+    @HttpCode(204)
+    @ApiOperation({ summary: 'Delete an invite (admin only)' })
+    @ApiParam({ name: 'id', type: String })
+    @ApiNotFoundResponse({ description: 'Invite not found' })
+    async delete(@Param() params: InviteParamsDto): Promise<void> {
+        await this.inviteService.deleteInvite(params.id)
     }
 }

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://swc.rs/schema.json",
+  "jsc": {
+    "parser": {
+      "syntax": "typescript",
+      "decorators": true
+    },
+    "transform": {
+      "legacyDecorator": true,
+      "decoratorMetadata": true
+    },
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@prisma/generated": ["./prisma/generated/client.ts"],
+      "@prisma/generated/*": ["./prisma/generated/*"]
+    }
+  }
+}

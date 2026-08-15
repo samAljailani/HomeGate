@@ -13,6 +13,7 @@ import { IUserOAuthIdentityRepository } from '@/data/repositories'
 import { OAuthIdentityCreateRequestDto, OAuthIdentityResponseDto } from '@/types/dtos/userOAuthIdentityDto'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 import { SubscriptionService } from './subscriptions.service'
 
 @Injectable()
@@ -175,9 +176,12 @@ export class UserService extends BaseService {
         return user ? this.userModelToLoadRequestForAdmin(user) : null
     }
 
-    async listUsers(take?: number, skip?: number): Promise<UserResponseForAdminDto[]> {
-        const users = await this.userRepository.findMany({}, take, skip)
-        return users.map((u) => this.userModelToLoadRequestForAdmin(u))
+    async listUsers(take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<UserResponseForAdminDto>> {
+        const [users, total] = await Promise.all([
+            this.userRepository.findMany({}, take, skip),
+            this.userRepository.count({}),
+        ])
+        return new PaginatedResponseDto(users.map((u) => this.userModelToLoadRequestForAdmin(u)), total, skip)
     }
 
     async getUserByIdForAdmin(userId: string): Promise<UserResponseForAdminDto | null> {

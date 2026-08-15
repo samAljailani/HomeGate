@@ -4,6 +4,7 @@ import { UserService } from '@/api/services/user.service'
 import { InviteService } from '@/api/services/invite.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { IOAuthProviderRepository } from '@/data/repositories/IOAuthProviderRepository'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { EnvRepository } from '@/data/repositories/env.repository'
 import { createUserFixture } from '../../fixtures/user.stub'
 import { createOAuthProviderFixture } from '../../fixtures/oauthProvider.stub'
@@ -35,6 +36,7 @@ describe('AuthService', () => {
                 { provide: IOAuthProviderRepository, useValue: oauthProviderRepositoryMock },
                 { provide: InviteService, useValue: inviteServiceMock },
                 { provide: EnvRepository, useValue: { getEnv: () => ({ session: { cookieName: 'sid' } }) } },
+                { provide: EventEmitter2, useValue: { emit: jest.fn() } },
             ],
         }).compile()
 

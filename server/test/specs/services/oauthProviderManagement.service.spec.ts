@@ -7,10 +7,11 @@ import { createOAuthProviderFixture } from '../../fixtures/oauthProvider.stub'
 import { OAuthProviderName } from '@prisma/generated'
 
 function createOAuthProviderRepositoryMock(): jest.Mocked<
-    Pick<IOAuthProviderRepository, 'findMany' | 'setEnabled' | 'findById'>
+    Pick<IOAuthProviderRepository, 'findMany' | 'count' | 'setEnabled' | 'findById'>
 > {
     return {
         findMany: jest.fn(),
+        count: jest.fn(),
         setEnabled: jest.fn(),
         findById: jest.fn(),
     }
@@ -45,14 +46,17 @@ describe('OAuthProviderManagementService', () => {
     // #region list
 
     describe('list', () => {
-        it('returns all providers', async () => {
+        it('returns paginated response with providers', async () => {
             const providers = [createOAuthProviderFixture(), createOAuthProviderFixture({ id: 2 })]
             providerRepositoryMock.findMany.mockResolvedValue(providers)
+            providerRepositoryMock.count.mockResolvedValue(2)
 
             const result = await service.list()
 
-            expect(providerRepositoryMock.findMany).toHaveBeenCalledWith({}, undefined, undefined)
-            expect(result).toHaveLength(2)
+            expect(providerRepositoryMock.findMany).toHaveBeenCalledWith({}, 50, 0)
+            expect(result.data).toHaveLength(2)
+            expect(result.total).toBe(2)
+            expect(result.hasMore).toBe(false)
         })
     })
 
