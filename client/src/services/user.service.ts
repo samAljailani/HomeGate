@@ -24,7 +24,7 @@ class UserService {
             params: { query: pagination },
         })
         if (error) throw error
-        return data
+        return data.data
     }
 
     async getUserById(id: string): Promise<UserResponseForAdminDto> {
