@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Post, Query, Request } from '@nestjs/common'
+import { Body, BadRequestException, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post, Query, Request } from '@nestjs/common'
 import {
     ApiBadRequestResponse,
     ApiBody,
@@ -71,5 +71,15 @@ export class InviteController {
         }
 
         return this.inviteService.revokeToken(params.id, req.session.userId!)
+    }
+
+    @Delete(routes.invites.subPath.delete)
+    @AdminRoute()
+    @HttpCode(204)
+    @ApiOperation({ summary: 'Delete an invite (admin only)' })
+    @ApiParam({ name: 'id', type: String })
+    @ApiNotFoundResponse({ description: 'Invite not found' })
+    async delete(@Param() params: InviteParamsDto): Promise<void> {
+        await this.inviteService.deleteInvite(params.id)
     }
 }

@@ -7,6 +7,8 @@ export function createInviteRepositoryMock(): jest.Mocked<IInviteRepository> {
         findActivePendingByEmail: jest.fn(),
         findAll: jest.fn(),
         create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
         claim: jest.fn(),
         incrementFailedAttempts: jest.fn(),
         revoke: jest.fn(),

@@ -1,4 +1,4 @@
-import { CreateInviteModel, InviteModel, InviteRevokedReason } from '@/types/models/invite'
+import { CreateInviteAccountModel, CreateInviteModel, InviteModel, InviteRevokedReason, UpdateInviteModel } from '@/types/models/invite'
 
 export const IInviteRepository = Symbol('IInviteRepository')
 
@@ -7,7 +7,9 @@ export interface IInviteRepository {
     findByToken(token: string): Promise<InviteModel | null>
     findActivePendingByEmail(email: string): Promise<InviteModel | null>
     findAll(take?: number, skip?: number): Promise<InviteModel[]>
-    create(request: CreateInviteModel): Promise<InviteModel>
+    create(request: CreateInviteModel, accounts?: CreateInviteAccountModel[]): Promise<InviteModel>
+    update(id: string, data: UpdateInviteModel): Promise<InviteModel | null>
+    delete(id: string): Promise<void>
     /**
      * Atomically claim a pending invite for a user. The update only applies when the
      * invite is still pending (not used, not revoked, not expired), which prevents a

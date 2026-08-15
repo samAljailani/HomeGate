@@ -6,10 +6,21 @@ export const InviteRevokedReason = {
 
 export type InviteRevokedReason = (typeof InviteRevokedReason)[keyof typeof InviteRevokedReason]
 
+export type InviteAccountModel = {
+    id: string
+    inviteId: string
+    serviceId: number
+    serviceName: string
+    username: string | null
+    email: string | null
+    accountId: string | null
+}
+
 export type InviteModel = {
     id: string
     token: string
     email: string | null
+    isAdmin: boolean
     expiresAt: Date
     createdAt: Date
     usedAt: Date | null
@@ -19,6 +30,16 @@ export type InviteModel = {
     createdByUserId: string | null
     usedByUserId: string | null
     revokedByUserId: string | null
+    accounts: InviteAccountModel[]
 }
 
-export type CreateInviteModel = Pick<InviteModel, 'token' | 'email' | 'expiresAt' | 'createdByUserId'>
+export type CreateInviteModel = Pick<InviteModel, 'token' | 'email' | 'isAdmin' | 'expiresAt' | 'createdByUserId'>
+
+export type UpdateInviteModel = Partial<Pick<InviteModel, 'email' | 'expiresAt' | 'isAdmin' | 'revokedAt' | 'revokedReason' | 'revokedByUserId'>>
+
+export type CreateInviteAccountModel = {
+    serviceId: number
+    username?: string
+    email?: string
+    accountId?: string
+}
