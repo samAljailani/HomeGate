@@ -97,7 +97,7 @@ describe('LogController', () => {
 
             await controller.list(query)
 
-            const filterArg = logServiceMock.list.mock.calls[0][0]
+            const filterArg = logServiceMock.list.mock.calls[0]![0]
             expect(filterArg).not.toHaveProperty('userId')
             expect(filterArg).not.toHaveProperty('logLevel')
         })
@@ -109,7 +109,7 @@ describe('LogController', () => {
             const result = await controller.list({} as LogListRequestDto)
 
             expect(result).toHaveLength(2)
-            expect(result[0].id).toBe(1)
+            expect(result[0]!.id).toBe(1)
         })
     })
 

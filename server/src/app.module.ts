@@ -2,9 +2,7 @@ import { Module } from '@nestjs/common'
 import { controllers } from '@/api/controllers'
 import { strategies } from '@/api/middleware/strategies'
 import { EnvRepository } from '@/data/repositories/env.repository'
-import { ServeStaticModule } from '@nestjs/serve-static'
 import { ThrottlerModule } from '@nestjs/throttler'
-import { resolve } from 'path'
 import { services } from '@/api/services'
 import { middleware } from '@/api/middleware'
 import { repositories } from '@/data/repositories'
@@ -22,9 +20,6 @@ const env = configRepository.getEnv()
     imports: [
         ScheduleModule.forRoot(),
         DiscoveryModule,
-        ServeStaticModule.forRoot({
-            rootPath: resolve(process.cwd(), env.client.buildPath),
-        }),
         ClsModule.forRoot(env.cls.config),
         ThrottlerModule.forRoot([
             {

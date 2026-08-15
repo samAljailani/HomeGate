@@ -1,4 +1,5 @@
 import { AuthController } from './auth.controller'
+import { ClientRouteController } from './client-routes'
 import { CsrfController } from './csrf.controller'
 import { InviteController } from './invite.controller'
 import { LogController } from './log.controller'
@@ -18,4 +19,5 @@ export const controllers = [
     OAuthProviderController,
     LogController,
     TaskController,
+    ClientRouteController, //must be registered last due to its generatlized pattern matching
 ]

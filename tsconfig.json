@@ -1,23 +1,23 @@
 {
-  "compilerOptions": {
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "paths": {
-      "@packages/types": ["./packages/types/src"],
-      "@packages/types/*": ["./packages/types/src/*"]
-    }
-  },
-  "references": [
-  { "path": "./packages/types" },
-  { "path": "./server" },
-  { "path": "./client"}
-  ],
-  "include": ["./src/**/*.ts"],
-  "exclude": ["node_modules", "./dist"]
+    "compilerOptions": {
+        "composite": true,
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "paths": {
+            "@packages/types": ["./packages/types/src"],
+            "@packages/types/*": ["./packages/types/src/*"]
+        }
+    },
+    "references": [
+        { "path": "./packages/types" },
+        { "path": "./server" },
+        { "path": "./client" }
+    ],
+    "include": ["./src/**/*.ts"],
+    "exclude": ["node_modules", "./dist"]
 }

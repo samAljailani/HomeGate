@@ -4,7 +4,8 @@ import { AuthService } from '@/api/services/auth.service'
 import { OAuthUserProfileDto } from '@/types/dtos/authDto'
 import { GoogleOAuthGuard } from '@/api/middleware/google-oauth.guard'
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
-import { routes, clientRoutes } from '../../types/dtos/routes'
+import { routes } from '../../types/dtos/routes'
+import { clientRoutes } from './client-routes'
 import { Public } from '@/decorators'
 import { Throttle } from '@nestjs/throttler'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -13,7 +14,7 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 export class AuthController {
     constructor(
         @Inject(AuthService) private readonly authService: AuthService,
-        @Inject(LoggingProvider) private readonly logger: LoggingProvider
+        @Inject(LoggingProvider) private readonly logger: LoggingProvider,
     ) {
         this.logger.setContext(AuthController.name)
     }
@@ -74,16 +75,16 @@ export class AuthController {
         const username = req.session.username
 
         try {
-            //TODO: remove session
             await this.authService.signOut(userId, username)
             await new Promise<void>((resolve) => req.session.destroy(() => resolve()))
+            res.clearCookie(this.authService.cookieName)
         } catch (error) {
             this.logger.error(`Failed to sign out user ${userId ?? 'unknown'}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
         }
 
-        return res.redirect(clientRoutes.signIn)
+        return res.status(204).send()
     }
 
     private async handleOAuthRedirect(req: ExpressRequest, res: ExpressResponse) {

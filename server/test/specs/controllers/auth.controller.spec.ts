@@ -7,7 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { createOAuthUserProfileFixture } from '../../fixtures/auth.stub'
 import { createRequestMock, createResponseMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
-import { clientRoutes } from '@/types/dtos/routes'
+import { clientRoutes } from '@/api/controllers/client-routes'
 import { NotFoundException } from '@nestjs/common'
 import { OAuthAuthModel } from '@/types/models/oauthAuth'
 
@@ -274,21 +274,23 @@ describe('AuthController', () => {
     // #region logout
 
     describe('logout', () => {
-        it('destroys session and redirects to sign-in', async () => {
+        it('destroys session and responds with 204', async () => {
             expressRequestMock.session.userId = 'user-123'
 
             await controller.logout(expressRequestMock, expressResponseMock)
 
             expect(expressRequestMock.session.destroy).toHaveBeenCalled()
-            expect(expressResponseMock.redirect).toHaveBeenCalledWith(clientRoutes.signIn)
+            expect(expressResponseMock.status).toHaveBeenCalledWith(204)
+            expect(expressResponseMock.send).toHaveBeenCalled()
         })
 
-        it('still redirects to sign-in if signOut throws', async () => {
+        it('still responds with 204 if signOut throws', async () => {
             authServiceMock.signOut.mockRejectedValue(new Error('signOut failed'))
 
             await controller.logout(expressRequestMock, expressResponseMock)
 
-            expect(expressResponseMock.redirect).toHaveBeenCalledWith(clientRoutes.signIn)
+            expect(expressResponseMock.status).toHaveBeenCalledWith(204)
+            expect(expressResponseMock.send).toHaveBeenCalled()
         })
     })
 

@@ -80,7 +80,7 @@ describe('UserService', () => {
         beforeEach(() => {
             subscriptionServiceMock.disableAllForUser.mockResolvedValue(undefined)
             sessionRepositoryMock.deleteByUserId.mockResolvedValue(undefined)
-            userRepositoryMock.softDelete.mockResolvedValue(undefined)
+            userRepositoryMock.softDelete.mockResolvedValue(true)
         })
 
         it('disables all subscriptions before deleting', async () => {
@@ -111,6 +111,7 @@ describe('UserService', () => {
             })
             userRepositoryMock.softDelete.mockImplementation(async () => {
                 order.push('softDelete')
+                return true
             })
 
             await service.softDeleteUser(userId)
@@ -127,7 +128,7 @@ describe('UserService', () => {
         const userId = 'user-uuid-1'
 
         beforeEach(() => {
-            userRepositoryMock.hardDelete.mockResolvedValue(undefined)
+            userRepositoryMock.hardDelete.mockResolvedValue(true)
         })
 
         it('hard deletes the user', async () => {
@@ -157,7 +158,7 @@ describe('UserService', () => {
         const userId = 'user-uuid-1'
 
         beforeEach(() => {
-            userRepositoryMock.setEnabled.mockResolvedValue(undefined)
+            userRepositoryMock.setEnabled.mockResolvedValue(null)
         })
 
         it('calls setEnabled with false', async () => {
@@ -175,7 +176,7 @@ describe('UserService', () => {
         const userId = 'user-uuid-1'
 
         beforeEach(() => {
-            userRepositoryMock.setEnabled.mockResolvedValue(undefined)
+            userRepositoryMock.setEnabled.mockResolvedValue(null)
         })
 
         it('calls setEnabled with true', async () => {
@@ -198,8 +199,8 @@ describe('UserService', () => {
 
             expect(userRepositoryMock.findMany).toHaveBeenCalledWith({}, undefined, undefined)
             expect(result).toHaveLength(2)
-            expect(result[0].id).toBe('a')
-            expect(result[1].id).toBe('b')
+            expect(result[0]!.id).toBe('a')
+            expect(result[1]!.id).toBe('b')
         })
 
         it('returns empty array when no users exist', async () => {

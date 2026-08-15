@@ -24,6 +24,7 @@ export function createResponseMock(overrides: Partial<ExpressResponse> = {}): je
         redirect: jest.fn(),
         status: jest.fn().mockReturnThis(),
         json: jest.fn().mockReturnThis(),
+        send: jest.fn().mockReturnThis(),
         ...overrides,
     } as unknown as jest.Mocked<ExpressResponse>
 }

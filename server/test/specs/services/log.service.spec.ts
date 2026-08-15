@@ -65,7 +65,7 @@ describe('LogService', () => {
             const result = await service.list({})
 
             expect(result).toHaveLength(2)
-            expect(result[0].id).toBe(1)
+            expect(result[0]!.id).toBe(1)
         })
 
         it('uses empty filter when none provided', async () => {

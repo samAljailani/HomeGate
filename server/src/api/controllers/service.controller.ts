@@ -15,7 +15,7 @@ export class ServiceController {
     ) {}
 
     @Get(routes.services.subPath.list)
-    @AdminRoute()
+    //@AdminRoute()
     @ApiOperation({ summary: 'List all services (admin only)' })
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
