@@ -20,7 +20,7 @@ import {
     InvitePatchRequestDto,
     InviteResponseDto,
 } from '@/types/dtos/inviteDto'
-import { PaginationRequestDto, PaginatedResponseDto } from '@/types/dtos/paginationDto'
+import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
 @ApiTags('Invites')
@@ -47,7 +47,7 @@ export class InviteController {
     @ApiOperation({ summary: 'List all invites (admin only)' })
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
-    @ApiOkResponse({ description: 'List of all invites' })
+    @ApiPaginatedResponse(InviteResponseDto)
     async list(@Query() pagination: PaginationRequestDto): Promise<PaginatedResponseDto<InviteResponseDto>> {
         return this.inviteService.listInvites(pagination.take, pagination.skip)
     }

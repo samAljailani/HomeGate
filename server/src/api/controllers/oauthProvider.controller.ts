@@ -16,7 +16,7 @@ import {
     OAuthProviderPatchRequestDto,
     OAuthProviderResponseDto,
 } from '@/types/dtos/oauthProviderDto'
-import { PaginationRequestDto, PaginatedResponseDto } from '@/types/dtos/paginationDto'
+import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
 @ApiTags('OAuth Providers')
@@ -32,7 +32,7 @@ export class OAuthProviderController {
     @ApiOperation({ summary: 'List all OAuth providers (admin only)' })
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
-    @ApiOkResponse({ type: [OAuthProviderResponseDto] })
+    @ApiPaginatedResponse(OAuthProviderResponseDto)
     async list(@Query() pagination: PaginationRequestDto): Promise<PaginatedResponseDto<OAuthProviderResponseDto>> {
         const result = await this.oauthProviderManagementService.list(pagination.take, pagination.skip)
         return new PaginatedResponseDto(

@@ -22,7 +22,7 @@ import {
     UserPatchRequestDto,
     UserResponseForAdminDto,
 } from '@/types/dtos/userDto'
-import { PaginationRequestDto, PaginatedResponseDto } from '@/types/dtos/paginationDto'
+import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
 @ApiTags('Users')
@@ -35,7 +35,7 @@ export class UserController {
     @ApiOperation({ summary: 'List all users' })
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
-    @ApiOkResponse({ description: 'List of users' })
+    @ApiPaginatedResponse(UserResponseForAdminDto)
     async listUsers(@Query() pagination: PaginationRequestDto): Promise<PaginatedResponseDto<UserResponseForAdminDto>> {
         return this.userService.listUsers(pagination.take, pagination.skip)
     }

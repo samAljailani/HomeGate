@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { BadRequestException } from '@nestjs/common'
 import { OAuthProviderController } from '@/api/controllers/oauthProvider.controller'
 import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
+import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 import { createOAuthProviderFixture } from '../../fixtures/oauthProvider.stub'
 
 function createOAuthProviderManagementServiceMock(): jest.Mocked<
@@ -40,14 +41,16 @@ describe('OAuthProviderController', () => {
                 createOAuthProviderFixture({ id: 1, enabled: true }),
                 createOAuthProviderFixture({ id: 2, enabled: false }),
             ]
-            oauthProviderManagementMock.list.mockResolvedValue(providers)
+            oauthProviderManagementMock.list.mockResolvedValue(
+                new PaginatedResponseDto(providers, 2, 0)
+            )
 
             const result = await controller.list({})
 
             expect(oauthProviderManagementMock.list).toHaveBeenCalled()
-            expect(result).toHaveLength(2)
-            expect(result[0]).toEqual({ id: 1, name: providers[0]!.name, enabled: true })
-            expect(result[1]).toEqual({ id: 2, name: providers[1]!.name, enabled: false })
+            expect(result.data).toHaveLength(2)
+            expect(result.data[0]).toEqual({ id: 1, name: providers[0]!.name, enabled: true })
+            expect(result.data[1]).toEqual({ id: 2, name: providers[1]!.name, enabled: false })
         })
     })
 
