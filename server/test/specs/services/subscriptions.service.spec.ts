@@ -4,7 +4,6 @@ import {
     ConflictException,
     InternalServerErrorException,
     NotFoundException,
-    ServiceUnavailableException,
 } from '@nestjs/common'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import { UserService } from '@/api/services/user.service'

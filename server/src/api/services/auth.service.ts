@@ -8,6 +8,7 @@ import { UserStatus } from '@/types/models/user'
 import { SIGNUP_COMPLETION_WINDOW_MINUTES } from '@/types/auth.constants'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { EnvRepository } from '@/data/repositories/env.repository'
 import { InviteService } from './invite.service'
 
 /** Context handed back to the controller after an invite sign-up is initiated. */
@@ -18,13 +19,17 @@ export type BeginSignUpResult = {
 
 @Injectable()
 export class AuthService extends BaseService {
+    readonly cookieName: string
+
     constructor(
         @Inject(forwardRef(() => UserService)) private userService: UserService,
         @Inject(LoggingProvider) logger: LoggingProvider,
         @Inject(IOAuthProviderRepository) private oauthProviderRepository: IOAuthProviderRepository,
-        @Inject(InviteService) private inviteService: InviteService
+        @Inject(InviteService) private inviteService: InviteService,
+        @Inject(EnvRepository) envRepository: EnvRepository,
     ) {
         super(logger)
+        this.cookieName = envRepository.getEnv().session.cookieName
     }
 
     async authorize(request: OAuthUserProfileDto): Promise<OAuthAuthModel | null> {

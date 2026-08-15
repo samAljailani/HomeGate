@@ -9,6 +9,7 @@
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "tsc -p tsconfig.build.json && tsc-alias",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node dist/src/main.js",
     "start:dev": "tsx watch --tsconfig tsconfig.build.json src/main.ts",
     "start:debug": "tsx --inspect watch --tsconfig tsconfig.build.json src/main.ts",
@@ -45,7 +46,6 @@
   },
   "devDependencies": {
     "@nestjs/testing": "^11.1.19",
-    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/express": "^5.0.6",
     "@types/express-session": "^1.19.0",
     "@types/jest": "^30.0.0",

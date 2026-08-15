@@ -32,11 +32,11 @@ per-user subscription lifecycle (enable, disable, renew, auto-renew) from one pl
 
 This is an npm-workspaces monorepo:
 
-| Workspace | Description |
-| --- | --- |
-| [`server/`](server) | NestJS API — auth, invites, users, subscriptions, services, OAuth providers, logs, and the task scheduler. Talks to PostgreSQL (via Prisma) and to the underlying services (Jellyfin, Immich). |
+| Workspace                           | Description                                                                                                                                                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`server/`](server)                 | NestJS API — auth, invites, users, subscriptions, services, OAuth providers, logs, and the task scheduler. Talks to PostgreSQL (via Prisma) and to the underlying services (Jellyfin, Immich).               |
 | [`packages/types/`](packages/types) | Generated from the server's OpenAPI schema: shared `paths`/`components`/`operations` types and a typed `createApiClient` (`openapi-fetch` wrapper), published to GitHub Packages and consumed by the client. |
-| [`client/`](client) | Next.js web app. Talks to the server exclusively through typed service modules built on `packages/types`. |
+| [`client/`](client)                 | Next.js web app. Talks to the server exclusively through typed service modules built on `packages/types`.                                                                                                    |
 
 For deeper dives into specific subsystems (sign-in & sessions, invite lifecycle,
 background tasks, and more), see [server/docs](server/docs).
@@ -53,9 +53,9 @@ background tasks, and more), see [server/docs](server/docs).
 
 1. **Install dependencies** (from the repo root):
 
-   ```sh
-   npm install
-   ```
+    ```sh
+    npm install
+    ```
 
 2. **Configure the server.** Copy [`server/.env.example`](server/.env.example) to
    `server/.env` and fill in the values (database connection, session secret, OAuth
@@ -64,24 +64,26 @@ background tasks, and more), see [server/docs](server/docs).
 
 3. **Set up the database.** Apply Prisma migrations from `server/`:
 
-   ```sh
-   cd server
-   npx prisma migrate deploy
-   ```
+    ```sh
+    cd server
+    npx prisma migrate deploy
+    ```
 
 4. **Run in development** (from the repo root, in separate terminals):
 
    ```sh
+   cd ../client
+   npm run build
+   cd ..
    npm run start:dev:server
-   npm run start:dev:client
    ```
 
 5. **Build for production**:
 
-   ```sh
-   npm run build           # builds packages/types, then client, then server
-   npm run start:prod:server
-   ```
+    ```sh
+    npm run build           # builds packages/types, then client, then server
+    npm run start:prod:server
+    ```
 
 ## Using HomeGate
 

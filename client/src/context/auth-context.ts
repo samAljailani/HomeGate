@@ -1,26 +1,28 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext } from 'react'
 
 export interface User {
-  id: string;
-  name?: string | null;
-  email?: string | null;
+    id: string
+    name?: string | null
+    email?: string | null
 }
 
 export interface AuthContextValue {
-  user: User | null;
-  accessToken: string | null;
-  signIn: () => void;
-  signOut: () => void;
+    user: User | null
+    accessToken: string | null
+    signIn: () => void
+    signOut: () => void
 }
 
-export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(
+    undefined
+)
 
 export function useAuthContext(): AuthContextValue {
-  const ctx = useContext(AuthContext);
+    const ctx = useContext(AuthContext)
 
-  if (!ctx) {
-    throw new Error('useAuthContext must be used within an AuthProvider');
-  }
-  
-  return ctx;
+    if (!ctx) {
+        throw new Error('useAuthContext must be used within an AuthProvider')
+    }
+
+    return ctx
 }

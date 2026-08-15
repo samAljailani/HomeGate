@@ -4,8 +4,10 @@ import { apiClient } from './api-client'
 import type { PaginationRequestDto } from '@/lib/apiPath'
 
 export type InviteResponseDto = components['schemas']['InviteResponseDto']
-export type CreateInviteRequestDto = components['schemas']['CreateInviteRequestDto']
-export type CreateInviteResponseDto = components['schemas']['CreateInviteResponseDto']
+export type CreateInviteRequestDto =
+    components['schemas']['CreateInviteRequestDto']
+export type CreateInviteResponseDto =
+    components['schemas']['CreateInviteResponseDto']
 
 /**
  * All invite-related API calls live here. Components/hooks call these methods
@@ -16,13 +18,19 @@ export type CreateInviteResponseDto = components['schemas']['CreateInviteRespons
  *  - if a route or DTO changes server-side, only this file needs updating
  */
 class InviteService {
-    async getAllInvites(pagination?: PaginationRequestDto): Promise<InviteResponseDto[]> {
-        const { data, error } = await apiClient.GET('/api/invites', { params: { query: pagination } })
+    async getAllInvites(
+        pagination?: PaginationRequestDto
+    ): Promise<InviteResponseDto[]> {
+        const { data, error } = await apiClient.GET('/api/invites', {
+            params: { query: pagination },
+        })
         if (error) throw error
         return data
     }
 
-    async createInvite(body: CreateInviteRequestDto): Promise<CreateInviteResponseDto> {
+    async createInvite(
+        body: CreateInviteRequestDto
+    ): Promise<CreateInviteResponseDto> {
         const { data, error } = await apiClient.POST('/api/invites', { body })
         if (error) throw error
         return data!

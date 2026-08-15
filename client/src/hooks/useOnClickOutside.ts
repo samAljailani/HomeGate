@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect } from 'react'
 
 /**
  * Hook that detects clicks outside of a specified element and triggers a callback.
@@ -9,29 +9,29 @@ import { useEffect } from "react";
  * @param when - Only listen when true (optimization to avoid unnecessary listeners)
  */
 export function useOnClickOutside<T extends HTMLElement>(
-  ref: React.RefObject<T | null>,
-  handler: (event: MouseEvent | TouchEvent) => void,
-  when: boolean = true
+    ref: React.RefObject<T | null>,
+    handler: (event: MouseEvent | TouchEvent) => void,
+    when: boolean = true
 ): void {
-  useEffect(() => {
-    if (!when) return;
+    useEffect(() => {
+        if (!when) return
 
-    const listener = (event: MouseEvent | TouchEvent) => {
-      const el = ref.current;
-      if (!el) return;
+        const listener = (event: MouseEvent | TouchEvent) => {
+            const el = ref.current
+            if (!el) return
 
-      const target = event.target;
-      if (target instanceof Node && el.contains(target)) return;
+            const target = event.target
+            if (target instanceof Node && el.contains(target)) return
 
-      handler(event);
-    };
+            handler(event)
+        }
 
-    document.addEventListener("mousedown", listener);
-    document.addEventListener("touchstart", listener);
+        document.addEventListener('mousedown', listener)
+        document.addEventListener('touchstart', listener)
 
-    return () => {
-      document.removeEventListener("mousedown", listener);
-      document.removeEventListener("touchstart", listener);
-    };
-  }, [ref, handler, when]);
+        return () => {
+            document.removeEventListener('mousedown', listener)
+            document.removeEventListener('touchstart', listener)
+        }
+    }, [ref, handler, when])
 }

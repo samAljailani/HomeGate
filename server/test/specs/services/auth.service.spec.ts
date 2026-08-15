@@ -4,6 +4,7 @@ import { UserService } from '@/api/services/user.service'
 import { InviteService } from '@/api/services/invite.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { IOAuthProviderRepository } from '@/data/repositories/IOAuthProviderRepository'
+import { EnvRepository } from '@/data/repositories/env.repository'
 import { createUserFixture } from '../../fixtures/user.stub'
 import { createOAuthProviderFixture } from '../../fixtures/oauthProvider.stub'
 import { createOpenIDUserFixture } from '../../fixtures/openIdUser.stub'
@@ -33,6 +34,7 @@ describe('AuthService', () => {
                 { provide: LoggingProvider, useValue: loggerMock },
                 { provide: IOAuthProviderRepository, useValue: oauthProviderRepositoryMock },
                 { provide: InviteService, useValue: inviteServiceMock },
+                { provide: EnvRepository, useValue: { getEnv: () => ({ session: { cookieName: 'sid' } }) } },
             ],
         }).compile()
 
