@@ -7,10 +7,11 @@ import { createServiceFixture } from '../../fixtures/service.stub'
 import { ApplicationClientNames } from '@/types/enums'
 
 function createServiceRepositoryMock(): jest.Mocked<
-    Pick<IServiceRepository, 'findMany' | 'setEnabled' | 'findByName' | 'setImageUrl'>
+    Pick<IServiceRepository, 'findMany' | 'count' | 'setEnabled' | 'findByName' | 'setImageUrl'>
 > {
     return {
         findMany: jest.fn(),
+        count: jest.fn(),
         setEnabled: jest.fn(),
         findByName: jest.fn(),
         setImageUrl: jest.fn(),
@@ -49,14 +50,17 @@ describe('ServiceManagementService', () => {
     // #region list
 
     describe('list', () => {
-        it('returns all services', async () => {
+        it('returns paginated response with services', async () => {
             const services = [createServiceFixture({ id: 1 }), createServiceFixture({ id: 2 })]
             serviceRepositoryMock.findMany.mockResolvedValue(services)
+            serviceRepositoryMock.count.mockResolvedValue(2)
 
             const result = await service.list()
 
-            expect(serviceRepositoryMock.findMany).toHaveBeenCalledWith({}, undefined, undefined)
-            expect(result).toHaveLength(2)
+            expect(serviceRepositoryMock.findMany).toHaveBeenCalledWith({}, 50, 0)
+            expect(result.data).toHaveLength(2)
+            expect(result.total).toBe(2)
+            expect(result.hasMore).toBe(false)
         })
     })
 

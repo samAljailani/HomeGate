@@ -5,6 +5,7 @@ export function createServiceRepositoryMock(): jest.Mocked<IServiceRepository> {
         findById: jest.fn(),
         findByName: jest.fn(),
         findMany: jest.fn(),
+        count: jest.fn(),
         findEnabled: jest.fn(),
         isEnabled: jest.fn(),
         setEnabled: jest.fn(),

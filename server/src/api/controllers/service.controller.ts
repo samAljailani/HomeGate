@@ -3,7 +3,7 @@ import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } fro
 import { AdminRoute } from '@/decorators'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
 import { ExternalAccountResponseDto, ServiceParamsDto, ServicePatchRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
-import { PaginationRequestDto } from '@/types/dtos/paginationDto'
+import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 import { ApplicationClientNames } from '@/types/enums'
 
@@ -19,8 +19,8 @@ export class ServiceController {
     @ApiOperation({ summary: 'List all services (admin only)' })
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
-    @ApiOkResponse({ type: [ServiceResponseDto] })
-    async list(@Query() pagination: PaginationRequestDto): Promise<ServiceResponseDto[]> {
+    @ApiPaginatedResponse(ServiceResponseDto)
+    async list(@Query() pagination: PaginationRequestDto): Promise<PaginatedResponseDto<ServiceResponseDto>> {
         return this.serviceManagementService.list(pagination.take, pagination.skip)
     }
 

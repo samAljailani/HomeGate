@@ -4,6 +4,7 @@ import { UserController } from '@/api/controllers/user.controller'
 import { UserService } from '@/api/services/user.service'
 import { createRequestMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
+import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 
 function createUserServiceMock(): jest.Mocked<
     Pick<
@@ -177,15 +178,15 @@ describe('UserController', () => {
     describe('listUsers', () => {
         it('returns the list from the service', async () => {
             const user = createUserFixture()
-            userServiceMock.listUsers.mockResolvedValue([
-                { ...user, isDeleted: false, isEnabled: true, createdAt: user.createdAt },
-            ])
+            userServiceMock.listUsers.mockResolvedValue(
+                new PaginatedResponseDto([{ ...user, isDeleted: false, isEnabled: true, createdAt: user.createdAt }], 1, 0)
+            )
 
             const result = await controller.listUsers({})
 
             expect(userServiceMock.listUsers).toHaveBeenCalled()
-            expect(result).toHaveLength(1)
-            expect(result[0]!.id).toBe(user.id)
+            expect(result.data).toHaveLength(1)
+            expect(result.data[0]!.id).toBe(user.id)
         })
     })
 

@@ -6,6 +6,7 @@ export interface IUserRepository {
     findById(id: string): Promise<UserModel | null>
     findByEmail(email: string): Promise<UserModel | null>
     findMany(filter: UserFilterOptions, take?: number, skip?: number): Promise<UserModel[]>
+    count(filter: UserFilterOptions): Promise<number>
     create(request: CreateUserModel): Promise<UserModel | null>
     createProvisional(request: CreateUserModel): Promise<UserModel>
     touchProvisional(id: string): Promise<void>

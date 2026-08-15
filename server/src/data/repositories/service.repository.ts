@@ -79,6 +79,10 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
+    async count(filter: ServiceFilterOptions): Promise<number> {
+        return this.db.service.count({ where: { ...filter } })
+    }
+
     async findEnabled(): Promise<ServiceModel[]> {
         try {
             const services = await this.db.service.findMany({

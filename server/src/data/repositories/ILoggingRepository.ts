@@ -11,4 +11,5 @@ export type LogFilterOptions = {
 export interface ILoggingRepository {
     create(log: CreateLogModel): Promise<boolean>
     findMany(filter: LogFilterOptions, take?: number, skip?: number): Promise<LogModel[]>
+    count(filter: LogFilterOptions): Promise<number>
 }

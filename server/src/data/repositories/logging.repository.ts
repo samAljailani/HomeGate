@@ -51,4 +51,13 @@ export class LoggingRepository implements ILoggingRepository {
             createdAt: log.createdAt,
         }))
     }
+
+    public async count(filter: LogFilterOptions): Promise<number> {
+        return this.db.log.count({
+            where: {
+                ...(filter.userId !== undefined ? { userId: filter.userId } : {}),
+                ...(filter.logLevel !== undefined ? { logLevel: filter.logLevel as LogLevel } : {}),
+            },
+        })
+    }
 }

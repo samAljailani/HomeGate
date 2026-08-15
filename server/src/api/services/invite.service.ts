@@ -1,25 +1,34 @@
 import {
     Injectable,
     Inject,
+    BadRequestException,
     NotFoundException,
     UnprocessableEntityException,
     ConflictException,
     ForbiddenException,
 } from '@nestjs/common'
-import { IInviteRepository } from '@/data/repositories'
-import { InviteModel, InviteRevokedReason } from '@/types/models/invite'
-import { CreateInviteRequestDto, CreateInviteResponseDto, InviteResponseDto } from '@/types/dtos/inviteDto'
+import { IInviteRepository, IServiceRepository } from '@/data/repositories'
+import { CreateInviteAccountModel, InviteModel, InviteRevokedReason, UpdateInviteModel } from '@/types/models/invite'
+import {
+    CreateInviteRequestDto,
+    CreateInviteResponseDto,
+    InvitePatchRequestDto,
+    InviteResponseDto,
+} from '@/types/dtos/inviteDto'
+import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 import { CryptographyProvider } from '@/infrastructure/cryptography.provider'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { UserService } from './user.service'
 import { UserStatus } from '@/types/models/user'
+import { ApplicationClientNames } from '@/types/enums'
 import { MAX_INVITE_FAILED_ATTEMPTS } from '@/types/invite.constants'
 
 @Injectable()
 export class InviteService extends BaseService {
     constructor(
         @Inject(IInviteRepository) private inviteRepository: IInviteRepository,
+        @Inject(IServiceRepository) private serviceRepository: IServiceRepository,
         @Inject(LoggingProvider) logger: LoggingProvider,
         @Inject(CryptographyProvider) private cryptography: CryptographyProvider,
         @Inject(UserService) private userService: UserService
@@ -35,6 +44,7 @@ export class InviteService extends BaseService {
         return {
             id: invite.id,
             email: invite.email,
+            isAdmin: invite.isAdmin,
             expiresAt: invite.expiresAt,
             createdAt: invite.createdAt,
             usedAt: invite.usedAt,
@@ -43,23 +53,24 @@ export class InviteService extends BaseService {
             createdByUserId: invite.createdByUserId,
             usedByUserId: invite.usedByUserId,
             revokedByUserId: invite.revokedByUserId,
+            accounts: invite.accounts.map((a) => ({
+                serviceName: a.serviceName,
+                username: a.username,
+                email: a.email,
+                accountId: a.accountId,
+            })),
         }
     }
 
     async createToken(options: CreateInviteRequestDto, createdByUserId: string): Promise<CreateInviteResponseDto> {
+        let accounts: CreateInviteAccountModel[] | undefined
+        if (options.accounts?.length) {
+            this.validateAccountEmails(options.accounts, options.email)
+            accounts = await this.resolveAccounts(options.accounts)
+        }
+
         if (options.email != null) {
-            const existingUser = await this.userService.getUserByEmail(options.email)
-
-            if (existingUser != null && existingUser.status !== UserStatus.PENDING) {
-                throw new ConflictException('An account with this email already exists.')
-            }
-
-            const existingInvite = await this.inviteRepository.findActivePendingByEmail(options.email)
-
-            if (existingInvite != null) {
-                await this.inviteRepository.revoke(existingInvite.id, InviteRevokedReason.AUTO_SUPERSEDED, null)
-                this.logger.log(`Invite ${existingInvite.id} superseded by a new invite for the same email`)
-            }
+            await this.supersedePendingInvite(options.email)
         }
 
         const rawToken = this.cryptography.GenerateRandomToken()
@@ -68,12 +79,16 @@ export class InviteService extends BaseService {
         const expiresAt = new Date()
         expiresAt.setDate(expiresAt.getDate() + options.expiresInDays)
 
-        const invite = await this.inviteRepository.create({
-            token,
-            email: options.email ?? null,
-            expiresAt,
-            createdByUserId,
-        })
+        const invite = await this.inviteRepository.create(
+            {
+                token,
+                email: options.email ?? null,
+                isAdmin: false,
+                expiresAt,
+                createdByUserId,
+            },
+            accounts
+        )
 
         this.logger.log(`Invite token created${options.email ? ` for ${options.email}` : ''}`)
 
@@ -128,7 +143,6 @@ export class InviteService extends BaseService {
         }
 
         if (invite.revokedAt != null || invite.expiresAt < new Date()) {
-            // Already terminal (revoked or expired) — revoking is an idempotent no-op.
             return this.mapInvite(invite)
         }
 
@@ -137,6 +151,46 @@ export class InviteService extends BaseService {
         this.logger.log(`Invite ${id} revoked by user ${revokedByUserId}`)
 
         return this.mapInvite(revoked ?? invite)
+    }
+
+    async updateInvite(id: string, request: InvitePatchRequestDto, userId: string): Promise<InviteResponseDto> {
+        const invite = await this.inviteRepository.findById(id)
+
+        if (invite == null) {
+            throw new NotFoundException('Invite not found.')
+        }
+
+        if (invite.usedAt != null) {
+            throw new UnprocessableEntityException('Cannot update an invite that has already been used.')
+        }
+
+        if (invite.revokedAt != null) {
+            throw new UnprocessableEntityException('Cannot update a revoked invite.')
+        }
+
+        const updateData: UpdateInviteModel = {}
+        if (request.email !== undefined) updateData.email = request.email
+        if (request.expiresAt !== undefined) updateData.expiresAt = request.expiresAt
+        if (request.isAdmin !== undefined) updateData.isAdmin = request.isAdmin
+        if (request.revoked === true) {
+            updateData.revokedAt = new Date()
+            updateData.revokedReason = InviteRevokedReason.ADMIN
+            updateData.revokedByUserId = userId
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return this.mapInvite(invite)
+        }
+
+        const updated = await this.inviteRepository.update(id, updateData)
+
+        if (request.revoked === true) {
+            this.logger.log(`Invite ${id} revoked by user ${userId}`)
+        }
+
+        this.logger.log(`Invite ${id} updated by user ${userId}`)
+
+        return this.mapInvite(updated ?? invite)
     }
 
     /**
@@ -155,8 +209,71 @@ export class InviteService extends BaseService {
         return claimed
     }
 
-    async listInvites(take?: number, skip?: number): Promise<InviteResponseDto[]> {
-        const invites = await this.inviteRepository.findAll(take, skip)
-        return invites.map((invite) => this.mapInvite(invite))
+    async deleteInvite(id: string): Promise<void> {
+        const invite = await this.inviteRepository.findById(id)
+
+        if (invite == null) {
+            throw new NotFoundException('Invite not found.')
+        }
+
+        await this.inviteRepository.delete(id)
+        this.logger.log(`Invite ${id} deleted`)
+    }
+
+    async listInvites(take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<InviteResponseDto>> {
+        const [invites, total] = await Promise.all([
+            this.inviteRepository.findAll(take, skip),
+            this.inviteRepository.count(),
+        ])
+        return new PaginatedResponseDto(invites.map((invite) => this.mapInvite(invite)), total, skip)
+    }
+
+    private async supersedePendingInvite(email: string): Promise<void> {
+        const existingUser = await this.userService.getUserByEmail(email)
+
+        if (existingUser != null && existingUser.status !== UserStatus.PENDING) {
+            throw new ConflictException('An account with this email already exists.')
+        }
+
+        const existingInvite = await this.inviteRepository.findActivePendingByEmail(email)
+
+        if (existingInvite != null) {
+            await this.inviteRepository.revoke(existingInvite.id, InviteRevokedReason.AUTO_SUPERSEDED, null)
+            this.logger.log(`Invite ${existingInvite.id} superseded by a new invite for the same email`)
+        }
+    }
+
+    private validateAccountEmails(accounts: CreateInviteRequestDto['accounts'] & object, inviteEmail?: string): void {
+        const accountWithEmail = accounts.find((a) => a.email != null)
+        if (accountWithEmail?.email == null) return
+
+        if (inviteEmail == null) {
+            throw new BadRequestException('Invite must have a bound email when an account email is provided.')
+        }
+        if (accountWithEmail.email.toLowerCase() !== inviteEmail.toLowerCase()) {
+            throw new BadRequestException('Account email must match the invite bound email.')
+        }
+    }
+
+    private async resolveAccounts(accounts: CreateInviteRequestDto['accounts'] & object): Promise<CreateInviteAccountModel[]> {
+        const resolved: CreateInviteAccountModel[] = []
+        for (const account of accounts) {
+            const serviceName = Object.values(ApplicationClientNames).find(
+                (v) => v === account.serviceName.toLowerCase()
+            ) as ApplicationClientNames | undefined
+            if (serviceName == null) {
+                throw new BadRequestException(`Service '${account.serviceName}' is not a valid service name.`)
+            }
+            const service = await this.serviceRepository.findByName(serviceName)
+            if (service == null) {
+                throw new BadRequestException(`Service '${account.serviceName}' not found.`)
+            }
+            const entry: CreateInviteAccountModel = { serviceId: service.id }
+            if (account.username != null) entry.username = account.username
+            if (account.email != null) entry.email = account.email
+            if (account.accountId != null) entry.accountId = account.accountId
+            resolved.push(entry)
+        }
+        return resolved
     }
 }

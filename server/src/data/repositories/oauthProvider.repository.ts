@@ -68,6 +68,10 @@ export class OAuthProviderRepository extends BaseRepository implements IOAuthPro
         }
     }
 
+    async count(filter: OAuthProviderFilterOptions): Promise<number> {
+        return this.db.oAuthProvider.count({ where: { ...filter } })
+    }
+
     async setEnabled(name: OAuthProviderName, enabled: boolean): Promise<OAuthProviderModel | null> {
         try {
             const provider = await this.db.oAuthProvider.update({ where: { name }, data: { enabled } })

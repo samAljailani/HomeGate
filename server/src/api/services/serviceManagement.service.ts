@@ -5,6 +5,7 @@ import { ExternalAccountResponseDto, ServiceResponseDto } from '@/types/dtos/ser
 import { ApplicationClientNames } from '@/types/enums'
 import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
 import { ApplicationUserModel } from '@/types/params/application.client'
+import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 
 @Injectable()
 export class ServiceManagementService {
@@ -43,9 +44,12 @@ export class ServiceManagementService {
         return (users ?? []).map((u) => this.applicationUserModelToResponseDto(u))
     }
 
-    async list(take?: number, skip?: number): Promise<ServiceResponseDto[]> {
-        const services = await this.serviceRepository.findMany({}, take, skip)
-        return services.map((s) => this.serviceModelToResponseDto(s))
+    async list(take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<ServiceResponseDto>> {
+        const [services, total] = await Promise.all([
+            this.serviceRepository.findMany({}, take, skip),
+            this.serviceRepository.count({}),
+        ])
+        return new PaginatedResponseDto(services.map((s) => this.serviceModelToResponseDto(s)), total, skip)
     }
 
     async enable(name: ApplicationClientNames): Promise<ServiceResponseDto> {

@@ -23,7 +23,7 @@ class ServiceService {
             params: { query: pagination },
         })
         if (error) throw error
-        return data
+        return data.data
     }
 
     async updateService(
