@@ -19,7 +19,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-HomeGate}
       LOG_TARGETS: console,database
       LOG_LEVEL: log
-      LOG_FORMAT: json
+      LOG_FORMAT: console
       COLOR_LOGS: "false"
     ports:
       - "${PORT:-3003}:${PORT:-3003}"
