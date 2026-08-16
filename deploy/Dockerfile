@@ -7,13 +7,14 @@ FROM base AS deps
 COPY package.json package-lock.json ./
 COPY server/package.json server/
 COPY packages/types/package.json packages/types/
-RUN npm ci --omit=dev --workspace=server --workspace=packages/types
+RUN npm ci --omit=dev --workspace=server --workspace=packages/types && npm approve-scripts
 
 # Final image
 FROM base
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/server/node_modules ./server/node_modules
-COPY --from=deps /app/packages/types/node_modules ./packages/types/node_modules
+
+# Copy workspace packages source (symlinked from node_modules)
+COPY packages/types ./packages/types
 
 # Copy Prisma schema for runtime migration
 COPY server/prisma ./server/prisma
