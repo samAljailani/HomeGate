@@ -11,7 +11,7 @@ services:
       APP_ENV: development
       PORT: ${PORT:-3004}
       HOST: https://${APP_SUBDOMAIN}.${DOMAIN}
-      CLIENT_RELATIVE_STATIC_PATH: ./client/
+      CLIENT_RELATIVE_STATIC_PATH: ./dist/client/
       SESSION_SECRET: ${SESSION_SECRET}
       SESSION_COOKIE_NAME: HOMEGATE_QA_SID
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
