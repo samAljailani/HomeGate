@@ -147,8 +147,7 @@ export function InviteGenerator({
                             onRemove={() => onRemoveAccount(index)}
                         />
                     )
-
-})}
+                })}
             </div>
         </div>
     )

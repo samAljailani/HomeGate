@@ -88,6 +88,7 @@ jobs:
           cat > .env <<'EOF'
           PORT=${{ vars.PORT }}
           DOMAIN=${{ vars.DOMAIN }}
+          APP_SUBDOMAIN=${{ vars.APP_SUBDOMAIN }}
           SESSION_SECRET=${{ secrets.SESSION_SECRET }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
