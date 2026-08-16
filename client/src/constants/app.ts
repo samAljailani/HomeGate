@@ -1,7 +1,5 @@
 export const config = Object.freeze({
-    appName: 'HomeGate',
-    // Falls back to empty string (same-origin) in production builds
-    apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? '',
+    appName: 'HomeGate',    
     routes: {
         home: '/',
         signIn: '/signin',

@@ -13,7 +13,7 @@ class AuthService {
     }
 
     getJoinUrl(token: string): string {
-        return `${config.apiBaseUrl}${path('/api/auth/join')}?token=${encodeURIComponent(token)}`
+        return `${window.location.origin}${path('/api/auth/join')}?token=${encodeURIComponent(token)}`
     }
 
     async logout(): Promise<void> {

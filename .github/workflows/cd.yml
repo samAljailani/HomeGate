@@ -77,16 +77,14 @@ jobs:
           find "$STAGING" -maxdepth 1 -not -name "$COMPOSE" -not -path "$STAGING" -exec cp -r {} "$DEPLOY"/ \;
 
           # Server build
-          mkdir -p "$DEPLOY/server/dist"
-          gh run download "$RUN" --pattern 'server-build-*' --dir "$DEPLOY/server/dist"
-          mv "$DEPLOY"/server/dist/server-build-*/* "$DEPLOY/server/dist/" 2>/dev/null || true
-          rmdir "$DEPLOY"/server/dist/server-build-* 2>/dev/null || true
+          gh run download "$RUN" --pattern 'server-build-*' --dir "$DEPLOY/tmp"
+          mv "$DEPLOY"/tmp/server-build-*/ "$DEPLOY/server/dist"
+          rm -rf "$DEPLOY/tmp"
 
           # Client build
-          mkdir -p "$DEPLOY/client/out"
-          gh run download "$RUN" --pattern 'client-build-*' --dir "$DEPLOY/client/out"
-          mv "$DEPLOY"/client/out/client-build-*/* "$DEPLOY/client/out/" 2>/dev/null || true
-          rmdir "$DEPLOY"/client/out/client-build-* 2>/dev/null || true
+          gh run download "$RUN" --pattern 'client-build-*' --dir "$DEPLOY/tmp"
+          mv "$DEPLOY"/tmp/client-build-*/ "$DEPLOY/client/out"
+          rm -rf "$DEPLOY/tmp"
 
       - name: Create .env for compose
         working-directory: ${{ steps.cfg.outputs.deploy_dir }}
