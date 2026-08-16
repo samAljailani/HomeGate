@@ -27,9 +27,9 @@ export function DataTableColumnToggle<TData>({ table }: { table: Table<TData> })
                 Columns
             </Button>
             {open && (
-                <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-md border border-(--border-default) bg-(--bg-dropdown) p-2 shadow-lg">
+                <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-md border border-input  bg-dropdown p-2 shadow-lg">
                     {table.getAllColumns().filter((col) => col.getCanHide()).map((col) => (
-                        <label key={col.id} className="flex items-center gap-2 px-2 py-1 text-sm cursor-pointer hover:bg-(--bg-dropdown-hover) rounded">
+                        <label key={col.id} className="flex items-center gap-2 px-2 py-1 text-sm text-secondary cursor-pointer hover:bg-(--bg-dropdown-hover) rounded">
                             <input
                                 type="checkbox"
                                 checked={col.getIsVisible()}

@@ -24,7 +24,7 @@ export function LinkedAccountRow({ account, serviceOptions, error, isDuplicateSe
                 className={`h-9 rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] ${
                     isDuplicateService
                         ? 'border-destructive text-destructive focus-visible:border-destructive focus-visible:ring-destructive/50'
-                        : 'border-(--border-default) text-(--text-primary) focus-visible:border-(--border-focus) focus-visible:ring-(--border-focus)/50'
+                        : 'border-(--border-default) text-(--text-primary) focus-visible:border-ring focus-visible:ring-ring/50'
                 } bg-(--bg-dropdown)`}
             >
                 <option value="">Select service</option>
