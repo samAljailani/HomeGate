@@ -35,9 +35,6 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Resolve CI run ID
         id: resolve
         env:
@@ -46,30 +43,35 @@ jobs:
           if [ -n "${{ inputs.run_id }}" ]; then
             echo "run_id=${{ inputs.run_id }}" >> $GITHUB_OUTPUT
           else
-            RUN_ID=$(gh run list --workflow=ci.yml --branch=development --status=success --limit=1 --json databaseId -q '.[0].databaseId')
+            RUN_ID=$(gh run list --workflow=ci.yml --status=success --limit=1 --json databaseId -q '.[0].databaseId')
             echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download server artifact
+      - name: Download artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh run download ${{ steps.resolve.outputs.run_id }} --pattern 'server-build-*' --dir ./server/dist
-          mv ./server/dist/server-build-*/* ./server/dist/ 2>/dev/null || true
-          rmdir ./server/dist/server-build-* 2>/dev/null || true
+          DEPLOY=${{ steps.cfg.outputs.deploy_dir }}
+          RUN=${{ steps.resolve.outputs.run_id }}
+          rm -rf "$DEPLOY"
+          mkdir -p "$DEPLOY"
 
-      - name: Download client artifact
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh run download ${{ steps.resolve.outputs.run_id }} --pattern 'client-build-*' --dir ./client/out
-          mv ./client/out/client-build-*/* ./client/out/ 2>/dev/null || true
-          rmdir ./client/out/client-build-* 2>/dev/null || true
+          # Deployment files (Dockerfile, compose, package.json, prisma, types)
+          gh run download "$RUN" --pattern 'deployment-files-*' --dir "$DEPLOY"
+          mv "$DEPLOY"/deployment-files-*/* "$DEPLOY"/ 2>/dev/null || true
+          rmdir "$DEPLOY"/deployment-files-* 2>/dev/null || true
 
-      - name: Sync to deploy directory
-        run: |
-          mkdir -p ${{ steps.cfg.outputs.deploy_dir }}
-          rsync -a --delete ./ ${{ steps.cfg.outputs.deploy_dir }}/
+          # Server build
+          mkdir -p "$DEPLOY/server/dist"
+          gh run download "$RUN" --pattern 'server-build-*' --dir "$DEPLOY/server/dist"
+          mv "$DEPLOY"/server/dist/server-build-*/* "$DEPLOY/server/dist/" 2>/dev/null || true
+          rmdir "$DEPLOY"/server/dist/server-build-* 2>/dev/null || true
+
+          # Client build
+          mkdir -p "$DEPLOY/client/out"
+          gh run download "$RUN" --pattern 'client-build-*' --dir "$DEPLOY/client/out"
+          mv "$DEPLOY"/client/out/client-build-*/* "$DEPLOY/client/out/" 2>/dev/null || true
+          rmdir "$DEPLOY"/client/out/client-build-* 2>/dev/null || true
 
       - name: Create .env for compose
         working-directory: ${{ steps.cfg.outputs.deploy_dir }}
