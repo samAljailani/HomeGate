@@ -9,7 +9,7 @@ services:
     environment:
       APP_ENV: qa
       PORT: ${PORT:-3004}
-      HOST: https://homegate.${DOMAIN}
+      HOST: https://${APP_SUBDOMAIN}.${DOMAIN}
       CLIENT_RELATIVE_STATIC_PATH: ./client/
       SESSION_SECRET: ${SESSION_SECRET}
       SESSION_COOKIE_NAME: HOMEGATE_QA_SID
@@ -28,7 +28,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.homegate-qa.entrypoints=websecure"
-      - "traefik.http.routers.homegate-qa.rule=Host(`homegate.${DOMAIN}`)"
+      - "traefik.http.routers.homegate-qa.rule=Host(`${APP_SUBDOMAIN}.${DOMAIN}`)"
       - "traefik.http.routers.homegate-qa.tls.certresolver=sslresolver"
       - "traefik.http.services.homegate-qa.loadbalancer.server.port=${PORT:-3004}"
     networks:

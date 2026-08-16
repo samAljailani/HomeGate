@@ -9,7 +9,7 @@ import { config } from '@/constants/app'
  */
 class AuthService {
     getGoogleSignInUrl(): string {
-        return `${config.apiBaseUrl}${path('/api/auth/google')}`
+        return path('/api/auth/google')
     }
 
     getJoinUrl(token: string): string {
