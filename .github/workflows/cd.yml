@@ -26,10 +26,10 @@ jobs:
         id: path
         run: |
           echo "dir=${{ vars.DEPLOY_PATH }}" >> $GITHUB_OUTPUT
-          if [ "${{ inputs.environment }}" = "qa" ]; then
-            echo "compose=docker-compose.qa.yml" >> $GITHUB_OUTPUT
-          elif [ "${{ inputs.environment }}" = "production" ]; then
+          if [ "${{ inputs.environment }}" = "PROD" ]; then
             echo "compose=docker-compose.prod.yml" >> $GITHUB_OUTPUT
+          elif [ "${{ inputs.environment }}" = "QA" ]; then
+            echo "compose=docker-compose.QA.yml" >> $GITHUB_OUTPUT
           else
             echo "Unknown environment: ${{ inputs.environment }}" >&2
             exit 1
