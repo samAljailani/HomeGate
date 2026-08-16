@@ -101,7 +101,7 @@ jobs:
         working-directory: work
         run: |
           COMPOSE=${{ steps.cfg.outputs.compose }}
-          docker compose -p ${{ steps.cfg.outputs.project }} -f "$COMPOSE" build --no-cache server
+          docker compose --progress=plain -p ${{ steps.cfg.outputs.project }} -f "$COMPOSE" build --no-cache server
 
       - name: Deploy containers
         run: |
