@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { type Column, type Table, flexRender } from '@tanstack/react-table'
+import { type Column, type Header, type Table, flexRender } from '@tanstack/react-table'
 import { ChevronUp, ChevronDown, ChevronsUpDown, Settings2 } from '@/components/ui/icons'
 import { useOnClickOutside } from '@/hooks/useOnClickOutside'
 import { Button } from './button'
@@ -45,7 +45,7 @@ export function DataTableColumnToggle<TData>({ table }: { table: Table<TData> })
     )
 }
 
-export function DataTableSortableHead<TData>({ header }: { header: { column: Column<TData>; id: string; isPlaceholder: boolean; getContext: () => any } }) {
+export function DataTableSortableHead<TData, TValue>({ header }: { header: Header<TData, TValue> }) {
     return (
         <TableHead
             className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}

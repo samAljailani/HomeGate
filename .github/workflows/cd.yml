@@ -8,8 +8,8 @@ on:
         required: true
         type: choice
         options:
-          - qa
-          - production
+          - QA
+          - PROD
       run_id:
         description: 'CI workflow run ID to deploy (leave blank for latest)'
         required: false

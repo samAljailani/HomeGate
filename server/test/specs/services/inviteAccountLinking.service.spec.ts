@@ -125,7 +125,7 @@ describe('InviteAccountLinkingService', () => {
         const clientMock = { getUser: jest.fn().mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'juser' } }) }
         registryMock.has.mockReturnValue(true)
         registryMock.get.mockReturnValue(clientMock as never)
-        userAccountRepoMock.findMany.mockResolvedValue([{ userId: 'other-user', serviceId: 5  }])
+        userAccountRepoMock.findMany.mockResolvedValue([{ userId: 'other-user', serviceId: 5 } as never])
 
         const event = { userId: 'user-1', accounts: [account] }
         await service.handleInviteClaimed(event)
