@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY server/package.json server/
-RUN npm ci --omit=dev --workspace=server && npm approve-scripts --all
+RUN npm ci --workspace=server && npm approve-scripts --all
 
 # Copy Prisma schema for runtime migration
 COPY server/prisma ./server/prisma
