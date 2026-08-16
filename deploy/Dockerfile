@@ -31,4 +31,4 @@ RUN npx prisma generate
 
 ARG PORT=3003
 EXPOSE ${PORT}
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "if npx prisma migrate status 2>&1 | grep -q 'Database schema is not empty'; then npx prisma db push --skip-generate; else npx prisma migrate deploy; fi && node dist/main.js"]
