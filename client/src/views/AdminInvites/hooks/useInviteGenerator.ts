@@ -25,8 +25,19 @@ export function useInviteGenerator(onGenerated?: () => void) {
     const [fieldErrors, setFieldErrors] = useState<InviteFieldErrors>({})
     const [copied, setCopied] = useState(false)
 
-    const addAccount = useCallback(() => {
-        setAccounts((prev) => [...prev, emptyAccount()])
+    const addAccount = useCallback((maxAccounts: number) => {
+        setAccounts((prev) => {
+            if (prev.length >= maxAccounts) {
+                addToastMessage('warning', 'Maximum number of linked accounts reached.')
+                return prev
+            }
+            const last = prev[prev.length - 1]
+            if (last && (!last.serviceName.trim() || (!last.username?.trim() && !last.email?.trim() && !last.accountId?.trim()))) {
+                addToastMessage('warning', 'Complete the current row before adding another.')
+                return prev
+            }
+            return [...prev, emptyAccount()]
+        })
     }, [])
 
     const removeAccount = useCallback((index: number) => {
@@ -46,8 +57,17 @@ export function useInviteGenerator(onGenerated?: () => void) {
         }
 
         const accountErrors: Record<number, string> = {}
+        const seenServices = new Map<string, number>()
         accounts.forEach((account, index) => {
             if (!account.serviceName.trim()) return
+            const key = account.serviceName.toLowerCase()
+            const prevIndex = seenServices.get(key)
+            if (prevIndex !== undefined) {
+                accountErrors[index] = 'Duplicate service'
+                if (!accountErrors[prevIndex]) accountErrors[prevIndex] = 'Duplicate service'
+            } else {
+                seenServices.set(key, index)
+            }
             const accountEmail = account.email?.trim()
             if (accountEmail) {
                 if (!trimmedEmail) {

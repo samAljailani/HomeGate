@@ -19,7 +19,7 @@ interface InviteGeneratorProps {
     onIsAdminChange: (value: boolean) => void
     accounts: InviteAccountDto[]
     serviceOptions: string[]
-    onAddAccount: () => void
+    onAddAccount: (maxAccounts: number) => void
     onRemoveAccount: (index: number) => void
     onUpdateAccount: (index: number, field: keyof InviteAccountDto, value: string) => void
     generatedLink: string
@@ -129,20 +129,25 @@ export function InviteGenerator({
             <div className="space-y-2">
                 <div className="flex items-center gap-2">
                     <Label>Link accounts</Label>
-                    <Button variant="outline" size="icon-sm" onClick={onAddAccount} title="Add account">
+                    <Button variant="outline" size="icon-sm" onClick={() => onAddAccount(serviceOptions.length)} title="Add account">
                         <Plus className="size-4" />
                     </Button>
                 </div>
-                {accounts.map((account, index) => (
-                    <LinkedAccountRow
-                        key={index}
-                        account={account}
-                        serviceOptions={serviceOptions}
-                        error={fieldErrors.accounts?.[index]}
-                        onChange={(field, value) => onUpdateAccount(index, field, value)}
-                        onRemove={() => onRemoveAccount(index)}
-                    />
-                ))}
+                {accounts.map((account, index) => {
+                    const isDuplicate = account.serviceName !== '' &&
+                        accounts.some((a, i) => i !== index && a.serviceName === account.serviceName)
+                    return (
+                        <LinkedAccountRow
+                            key={index}
+                            account={account}
+                            serviceOptions={serviceOptions}
+                            error={fieldErrors.accounts?.[index]}
+                            isDuplicateService={isDuplicate}
+                            onChange={(field, value) => onUpdateAccount(index, field, value)}
+                            onRemove={() => onRemoveAccount(index)}
+                        />
+                    )
+                })}
             </div>
         </div>
     )

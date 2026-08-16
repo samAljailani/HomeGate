@@ -2,6 +2,7 @@
 
 import { Sun, Moon } from '@/components/ui/icons'
 import { usePreferences, type Theme } from '@/context/preferences-context'
+import { addToastMessage } from '@/lib/utils'
 
 const nextTheme: Record<Theme, Theme> = { light: 'dark', dark: 'system', system: 'light' }
 const themeLabel: Record<Theme, string> = { light: 'Light', dark: 'Dark', system: 'System' }
@@ -9,10 +10,16 @@ const themeLabel: Record<Theme, string> = { light: 'Light', dark: 'Dark', system
 export function ThemeToggle() {
     const { theme, setTheme } = usePreferences()
 
+    const handleToggle = () => {
+        const next = nextTheme[theme]
+        setTheme(next)
+        addToastMessage('info', `Theme: ${themeLabel[next]}`)
+    }
+
     return (
         <button
             type="button"
-            onClick={() => setTheme(nextTheme[theme])}
+            onClick={handleToggle}
             title={`Theme: ${themeLabel[theme]}`}
             className="relative rounded-full p-1 text-muted hover:text-nav focus:outline-2 focus:outline-offset-2 focus:outline-accent"
         >

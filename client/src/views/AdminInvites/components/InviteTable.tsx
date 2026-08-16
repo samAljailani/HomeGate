@@ -158,34 +158,22 @@ export function InviteTable({
             cell: ({ row }) => row.original.revokedReason ?? '—',
         },
         {
-            id: 'createdByUserId',
-            accessorKey: 'createdByUserId',
+            id: 'createdByUsername',
+            accessorKey: 'createdByUsername',
             header: 'Created By',
-            cell: ({ row }) => (
-                <span className="font-mono text-xs">
-                    {row.original.createdByUserId ? truncateId(row.original.createdByUserId) : '—'}
-                </span>
-            ),
+            cell: ({ row }) => row.original.createdByUsername ?? '—',
         },
         {
-            id: 'usedByUserId',
-            accessorKey: 'usedByUserId',
+            id: 'usedByUsername',
+            accessorKey: 'usedByUsername',
             header: 'Used By',
-            cell: ({ row }) => (
-                <span className="font-mono text-xs">
-                    {row.original.usedByUserId ? truncateId(row.original.usedByUserId) : '—'}
-                </span>
-            ),
+            cell: ({ row }) => row.original.usedByUsername ?? '—',
         },
         {
-            id: 'revokedByUserId',
-            accessorKey: 'revokedByUserId',
+            id: 'revokedByUsername',
+            accessorKey: 'revokedByUsername',
             header: 'Revoked By',
-            cell: ({ row }) => (
-                <span className="font-mono text-xs">
-                    {row.original.revokedByUserId ? truncateId(row.original.revokedByUserId) : '—'}
-                </span>
-            ),
+            cell: ({ row }) => row.original.revokedByUsername ?? '—',
         },
         {
             id: 'actions',
@@ -266,9 +254,9 @@ export function InviteTable({
                             {table.getVisibleFlatColumns().find(c => c.id === 'usedAt') && <TableCell>—</TableCell>}
                             {table.getVisibleFlatColumns().find(c => c.id === 'revokedAt') && <TableCell>—</TableCell>}
                             {table.getVisibleFlatColumns().find(c => c.id === 'revokedReason') && <TableCell>—</TableCell>}
-                            {table.getVisibleFlatColumns().find(c => c.id === 'createdByUserId') && <TableCell>—</TableCell>}
-                            {table.getVisibleFlatColumns().find(c => c.id === 'usedByUserId') && <TableCell>—</TableCell>}
-                            {table.getVisibleFlatColumns().find(c => c.id === 'revokedByUserId') && <TableCell>—</TableCell>}
+                            {table.getVisibleFlatColumns().find(c => c.id === 'createdByUsername') && <TableCell>—</TableCell>}
+                            {table.getVisibleFlatColumns().find(c => c.id === 'usedByUsername') && <TableCell>—</TableCell>}
+                            {table.getVisibleFlatColumns().find(c => c.id === 'revokedByUsername') && <TableCell>—</TableCell>}
                             <TableCell>
                                 <div className="flex items-center gap-1">
                                     <Button variant="ghost" size="icon-sm" onClick={onSaveEdit} title="Save"><Save className="size-4" /></Button>

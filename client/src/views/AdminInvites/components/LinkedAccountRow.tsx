@@ -9,18 +9,23 @@ interface LinkedAccountRowProps {
     account: InviteAccountDto
     serviceOptions: string[]
     error?: string
+    isDuplicateService?: boolean
     onChange: (field: keyof InviteAccountDto, value: string) => void
     onRemove: () => void
 }
 
-export function LinkedAccountRow({ account, serviceOptions, error, onChange, onRemove }: LinkedAccountRowProps) {
+export function LinkedAccountRow({ account, serviceOptions, error, isDuplicateService, onChange, onRemove }: LinkedAccountRowProps) {
     return (
         <div className="space-y-1">
             <div className="flex items-center gap-2">
             <select
                 value={account.serviceName}
                 onChange={(e) => onChange('serviceName', e.target.value)}
-                className="h-9 rounded-md border border-(--border-default) bg-(--bg-dropdown) px-3 text-sm text-(--text-primary) shadow-xs outline-none focus-visible:border-(--border-focus) focus-visible:ring-[3px] focus-visible:ring-(--border-focus)/50"
+                className={`h-9 rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] ${
+                    isDuplicateService
+                        ? 'border-destructive text-destructive focus-visible:border-destructive focus-visible:ring-destructive/50'
+                        : 'border-(--border-default) text-(--text-primary) focus-visible:border-(--border-focus) focus-visible:ring-(--border-focus)/50'
+                } bg-(--bg-dropdown)`}
             >
                 <option value="">Select service</option>
                 {serviceOptions.map((name) => (
