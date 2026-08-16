@@ -168,7 +168,6 @@ jobs:
                       package-lock.json
                       server/package.json
                       server/prisma/
-                      packages/types/
                   retention-days: 7
 
     test:
