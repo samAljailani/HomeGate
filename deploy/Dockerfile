@@ -6,7 +6,7 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json package-lock.json ./
 COPY server/package.json server/
-RUN npm ci --omit=dev --workspace=server && npm approve-scripts
+RUN npm ci --omit=dev --workspace=server && npm approve-scripts --all
 
 # Final image
 FROM base
