@@ -142,13 +142,13 @@ export class InviteResponseDto {
     revokedReason: string | null
 
     @ApiPropertyOptional({ type: String })
-    createdByUserId: string | null
+    createdByUsername: string | null
 
     @ApiPropertyOptional({ type: String })
-    usedByUserId: string | null
+    usedByUsername: string | null
 
     @ApiPropertyOptional({ type: String })
-    revokedByUserId: string | null
+    revokedByUsername: string | null
 
     @ApiPropertyOptional({ type: [InviteAccountResponseDto] })
     accounts: InviteAccountResponseDto[]

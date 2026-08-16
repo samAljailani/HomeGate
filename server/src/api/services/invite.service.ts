@@ -50,9 +50,9 @@ export class InviteService extends BaseService {
             usedAt: invite.usedAt,
             revokedAt: invite.revokedAt,
             revokedReason: invite.revokedReason,
-            createdByUserId: invite.createdByUserId,
-            usedByUserId: invite.usedByUserId,
-            revokedByUserId: invite.revokedByUserId,
+            createdByUsername: invite.createdByUsername,
+            usedByUsername: invite.usedByUsername,
+            revokedByUsername: invite.revokedByUsername,
             accounts: invite.accounts.map((a) => ({
                 serviceName: a.serviceName,
                 username: a.username,
