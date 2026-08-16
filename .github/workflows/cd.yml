@@ -76,7 +76,7 @@ jobs:
       - name: Create .env for compose
         working-directory: ${{ steps.cfg.outputs.deploy_dir }}
         run: |
-          cat > .env <<EOF
+          cat > .env <<'EOF'
           PORT=${{ vars.PORT }}
           DOMAIN=${{ vars.DOMAIN }}
           SESSION_SECRET=${{ secrets.SESSION_SECRET }}
@@ -86,6 +86,7 @@ jobs:
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB=${{ vars.POSTGRES_DB }}
           EOF
+          sed -i 's/^[[:space:]]*//' .env
 
       - name: Build and deploy containers
         working-directory: ${{ steps.cfg.outputs.deploy_dir }}
