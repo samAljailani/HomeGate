@@ -17,6 +17,7 @@ import {
 } from 'class-validator'
 import { MAX_INVITE_EXPIRY_DAYS } from '@/types/invite.constants'
 import { AtLeastOneField } from '@/decorators'
+import { EmptyStringToUndefined } from '../../../lib/utils'
 
 export class InviteParamsDto {
     @ApiProperty({ type: String, format: 'uuid' })
@@ -40,6 +41,7 @@ export class InviteAccountDto {
     username?: string
 
     @ApiPropertyOptional({ type: String })
+    @Transform(EmptyStringToUndefined)
     @IsOptional()
     @IsEmail()
     email?: string
@@ -54,7 +56,7 @@ export class InviteAccountDto {
 export class CreateInviteRequestDto {
     @ApiPropertyOptional({ type: String })
     @IsOptional()
-    @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+    @Transform(EmptyStringToUndefined)
     @IsEmail()
     email?: string
 
@@ -87,7 +89,7 @@ export class InvitePatchRequestDto {
 
     @ApiPropertyOptional({ type: String })
     @IsOptional()
-    @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+    @Transform(EmptyStringToUndefined)
     @IsEmail()
     email?: string
 
