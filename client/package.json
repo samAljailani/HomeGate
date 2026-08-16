@@ -15,7 +15,8 @@
     "dependencies": {
         "@base-ui/react": "^1.6.0",
         "@radix-ui/react-slot": "^1.2.4",
-        "@samaljailani/homegate-types": "^0.0.1-dev.10",
+        "@samaljailani/homegate-types": "^0.0.1-dev.12",
+        "@tanstack/react-table": "^8.21.3",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "lucide-react": "^1.28.0",

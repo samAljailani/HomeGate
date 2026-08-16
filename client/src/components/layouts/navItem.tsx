@@ -35,7 +35,6 @@ export function NavItemLink({
         </a>
     )
 
-    console.log(`${item.dropdownItems?.length}, ${item.dropdownItems?.length}`)
     return item.dropdownItems?.length ? (
         <DropdownMenu
             className="ml-3"

@@ -1,4 +1,4 @@
-import { Body, BadRequestException, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post, Query, Request } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post, Query, Request } from '@nestjs/common'
 import {
     ApiBadRequestResponse,
     ApiBody,
@@ -59,18 +59,14 @@ export class InviteController {
     @ApiOperation({ summary: 'Revoke an invite (admin only)' })
     @ApiParam({ name: 'id', type: String })
     @ApiBody({ type: InvitePatchRequestDto })
-    @ApiOkResponse({ description: 'Invite revoked successfully', type: InviteResponseDto })
+    @ApiOkResponse({ description: 'Invite updated successfully', type: InviteResponseDto })
     @ApiNotFoundResponse({ description: 'Invite not found' })
     async update(
         @Param() params: InviteParamsDto,
         @Body() request: InvitePatchRequestDto,
         @Request() req: ExpressRequest
     ): Promise<InviteResponseDto> {
-        if (request.revoked !== true) {
-            throw new BadRequestException('Only revoking an invite is supported (revoked: true)')
-        }
-
-        return this.inviteService.revokeToken(params.id, req.session.userId!)
+        return this.inviteService.updateInvite(params.id, request, req.session.userId!)
     }
 
     @Delete(routes.invites.subPath.delete)

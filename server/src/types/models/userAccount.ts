@@ -59,6 +59,7 @@ export type UserAccountFilterOptions = {
     userId?: string
     serviceId?: number
     username?: string
+    userServiceAccountId?: string
     status?: UserAccountStatus
     statuses?: UserAccountStatus[]
     expiresBefore?: Date

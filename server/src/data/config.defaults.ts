@@ -1,6 +1,6 @@
 import { CronExpression } from '@nestjs/schedule'
-import { ScheduledTasks } from '@/types/enums'
-import { SystemConfigKey, SystemConfigMap, TasksSystemConfig } from '@/types/models/SystemConfig'
+import { ScheduledTasks, ImmichProvisioningMode } from '@/types/enums'
+import { SystemConfigKey, SystemConfigMap, TasksSystemConfig, JellyfinSystemConfig, ImmichSystemConfig } from '@/types/models/SystemConfig'
 
 const taskDefaults: TasksSystemConfig = Object.freeze({
     [ScheduledTasks.PROCESS_SUBSCRIPTIONS]: {
@@ -25,6 +25,21 @@ const taskDefaults: TasksSystemConfig = Object.freeze({
     },
 }) as TasksSystemConfig
 
+const jellyfinDefaults: JellyfinSystemConfig = Object.freeze({
+    baseUrl: '',
+    apiKey: '',
+    clientName: 'HOMEGATE_v1.0.0',
+    deviceId: 'homegate_server',
+})
+
+const immichDefaults: ImmichSystemConfig = Object.freeze({
+    baseUrl: '',
+    apiKey: '',
+    provisioningMode: ImmichProvisioningMode.Local,
+})
+
 export const systemDefaults: Readonly<SystemConfigMap> = Object.freeze({
     [SystemConfigKey.TASKS]: taskDefaults,
+    [SystemConfigKey.JELLYFIN]: jellyfinDefaults,
+    [SystemConfigKey.IMMICH]: immichDefaults,
 })

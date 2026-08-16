@@ -21,10 +21,18 @@ type InviteWithAccounts = {
     createdByUserId: string | null
     usedByUserId: string | null
     revokedByUserId: string | null
+    createdBy: { username: string } | null
+    usedBy: { username: string } | null
+    revokedBy: { username: string } | null
     accounts: { id: string; inviteId: string; serviceId: number; username: string | null; email: string | null; accountId: string | null; service: { name: string } }[]
 }
 
-const includeAccounts = { accounts: { include: { service: { select: { name: true } } } } } as const
+const includeRelations = {
+    accounts: { include: { service: { select: { name: true } } } },
+    createdBy: { select: { username: true } },
+    usedBy: { select: { username: true } },
+    revokedBy: { select: { username: true } },
+} as const
 
 @Injectable()
 export class InviteRepository extends BaseRepository implements IInviteRepository {
@@ -47,6 +55,9 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
             createdByUserId: invite.createdByUserId,
             usedByUserId: invite.usedByUserId,
             revokedByUserId: invite.revokedByUserId,
+            createdByUsername: invite.createdBy?.username ?? null,
+            usedByUsername: invite.usedBy?.username ?? null,
+            revokedByUsername: invite.revokedBy?.username ?? null,
             accounts: invite.accounts.map((a) => ({
                 id: a.id,
                 inviteId: a.inviteId,
@@ -61,7 +72,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
 
     async findById(id: string): Promise<InviteModel | null> {
         try {
-            const invite = await this.db.invite.findUnique({ where: { id }, include: includeAccounts })
+            const invite = await this.db.invite.findUnique({ where: { id }, include: includeRelations })
             return invite ? this.mapInvite(invite) : null
         } catch (error) {
             this.logger.error(`findById failed for id: ${id}`, {
@@ -73,7 +84,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
 
     async findByToken(token: string): Promise<InviteModel | null> {
         try {
-            const invite = await this.db.invite.findUnique({ where: { token }, include: includeAccounts })
+            const invite = await this.db.invite.findUnique({ where: { token }, include: includeRelations })
             return invite ? this.mapInvite(invite) : null
         } catch (error) {
             this.logger.error(`findByToken failed`, {
@@ -93,7 +104,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
                     expiresAt: { gt: new Date() },
                 },
                 orderBy: { createdAt: 'desc' },
-                include: includeAccounts,
+                include: includeRelations,
             })
             return invite ? this.mapInvite(invite) : null
         } catch (error) {
@@ -112,7 +123,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
             }
             const invite = await this.db.invite.create({
                 data,
-                include: includeAccounts,
+                include: includeRelations,
             })
             return this.mapInvite(invite)
         } catch (error) {
@@ -128,7 +139,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
             const invite = await this.db.invite.update({
                 where: { id },
                 data,
-                include: includeAccounts,
+                include: includeRelations,
             })
             return this.mapInvite(invite)
         } catch (error) {
@@ -166,7 +177,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
                 return null
             }
 
-            const invite = await this.db.invite.findUnique({ where: { id }, include: includeAccounts })
+            const invite = await this.db.invite.findUnique({ where: { id }, include: includeRelations })
             return invite ? this.mapInvite(invite) : null
         } catch (error) {
             this.logger.error(`claim failed for id: ${id}`, {
@@ -200,7 +211,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
             const invite = await this.db.invite.update({
                 where: { id },
                 data: { revokedAt: new Date(), revokedReason: reason, revokedByUserId: revokedByUserId ?? null },
-                include: includeAccounts,
+                include: includeRelations,
             })
             return this.mapInvite(invite)
         } catch (error) {
@@ -213,7 +224,7 @@ export class InviteRepository extends BaseRepository implements IInviteRepositor
 
     async findAll(take: number = 50, skip: number = 0): Promise<InviteModel[]> {
         try {
-            const invites = await this.db.invite.findMany({ orderBy: { createdAt: 'desc' }, take, skip, include: includeAccounts })
+            const invites = await this.db.invite.findMany({ orderBy: { createdAt: 'desc' }, take, skip, include: includeRelations })
             return invites.map((invite) => this.mapInvite(invite))
         } catch (error) {
             this.logger.error('findAll failed', {

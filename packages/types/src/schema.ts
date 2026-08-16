@@ -510,6 +510,7 @@ export interface components {
         CreateInviteRequestDto: {
             email?: string;
             expiresInDays: number;
+            isAdmin?: boolean;
             accounts?: components["schemas"]["InviteAccountDto"][];
         };
         InviteAccountResponseDto: {
@@ -527,9 +528,9 @@ export interface components {
             usedAt?: string;
             revokedAt?: string;
             revokedReason?: string;
-            createdByUserId?: string;
-            usedByUserId?: string;
-            revokedByUserId?: string;
+            createdByUsername?: string;
+            usedByUsername?: string;
+            revokedByUsername?: string;
             accounts?: components["schemas"]["InviteAccountResponseDto"][];
         };
         CreateInviteResponseDto: {
@@ -1059,7 +1060,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Invite revoked successfully */
+            /** @description Invite updated successfully */
             200: {
                 headers: {
                     [name: string]: unknown;

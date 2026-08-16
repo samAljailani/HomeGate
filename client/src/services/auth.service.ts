@@ -1,5 +1,6 @@
 import { apiClient } from './api-client'
 import { path } from '@/lib/apiPath'
+import { config } from '@/constants/app'
 
 /**
  * All auth-related API calls live here. `getGoogleSignInUrl` and `getJoinUrl` are not
@@ -12,7 +13,7 @@ class AuthService {
     }
 
     getJoinUrl(token: string): string {
-        return `${path('/api/auth/join')}?token=${encodeURIComponent(token)}`
+        return `${config.apiBaseUrl}${path('/api/auth/join')}?token=${encodeURIComponent(token)}`
     }
 
     async logout(): Promise<void> {

@@ -30,6 +30,9 @@ export type InviteModel = {
     createdByUserId: string | null
     usedByUserId: string | null
     revokedByUserId: string | null
+    createdByUsername: string | null
+    usedByUsername: string | null
+    revokedByUsername: string | null
     accounts: InviteAccountModel[]
 }
 

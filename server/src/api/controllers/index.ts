@@ -1,6 +1,7 @@
 import { AuthController } from './auth.controller'
 import { ClientRouteController } from './client-routes'
 import { CsrfController } from './csrf.controller'
+import { HealthController } from './health.controller'
 import { InviteController } from './invite.controller'
 import { LogController } from './log.controller'
 import { OAuthProviderController } from './oauthProvider.controller'
@@ -10,6 +11,7 @@ import { TaskController } from './task.controller'
 import { UserController } from './user.controller'
 
 export const controllers = [
+    HealthController,
     AuthController,
     CsrfController,
     SubscriptionController,

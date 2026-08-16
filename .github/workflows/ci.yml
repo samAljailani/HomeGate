@@ -2,9 +2,9 @@ name: Development CI
 
 on:
     push:
-        branches: [development]
+        branches: [development, main]
     pull_request:
-        branches: [development]
+        branches: [development, main]
 
 concurrency:
     group: ci-${{ github.ref }}
@@ -154,6 +154,21 @@ jobs:
               with:
                   name: client-build-${{ steps.label.outputs.value }}
                   path: client/out
+                  retention-days: 7
+
+            - name: Upload deployment files
+              uses: actions/upload-artifact@v4
+              with:
+                  name: deployment-files-${{ steps.label.outputs.value }}
+                  path: |
+                      deploy/
+                      docker-compose.prod.yml
+                      docker-compose.qa.yml
+                      package.json
+                      package-lock.json
+                      server/package.json
+                      server/prisma.config.ts
+                      server/prisma/
                   retention-days: 7
 
     test:
