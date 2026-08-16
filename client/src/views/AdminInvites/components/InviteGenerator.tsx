@@ -102,7 +102,7 @@ export function InviteGenerator({
                         id="invite-expiry"
                         value={expiresInDays}
                         onChange={(e) => onExpiresInDaysChange(Number(e.target.value))}
-                        className="h-9 rounded-md border border-(--border-default) bg-(--bg-dropdown) px-3 text-sm text-(--text-primary) shadow-xs outline-none focus-visible:border-(--border-focus) focus-visible:ring-[3px] focus-visible:ring-(--border-focus)/50"
+                        className="h-9 rounded-md border border-default bg-dropdown px-3 text-sm text-primary shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                     >
                         {EXPIRY_OPTIONS.map((days) => (
                             <option key={days} value={days}>
