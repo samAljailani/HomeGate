@@ -1,6 +1,6 @@
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { Inject, Injectable } from '@nestjs/common'
-import { EnvRepository } from '@/data/repositories/env.repository'
+import { ConfigService } from '@/api/services/config.service'
 import {
     ApplicationUserModel,
     FilterApplicationUserParam,
@@ -16,6 +16,7 @@ import {
     CreateJellyfinUserRequestDto,
 } from '@/core/clients/jellyfin/jellyfin.types'
 import { ApplicationClientNames } from '@/types/enums'
+import { SystemConfigKey } from '@/types/models/SystemConfig'
 
 @Injectable()
 export class JellyfinClient implements IApplicationManager {
@@ -28,33 +29,28 @@ export class JellyfinClient implements IApplicationManager {
         displayName: false,
     }
 
-    readonly #baseUrl: string
-    readonly #apiKey: string
-    readonly #clientName: string
-    readonly #deviceId: string
-
     constructor(
         @Inject(LoggingProvider) private logger: LoggingProvider,
-        @Inject(EnvRepository) config: EnvRepository
+        @Inject(ConfigService) private configService: ConfigService
     ) {
-        this.#baseUrl = config.getEnv().jellyfin.baseUrl
-        this.#apiKey = config.getEnv().jellyfin.apiKey
-        this.#clientName = config.getEnv().jellyfin.clientName
-        this.#deviceId = config.getEnv().jellyfin.deviceId
-
         this.logger.setContext(this.constructor.name)
     }
 
+    private get config() {
+        return this.configService.get(SystemConfigKey.JELLYFIN)
+    }
+
     get headers() {
+        const { apiKey, clientName, deviceId } = this.config
         return {
             Accept: 'application/json',
             'Content-Type': 'application/json',
             'X-Emby-Authorization':
-                `MediaBrowser Client="${this.#clientName}", ` +
+                `MediaBrowser Client="${clientName}", ` +
                 `Device="NestJS Server", ` +
-                `DeviceId="${this.#deviceId}", ` +
+                `DeviceId="${deviceId}", ` +
                 `Version="1.0.0", ` +
-                `Token="${this.#apiKey}"`,
+                `Token="${apiKey}"`,
         }
     }
     // #region IApplicationClient
@@ -87,7 +83,7 @@ export class JellyfinClient implements IApplicationManager {
     }
 
     async getAllUsers(): Promise<ApplicationUserModel[] | null> {
-        const url = `${this.#baseUrl}${jellyfinEndpoints.getAllUsers}`
+        const url = `${this.config.baseUrl}${jellyfinEndpoints.getAllUsers}`
 
         const requestOptions = {
             method: 'GET',
@@ -160,7 +156,7 @@ export class JellyfinClient implements IApplicationManager {
             }
         }
 
-        const url = `${this.#baseUrl}${jellyfinEndpoints.createUser}`
+        const url = `${this.config.baseUrl}${jellyfinEndpoints.createUser}`
 
         const body = {
             Name: user.username,
@@ -245,7 +241,7 @@ export class JellyfinClient implements IApplicationManager {
             return false
         }
 
-        const url = `${this.#baseUrl}${jellyfinEndpoints.deleteUser(encodeURIComponent(userServiceAccountId))}`
+        const url = `${this.config.baseUrl}${jellyfinEndpoints.deleteUser(encodeURIComponent(userServiceAccountId))}`
 
         const requestOptions = {
             method: 'DELETE',
@@ -304,8 +300,8 @@ export class JellyfinClient implements IApplicationManager {
         }
         const encodedUserServiceAccountId = encodeURIComponent(userServiceAccountId!)
 
-        const getUserUrl = `${this.#baseUrl}${jellyfinEndpoints.getUser(encodedUserServiceAccountId)}`
-        const updatePolicyUrl = `${this.#baseUrl}${jellyfinEndpoints.updateUserPolicy(encodedUserServiceAccountId)}`
+        const getUserUrl = `${this.config.baseUrl}${jellyfinEndpoints.getUser(encodedUserServiceAccountId)}`
+        const updatePolicyUrl = `${this.config.baseUrl}${jellyfinEndpoints.updateUserPolicy(encodedUserServiceAccountId)}`
 
         try {
             const getUserResponse = await fetch(getUserUrl, {
@@ -356,7 +352,7 @@ export class JellyfinClient implements IApplicationManager {
     }
 
     private async getUserById(userServiceAccountId: string): Promise<ApplicationUserModel | null> {
-        const url = `${this.#baseUrl}${jellyfinEndpoints.getUser(encodeURIComponent(userServiceAccountId))}`
+        const url = `${this.config.baseUrl}${jellyfinEndpoints.getUser(encodeURIComponent(userServiceAccountId))}`
 
         const requestOptions = {
             method: 'GET',
@@ -399,7 +395,7 @@ export class JellyfinClient implements IApplicationManager {
     }
 
     private async getUserByUsername(username: string): Promise<ApplicationUserModel | null> {
-        const url = `${this.#baseUrl}${jellyfinEndpoints.getAllUsers}`
+        const url = `${this.config.baseUrl}${jellyfinEndpoints.getAllUsers}`
 
         const requestOptions = {
             method: 'GET',
