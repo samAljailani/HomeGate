@@ -65,6 +65,7 @@ export class InviteService extends BaseService {
     async createToken(options: CreateInviteRequestDto, createdByUserId: string): Promise<CreateInviteResponseDto> {
         let accounts: CreateInviteAccountModel[] | undefined
         if (options.accounts?.length) {
+            this.validateUniqueServices(options.accounts)
             this.validateAccountEmails(options.accounts, options.email)
             accounts = await this.resolveAccounts(options.accounts)
         }
@@ -243,9 +244,20 @@ export class InviteService extends BaseService {
         }
     }
 
+    private validateUniqueServices(accounts: CreateInviteRequestDto['accounts'] & object): void {
+        const seen = new Set<string>()
+        for (const account of accounts) {
+            const key = account.serviceName.toLowerCase()
+            if (seen.has(key)) {
+                throw new BadRequestException(`Duplicate service '${account.serviceName}' in linked accounts.`)
+            }
+            seen.add(key)
+        }
+    }
+
     private validateAccountEmails(accounts: CreateInviteRequestDto['accounts'] & object, inviteEmail?: string): void {
         const accountWithEmail = accounts.find((a) => a.email != null)
-        if (accountWithEmail?.email == null) return
+        if (accountWithEmail?.email == null || accountWithEmail?.email == "") return
 
         if (inviteEmail == null) {
             throw new BadRequestException('Invite must have a bound email when an account email is provided.')
