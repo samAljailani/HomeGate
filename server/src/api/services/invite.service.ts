@@ -96,7 +96,7 @@ export class InviteService extends BaseService {
     }
 
     async validateToken(rawToken: string, email?: string): Promise<InviteModel> {
-        const token = this.hashToken(rawToken.toUpperCase())
+        const token = this.hashToken(rawToken)
         const invite = await this.inviteRepository.findByToken(token)
 
         if (invite == null) {

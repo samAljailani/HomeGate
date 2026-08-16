@@ -1,6 +1,6 @@
 'use client'
 
-import { ClipboardCopy, Check, Loader2, Plus } from 'lucide-react'
+import { ClipboardCopy, Check, Loader2, Plus } from '@/components/ui/icons'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

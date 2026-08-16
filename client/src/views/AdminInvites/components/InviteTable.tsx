@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import {
     useReactTable,
     getCoreRowModel,
@@ -10,9 +10,11 @@ import {
     type SortingState,
     type VisibilityState,
 } from '@tanstack/react-table'
-import { Copy, Pencil, Trash2, Save, X } from 'lucide-react'
+import { Copy, Pencil, Trash2, Save, X } from '@/components/ui/icons'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { usePreferences } from '@/context/preferences-context'
+import { preferences } from '@/constants/preferences'
 import { DataTableColumnToggle, DataTableSortableHead } from '@/components/ui/data-table'
 import type { InviteResponseDto } from '@/services/invite.service'
 import type { EditingState } from '../hooks/useInviteTable'
@@ -79,8 +81,17 @@ export function InviteTable({
     onDuplicate,
     onDelete,
 }: InviteTableProps) {
+    const { getColumnVisibility, setColumnVisibility } = usePreferences()
     const [sorting, setSorting] = useState<SortingState>([])
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+    const columnVisibility = getColumnVisibility(preferences.columns.adminInvites)
+
+    const onColumnVisibilityChange = useCallback(
+        (updater: VisibilityState | ((prev: VisibilityState) => VisibilityState)) => {
+            const next = typeof updater === 'function' ? updater(columnVisibility) : updater
+            setColumnVisibility(preferences.columns.adminInvites, next)
+        },
+        [columnVisibility, setColumnVisibility]
+    )
 
     const columns = useMemo<ColumnDef<InviteResponseDto>[]>(() => [
         {
@@ -190,7 +201,7 @@ export function InviteTable({
         columns,
         state: { sorting, columnVisibility },
         onSortingChange: setSorting,
-        onColumnVisibilityChange: setColumnVisibility,
+        onColumnVisibilityChange: onColumnVisibilityChange,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
     })

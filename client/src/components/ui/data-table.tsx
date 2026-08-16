@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { type Column, type Table, flexRender } from '@tanstack/react-table'
-import { ChevronUp, ChevronDown, ChevronsUpDown, Settings2 } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Settings2 } from '@/components/ui/icons'
 import { useOnClickOutside } from '@/hooks/useOnClickOutside'
 import { Button } from './button'
 import { TableHead } from './table'

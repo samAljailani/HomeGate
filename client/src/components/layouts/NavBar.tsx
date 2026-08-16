@@ -1,17 +1,19 @@
 'use client'
 
-import { useEffect, useState, type JSX } from 'react'
+import { useState, useMemo, type JSX } from 'react'
+import { usePathname } from 'next/navigation'
 import { classNames } from '@/utils/styles'
 import { IconHamburger } from '@/components/ui/icons/IconHamburger'
 import { IconX } from '@/components/ui/icons/IconX'
 import { IconBell } from '@/components/ui/icons/IconBell'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { authService } from '@/services/auth.service'
 import { config } from '@/constants/app'
 import { NavItem, NavItemLink } from './navItem'
 
-const navigationDefaults: NavItem[] = [
-    { name: 'Dashboard', href: config.routes.home, current: true },
+const navigationItems: NavItem[] = [
+    { name: 'Dashboard', href: config.routes.home, current: false },
     {
         name: 'Admin',
         current: false,
@@ -21,28 +23,22 @@ const navigationDefaults: NavItem[] = [
 
 export default function NavBar(): JSX.Element {
     const [mobileOpen, setMobileOpen] = useState<boolean>(false)
-    const [navigation, setNavigation] = useState(navigationDefaults)
+    const pathname = usePathname()
 
-    useEffect(() => {
-        const path = window.location.pathname.replace(/\.html$/, '')
-        setNavigation((items) =>
-            items.map((item) => {
-                const href = item.href?.replace(/\.html$/, '')
-                // Also highlight parent if any dropdown child matches the current path
-                const childMatch = item.dropdownItems?.some((child) => {
-                    const childHref = child.href?.replace(/\.html$/, '')
-                    return childHref && path.startsWith(childHref)
-                })
-                if (!href && !childMatch) return item
-                const current =
-                    childMatch ||
-                    (href === '/'
-                        ? path === '/'
-                        : !!href && path.startsWith(href))
-                return { ...item, current }
-            })
-        )
-    }, [])
+    const navigation = useMemo(() =>
+        navigationItems.map((item) => {
+            const href = item.href
+            const childMatch = item.dropdownItems?.some((child) =>
+                child.href && pathname.startsWith(child.href)
+            )
+            if (!href && !childMatch) return item
+            const current =
+                childMatch ||
+                (href === '/' ? pathname === '/' : !!href && pathname.startsWith(href))
+            return { ...item, current }
+        }),
+        [pathname]
+    )
 
     return (
         <nav className="relative bg-nav after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-divider">
@@ -98,6 +94,7 @@ export default function NavBar(): JSX.Element {
                     </div>
 
                     <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+                        <ThemeToggle />
                         <button
                             type="button"
                             className="relative rounded-full p-1 text-muted hover:text-nav focus:outline-2 focus:outline-offset-2 focus:outline-accent"
