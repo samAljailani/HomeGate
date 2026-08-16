@@ -411,4 +411,27 @@ describe('InviteService', () => {
             expect(result.hasMore).toBe(true)
         })
     })
+
+    describe('getInviteUserOverrides', () => {
+        it('returns isAdmin=false and no email for an unbound non-admin invite', () => {
+            const invite = createInviteFixture({ email: null, isAdmin: false })
+            expect(service.getInviteUserOverrides(invite)).toEqual({ isAdmin: false })
+        })
+
+        it('returns isAdmin=true for an admin invite', () => {
+            const invite = createInviteFixture({ isAdmin: true })
+            expect(service.getInviteUserOverrides(invite)).toEqual({ isAdmin: true })
+        })
+
+        it('includes email when the invite is bound to an email', () => {
+            const invite = createInviteFixture({ email: 'user@example.com', isAdmin: false })
+            expect(service.getInviteUserOverrides(invite)).toEqual({ email: 'user@example.com', isAdmin: false })
+        })
+
+        it('omits email when invite email is null', () => {
+            const invite = createInviteFixture({ email: null, isAdmin: false })
+            const result = service.getInviteUserOverrides(invite)
+            expect(result).not.toHaveProperty('email')
+        })
+    })
 })

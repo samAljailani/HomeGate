@@ -8,10 +8,10 @@ services:
         PORT: ${PORT:-3004}
     restart: unless-stopped
     environment:
-      APP_ENV: qa
+      APP_ENV: development
       PORT: ${PORT:-3004}
       HOST: https://${APP_SUBDOMAIN}.${DOMAIN}
-      CLIENT_RELATIVE_STATIC_PATH: ./client/
+      CLIENT_RELATIVE_STATIC_PATH: ./dist/client/
       SESSION_SECRET: ${SESSION_SECRET}
       SESSION_COOKIE_NAME: HOMEGATE_QA_SID
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -19,7 +19,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-HomeGate_QA}
       LOG_TARGETS: console,database
       LOG_LEVEL: debug
-      LOG_FORMAT: debug
+      LOG_FORMAT: console
       COLOR_LOGS: "false"
     ports:
       - "${PORT:-3004}:${PORT:-3004}"
@@ -56,7 +56,18 @@ services:
       start_period: 60s
     networks:
       - traefik
-
+  adminer:
+    container_name: homegate-qa-adminer
+    image: adminer
+    restart: always
+    environment:
+      TZ: America/New_York
+    ports:
+      - "8754:8080"
+    depends_on:
+      - db
+    networks:
+      - traefik
 volumes:
   homegate-qa-pgdata:
 

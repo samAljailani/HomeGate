@@ -11,7 +11,7 @@ services:
       APP_ENV: production
       PORT: ${PORT:-3003}
       HOST: https://${APP_SUBDOMAIN}.${DOMAIN}
-      CLIENT_RELATIVE_STATIC_PATH: ./client/
+      CLIENT_RELATIVE_STATIC_PATH: ./dist/client/
       SESSION_SECRET: ${SESSION_SECRET}
       SESSION_COOKIE_NAME: HOMEGATE_SID
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -19,7 +19,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-HomeGate}
       LOG_TARGETS: console,database
       LOG_LEVEL: log
-      LOG_FORMAT: json
+      LOG_FORMAT: console
       COLOR_LOGS: "false"
     ports:
       - "${PORT:-3003}:${PORT:-3003}"
