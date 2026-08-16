@@ -20,7 +20,7 @@ import { CryptographyProvider } from '@/infrastructure/cryptography.provider'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { UserService } from './user.service'
-import { UserStatus } from '@/types/models/user'
+import { UserModel, UserStatus } from '@/types/models/user'
 import { ApplicationClientNames } from '@/types/enums'
 import { MAX_INVITE_FAILED_ATTEMPTS } from '@/types/invite.constants'
 
@@ -243,6 +243,13 @@ export class InviteService extends BaseService {
             this.logger.log(`Invite ${existingInvite.id} superseded by a new invite for the same email`)
         }
     }
+
+    public getInviteUserOverrides(invite: InviteModel): Partial<UserModel> {
+        return {
+            ...(invite.email != null && {email: invite.email}),
+            isAdmin: invite.isAdmin,
+        }
+    }   
 
     private validateUniqueServices(accounts: CreateInviteRequestDto['accounts'] & object): void {
         const seen = new Set<string>()
