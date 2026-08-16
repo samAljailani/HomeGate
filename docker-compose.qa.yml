@@ -57,6 +57,7 @@ services:
     networks:
       - traefik
   adminer:
+    container_name: homegate-qa-adminer
     image: adminer
     restart: always
     environment:
