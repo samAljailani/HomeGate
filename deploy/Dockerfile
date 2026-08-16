@@ -21,4 +21,4 @@ RUN npx prisma generate
 
 ARG PORT=3003
 EXPOSE ${PORT}
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
