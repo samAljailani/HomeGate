@@ -60,38 +60,29 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          DEPLOY=${{ steps.cfg.outputs.deploy_dir }}
-          COMPOSE=${{ steps.cfg.outputs.compose }}
           RUN=${{ steps.resolve.outputs.run_id }}
-          STAGING="$DEPLOY/.staging"
-          rm -rf "$STAGING"
-          mkdir -p "$STAGING"
+          rm -rf work
+          mkdir -p work
 
-          # Deployment files (Dockerfile, compose, package.json, prisma) → staging first
-          gh run download "$RUN" --pattern 'deployment-files-*' --dir "$STAGING"
-          mv "$STAGING"/deployment-files-*/* "$STAGING"/ 2>/dev/null || true
-          rmdir "$STAGING"/deployment-files-* 2>/dev/null || true
-
-          # Copy everything except the compose file into deploy dir
-          mkdir -p "$DEPLOY"
-          find "$STAGING" -maxdepth 1 -not -name "$COMPOSE" -not -path "$STAGING" -exec cp -r {} "$DEPLOY"/ \;
+          # Deployment files (Dockerfile, compose, package.json, prisma)
+          gh run download "$RUN" --pattern 'deployment-files-*' --dir work/tmp
+          mv work/tmp/deployment-files-*/* work/
+          rm -rf work/tmp
 
           # Server build
-          gh run download "$RUN" --pattern 'server-build-*' --dir "$DEPLOY/tmp"
-          rm -rf "$DEPLOY/server/dist"
-          mkdir -p "$DEPLOY/server"
-          mv "$DEPLOY"/tmp/server-build-*/ "$DEPLOY/server/dist"
-          rm -rf "$DEPLOY/tmp"
+          gh run download "$RUN" --pattern 'server-build-*' --dir work/tmp
+          mkdir -p work/server
+          mv work/tmp/server-build-*/ work/server/dist
+          rm -rf work/tmp
 
           # Client build
-          gh run download "$RUN" --pattern 'client-build-*' --dir "$DEPLOY/tmp"
-          rm -rf "$DEPLOY/client/out"
-          mkdir -p "$DEPLOY/client"
-          mv "$DEPLOY"/tmp/client-build-*/ "$DEPLOY/client/out"
-          rm -rf "$DEPLOY/tmp"
+          gh run download "$RUN" --pattern 'client-build-*' --dir work/tmp
+          mkdir -p work/client
+          mv work/tmp/client-build-*/ work/client/out
+          rm -rf work/tmp
 
       - name: Create .env for compose
-        working-directory: ${{ steps.cfg.outputs.deploy_dir }}
+        working-directory: work
         run: |
           cat > .env <<'EOF'
           PORT=${{ vars.PORT }}
@@ -107,18 +98,20 @@ jobs:
           sed -i 's/^[[:space:]]*//' .env
 
       - name: Build image
-        working-directory: ${{ steps.cfg.outputs.deploy_dir }}
+        working-directory: work
         run: |
           COMPOSE=${{ steps.cfg.outputs.compose }}
-          docker compose -p ${{ steps.cfg.outputs.project }} -f ".staging/$COMPOSE" build --no-cache server
+          docker compose -p ${{ steps.cfg.outputs.project }} -f "$COMPOSE" build --no-cache server
 
       - name: Deploy containers
-        working-directory: ${{ steps.cfg.outputs.deploy_dir }}
         run: |
+          DEPLOY=${{ steps.cfg.outputs.deploy_dir }}
           COMPOSE=${{ steps.cfg.outputs.compose }}
-          # Promote compose only after a successful build
-          mv ".staging/$COMPOSE" "$COMPOSE"
-          docker compose -p ${{ steps.cfg.outputs.project }} -f "$COMPOSE" up -d
+          # Promote only the compose file (and its .env) after a successful build
+          mkdir -p "$DEPLOY"
+          mv "work/$COMPOSE" "$DEPLOY/$COMPOSE"
+          cp work/.env "$DEPLOY/.env"
+          docker compose -p ${{ steps.cfg.outputs.project }} -f "$DEPLOY/$COMPOSE" up -d
 
       - name: Wait for healthy
         run: |
@@ -137,5 +130,5 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          rm -rf "${{ steps.cfg.outputs.deploy_dir }}/.staging"
+          rm -rf work
           docker image prune -f
