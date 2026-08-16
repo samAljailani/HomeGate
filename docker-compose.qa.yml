@@ -65,6 +65,8 @@ services:
       - "8754:8080"
     depends_on:
       - db
+    networks:
+      - traefik
 volumes:
   homegate-qa-pgdata:
 
