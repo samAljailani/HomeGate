@@ -1,6 +1,5 @@
 import { apiClient } from './api-client'
 import { path } from '@/lib/apiPath'
-import { config } from '@/constants/app'
 
 /**
  * All auth-related API calls live here. `getGoogleSignInUrl` and `getJoinUrl` are not
