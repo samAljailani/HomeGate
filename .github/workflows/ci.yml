@@ -167,6 +167,7 @@ jobs:
                       package.json
                       package-lock.json
                       server/package.json
+                      server/prisma.config.ts
                       server/prisma/
                   retention-days: 7
 
