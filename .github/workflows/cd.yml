@@ -130,5 +130,6 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          rm -rf work
+          # Wipe the entire workflow workspace (_work/HomeGate/HomeGate)
+          rm -rf "$GITHUB_WORKSPACE"/* "$GITHUB_WORKSPACE"/.[!.]*
           docker image prune -f
