@@ -4,6 +4,7 @@ import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Mi
 import { Match } from '@/types/validators/match.validator'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { UserAccountStatus } from '@/types/enums'
+import { EmptyStringToUndefined } from '../../../lib/utils'
 
 export { UserAccountStatus }
 
@@ -63,6 +64,7 @@ export class SubscriptionCreateRequestDto {
     serviceUsername: string
 
     @ApiPropertyOptional({ type: String })
+    @Transform(EmptyStringToUndefined)
     @IsOptional()
     @IsEmail()
     email?: string
