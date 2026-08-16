@@ -78,11 +78,15 @@ jobs:
 
           # Server build
           gh run download "$RUN" --pattern 'server-build-*' --dir "$DEPLOY/tmp"
+          rm -rf "$DEPLOY/server/dist"
+          mkdir -p "$DEPLOY/server"
           mv "$DEPLOY"/tmp/server-build-*/ "$DEPLOY/server/dist"
           rm -rf "$DEPLOY/tmp"
 
           # Client build
           gh run download "$RUN" --pattern 'client-build-*' --dir "$DEPLOY/tmp"
+          rm -rf "$DEPLOY/client/out"
+          mkdir -p "$DEPLOY/client"
           mv "$DEPLOY"/tmp/client-build-*/ "$DEPLOY/client/out"
           rm -rf "$DEPLOY/tmp"
 
