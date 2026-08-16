@@ -30,7 +30,7 @@ export class AuthService extends BaseService {
         @Inject(IOAuthProviderRepository) private oauthProviderRepository: IOAuthProviderRepository,
         @Inject(InviteService) private inviteService: InviteService,
         @Inject(EnvRepository) envRepository: EnvRepository,
-        private eventEmitter: EventEmitter2,
+        @Inject(EventEmitter2) private eventEmitter: EventEmitter2,
     ) {
         super(logger)
         this.cookieName = envRepository.getEnv().session.cookieName
