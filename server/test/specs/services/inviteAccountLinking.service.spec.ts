@@ -48,6 +48,7 @@ describe('InviteAccountLinkingService', () => {
         const clientMock = { getUser: jest.fn().mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'juser' } }) }
         registryMock.has.mockReturnValue(true)
         registryMock.get.mockReturnValue(clientMock as never)
+        userAccountRepoMock.findMany.mockResolvedValue([])
         userAccountRepoMock.create.mockResolvedValue(null)
 
         const event = { userId: 'user-1', accounts: [account] }
@@ -57,6 +58,10 @@ describe('InviteAccountLinkingService', () => {
             username: 'juser',
             email: undefined,
             userServiceAccountId: undefined,
+        })
+        expect(userAccountRepoMock.findMany).toHaveBeenCalledWith({
+            serviceId: 5,
+            userServiceAccountId: 'ext-1',
         })
         expect(userAccountRepoMock.create).toHaveBeenCalledWith({
             userId: 'user-1',
@@ -102,6 +107,7 @@ describe('InviteAccountLinkingService', () => {
         }
         registryMock.has.mockReturnValue(true)
         registryMock.get.mockReturnValue(clientMock as never)
+        userAccountRepoMock.findMany.mockResolvedValue([])
         userAccountRepoMock.create.mockResolvedValue(null)
 
         const event = { userId: 'user-1', username: 'homeuser', accounts: [account1, account2] }
@@ -112,5 +118,19 @@ describe('InviteAccountLinkingService', () => {
             expect.anything()
         )
         expect(userAccountRepoMock.create).toHaveBeenCalledTimes(1)
+    })
+
+    it('skips linking when the external account is already linked to another user', async () => {
+        const account = makeAccount()
+        const clientMock = { getUser: jest.fn().mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'juser' } }) }
+        registryMock.has.mockReturnValue(true)
+        registryMock.get.mockReturnValue(clientMock as never)
+        userAccountRepoMock.findMany.mockResolvedValue([{ userId: 'other-user', serviceId: 5  }])
+
+        const event = { userId: 'user-1', accounts: [account] }
+        await service.handleInviteClaimed(event)
+
+        expect(userAccountRepoMock.create).not.toHaveBeenCalled()
+        expect(loggerMock.log).toHaveBeenCalledWith(expect.stringContaining('already linked'))
     })
 })
