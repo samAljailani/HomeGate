@@ -61,14 +61,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           DEPLOY=${{ steps.cfg.outputs.deploy_dir }}
+          COMPOSE=${{ steps.cfg.outputs.compose }}
           RUN=${{ steps.resolve.outputs.run_id }}
-          rm -rf "$DEPLOY"
-          mkdir -p "$DEPLOY"
+          STAGING="$DEPLOY/.staging"
+          rm -rf "$STAGING"
+          mkdir -p "$STAGING"
 
-          # Deployment files (Dockerfile, compose, package.json, prisma, types)
-          gh run download "$RUN" --pattern 'deployment-files-*' --dir "$DEPLOY"
-          mv "$DEPLOY"/deployment-files-*/* "$DEPLOY"/ 2>/dev/null || true
-          rmdir "$DEPLOY"/deployment-files-* 2>/dev/null || true
+          # Deployment files (Dockerfile, compose, package.json, prisma) → staging first
+          gh run download "$RUN" --pattern 'deployment-files-*' --dir "$STAGING"
+          mv "$STAGING"/deployment-files-*/* "$STAGING"/ 2>/dev/null || true
+          rmdir "$STAGING"/deployment-files-* 2>/dev/null || true
+
+          # Copy everything except the compose file into deploy dir
+          mkdir -p "$DEPLOY"
+          find "$STAGING" -maxdepth 1 -not -name "$COMPOSE" -not -path "$STAGING" -exec cp -r {} "$DEPLOY"/ \;
 
           # Server build
           mkdir -p "$DEPLOY/server/dist"
@@ -98,11 +104,19 @@ jobs:
           EOF
           sed -i 's/^[[:space:]]*//' .env
 
-      - name: Build and deploy containers
+      - name: Build image
         working-directory: ${{ steps.cfg.outputs.deploy_dir }}
         run: |
-          docker compose -p ${{ steps.cfg.outputs.project }} -f ${{ steps.cfg.outputs.compose }} build --no-cache server
-          docker compose -p ${{ steps.cfg.outputs.project }} -f ${{ steps.cfg.outputs.compose }} up -d
+          COMPOSE=${{ steps.cfg.outputs.compose }}
+          docker compose -p ${{ steps.cfg.outputs.project }} -f ".staging/$COMPOSE" build --no-cache server
+
+      - name: Deploy containers
+        working-directory: ${{ steps.cfg.outputs.deploy_dir }}
+        run: |
+          COMPOSE=${{ steps.cfg.outputs.compose }}
+          # Promote compose only after a successful build
+          mv ".staging/$COMPOSE" "$COMPOSE"
+          docker compose -p ${{ steps.cfg.outputs.project }} -f "$COMPOSE" up -d
 
       - name: Wait for healthy
         run: |
@@ -118,6 +132,8 @@ jobs:
           docker compose -p ${{ steps.cfg.outputs.project }} -f ${{ steps.cfg.outputs.deploy_dir }}/${{ steps.cfg.outputs.compose }} logs server --tail=50
           exit 1
 
-      - name: Cleanup old images
-        if: success()
-        run: docker image prune -f
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf "${{ steps.cfg.outputs.deploy_dir }}/.staging"
+          docker image prune -f
