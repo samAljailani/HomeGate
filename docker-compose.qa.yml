@@ -1,5 +1,6 @@
 services:
   server:
+    container_name: homegate-qa-server
     build:
       context: .
       dockerfile: deploy/Dockerfile
@@ -35,6 +36,7 @@ services:
       - traefik
 
   db:
+    container_name: homegate-qa-db
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -51,6 +53,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+      start_period: 60s
     networks:
       - traefik
 

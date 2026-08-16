@@ -2,15 +2,9 @@ FROM node:24-slim AS base
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
-# Install production dependencies only
-FROM base AS deps
 COPY package.json package-lock.json ./
 COPY server/package.json server/
 RUN npm ci --omit=dev --workspace=server && npm approve-scripts --all
-
-# Final image
-FROM base
-COPY --from=deps /app/node_modules ./node_modules
 
 # Copy Prisma schema for runtime migration
 COPY server/prisma ./server/prisma
