@@ -4,6 +4,7 @@
    Light Mode (Default)
    ============================================ */
 :root {
+    color-scheme: light dark;
     /* -- Background Colors -- */
     background-color: oklch(var(--tw-gray-100));
     --bg-main: oklch(var(--tw-gray-500));
