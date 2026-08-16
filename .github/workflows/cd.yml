@@ -1,0 +1,110 @@
+name: Deploy to Raspberry Pi
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - qa
+          - production
+      run_id:
+        description: 'CI workflow run ID to deploy (leave blank for latest)'
+        required: false
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy (${{ inputs.environment }})
+    runs-on: [self-hosted, linux, ARM64]
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Set deploy path
+        id: path
+        run: |
+          echo "dir=${{ vars.DEPLOY_PATH }}" >> $GITHUB_OUTPUT
+          if [ "${{ inputs.environment }}" = "qa" ]; then
+            echo "compose=docker-compose.qa.yml" >> $GITHUB_OUTPUT
+          elif [ "${{ inputs.environment }}" = "production" ]; then
+            echo "compose=docker-compose.prod.yml" >> $GITHUB_OUTPUT
+          else
+            echo "Unknown environment: ${{ inputs.environment }}" >&2
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: ${{ steps.path.outputs.dir }}
+
+      - name: Resolve CI run ID
+        id: resolve
+        working-directory: ${{ steps.path.outputs.dir }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "${{ inputs.run_id }}" ]; then
+            echo "run_id=${{ inputs.run_id }}" >> $GITHUB_OUTPUT
+          else
+            RUN_ID=$(gh run list --workflow=ci.yml --branch=development --status=success --limit=1 --json databaseId -q '.[0].databaseId')
+            echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download server artifact
+        working-directory: ${{ steps.path.outputs.dir }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download ${{ steps.resolve.outputs.run_id }} --pattern 'server-build-*' --dir ./server/dist
+          mv ./server/dist/server-build-*/* ./server/dist/ 2>/dev/null || true
+          rmdir ./server/dist/server-build-* 2>/dev/null || true
+
+      - name: Download client artifact
+        working-directory: ${{ steps.path.outputs.dir }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download ${{ steps.resolve.outputs.run_id }} --pattern 'client-build-*' --dir ./client/out
+          mv ./client/out/client-build-*/* ./client/out/ 2>/dev/null || true
+          rmdir ./client/out/client-build-* 2>/dev/null || true
+
+      - name: Create .env for compose
+        working-directory: ${{ steps.path.outputs.dir }}
+        run: |
+          cat > .env <<EOF
+          PORT=${{ vars.PORT }}
+          DOMAIN=${{ vars.DOMAIN }}
+          SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          POSTGRES_USER=${{ vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ vars.POSTGRES_DB }}
+          EOF
+
+      - name: Build and deploy containers
+        working-directory: ${{ steps.path.outputs.dir }}
+        run: |
+          docker compose -f ${{ steps.path.outputs.compose }} build --no-cache server
+          docker compose -f ${{ steps.path.outputs.compose }} up -d
+
+      - name: Wait for healthy
+        run: |
+          echo "Waiting for server to be healthy..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:${{ vars.PORT }}/api/health > /dev/null 2>&1; then
+              echo "Server is healthy!"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Server did not become healthy in time"
+          docker compose -f ${{ steps.path.outputs.dir }}/${{ steps.path.outputs.compose }} logs server --tail=50
+          exit 1
+
+      - name: Cleanup old images
+        if: success()
+        run: docker image prune -f

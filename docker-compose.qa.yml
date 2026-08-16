@@ -1,0 +1,63 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      args:
+        PORT: ${PORT:-3004}
+    restart: unless-stopped
+    environment:
+      APP_ENV: qa
+      PORT: ${PORT:-3004}
+      HOST: https://homegate.${DOMAIN}
+      CLIENT_RELATIVE_STATIC_PATH: ./client/
+      SESSION_SECRET: ${SESSION_SECRET}
+      SESSION_COOKIE_NAME: HOMEGATE_QA_SID
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-HomeGate_QA}
+      LOG_TARGETS: console,database
+      LOG_LEVEL: debug
+      LOG_FORMAT: debug
+      COLOR_LOGS: "false"
+    ports:
+      - "${PORT:-3004}:${PORT:-3004}"
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homegate-qa.entrypoints=websecure"
+      - "traefik.http.routers.homegate-qa.rule=Host(`homegate.${DOMAIN}`)"
+      - "traefik.http.routers.homegate-qa.tls.certresolver=sslresolver"
+      - "traefik.http.services.homegate-qa.loadbalancer.server.port=${PORT:-3004}"
+    networks:
+      - traefik
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-HomeGate_QA}
+      TZ: America/New_York
+      PGTZ: America/New_York
+    command: ["postgres", "-c", "timezone=America/New_York"]
+    volumes:
+      - homegate-qa-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - traefik
+
+volumes:
+  homegate-qa-pgdata:
+
+networks:
+  traefik:
+    external: true
+    name: traefik_default
