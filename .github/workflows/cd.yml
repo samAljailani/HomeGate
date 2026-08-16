@@ -91,8 +91,8 @@ jobs:
       - name: Build and deploy containers
         working-directory: ${{ steps.cfg.outputs.deploy_dir }}
         run: |
-          docker compose -f ${{ steps.cfg.outputs.compose }} build --no-cache server
-          docker compose -f ${{ steps.cfg.outputs.compose }} up -d
+          docker compose -p homegate-${{ inputs.environment }} -f ${{ steps.cfg.outputs.compose }} build --no-cache server
+          docker compose -p homegate-${{ inputs.environment }} -f ${{ steps.cfg.outputs.compose }} up -d
 
       - name: Wait for healthy
         run: |
@@ -105,7 +105,7 @@ jobs:
             sleep 2
           done
           echo "Server did not become healthy in time"
-          docker compose -f ${{ steps.cfg.outputs.deploy_dir }}/${{ steps.cfg.outputs.compose }} logs server --tail=50
+          docker compose -p homegate-${{ inputs.environment }} -f ${{ steps.cfg.outputs.deploy_dir }}/${{ steps.cfg.outputs.compose }} logs server --tail=50
           exit 1
 
       - name: Cleanup old images
