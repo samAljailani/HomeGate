@@ -10,7 +10,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <div>
       <NavBar />
-      <div>
+      <div className="mx-auto max-w-screen px-4">
         {children}
       </div>
     </div>

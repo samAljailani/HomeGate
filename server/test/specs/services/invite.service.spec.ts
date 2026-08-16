@@ -60,7 +60,7 @@ describe('InviteService', () => {
             expect(userServiceMock.getUserByEmail).not.toHaveBeenCalled()
             expect(inviteRepositoryMock.findActivePendingByEmail).not.toHaveBeenCalled()
             expect(inviteRepositoryMock.create).toHaveBeenCalled()
-            expect(result.rawToken).toBe('raw-token')
+            expect(result.rawToken).toBe('RAW-TOKEN')
             expect(result.invite.id).toBe(invite.id)
         })
 

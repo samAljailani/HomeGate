@@ -8,6 +8,9 @@ export type CreateInviteRequestDto =
     components['schemas']['CreateInviteRequestDto']
 export type CreateInviteResponseDto =
     components['schemas']['CreateInviteResponseDto']
+export type InviteAccountDto = components['schemas']['InviteAccountDto']
+export type InvitePatchRequestDto =
+    components['schemas']['InvitePatchRequestDto']
 
 /**
  * All invite-related API calls live here. Components/hooks call these methods
@@ -36,13 +39,23 @@ class InviteService {
         return data!
     }
 
-    async revokeInvite(id: string): Promise<InviteResponseDto> {
+    async updateInvite(
+        id: string,
+        body: InvitePatchRequestDto
+    ): Promise<InviteResponseDto> {
         const { data, error } = await apiClient.PATCH('/api/invites/{id}', {
             params: { path: { id } },
-            body: { revoked: true },
+            body,
         })
         if (error) throw error
         return data!
+    }
+
+    async deleteInvite(id: string): Promise<void> {
+        const { error } = await apiClient.DELETE('/api/invites/{id}', {
+            params: { path: { id } },
+        })
+        if (error) throw error
     }
 }
 

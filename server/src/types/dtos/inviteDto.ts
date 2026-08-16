@@ -65,6 +65,11 @@ export class CreateInviteRequestDto {
     @Max(MAX_INVITE_EXPIRY_DAYS)
     expiresInDays: number
 
+    @ApiPropertyOptional({ type: Boolean })
+    @IsOptional()
+    @IsBoolean()
+    isAdmin?: boolean
+
     @ApiPropertyOptional({ type: [InviteAccountDto] })
     @IsOptional()
     @IsArray()
@@ -137,13 +142,13 @@ export class InviteResponseDto {
     revokedReason: string | null
 
     @ApiPropertyOptional({ type: String })
-    createdByUserId: string | null
+    createdByUsername: string | null
 
     @ApiPropertyOptional({ type: String })
-    usedByUserId: string | null
+    usedByUsername: string | null
 
     @ApiPropertyOptional({ type: String })
-    revokedByUserId: string | null
+    revokedByUsername: string | null
 
     @ApiPropertyOptional({ type: [InviteAccountResponseDto] })
     accounts: InviteAccountResponseDto[]

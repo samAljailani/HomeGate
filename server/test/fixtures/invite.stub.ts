@@ -15,6 +15,9 @@ export function createInviteFixture(overrides: Partial<InviteModel> = {}): Invit
         createdByUserId: null,
         usedByUserId: null,
         revokedByUserId: null,
+        createdByUsername: null,
+        usedByUsername: null,
+        revokedByUsername: null,
         accounts: [],
         ...overrides,
     }

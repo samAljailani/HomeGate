@@ -58,6 +58,18 @@ export class InviteAccountLinkingService extends BaseService {
             return
         }
 
+        const existing = await this.userAccountRepository.findMany({
+            serviceId: inviteAccount.serviceId,
+            userServiceAccountId: result.user.id,
+        })
+
+        if (existing.length > 0) {
+            this.logger.log(
+                `Account '${result.user.username}' on '${serviceName}' is already linked to user ${existing[0]!.userId}, skipping`
+            )
+            return
+        }
+
         await this.userAccountRepository.create({
             userId,
             serviceId: inviteAccount.serviceId,

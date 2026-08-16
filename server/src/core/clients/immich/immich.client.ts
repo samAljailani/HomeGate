@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { IApplicationManager } from '../IApplicationManager'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
-import { EnvRepository } from '@/data/repositories/env.repository'
+import { ConfigService } from '@/api/services/config.service'
 import {
     ApplicationUserModel,
     ApplicationUserRequirements,
@@ -10,8 +10,9 @@ import {
     FilterApplicationUserParam,
     GetApplicationUserResult,
 } from '@/types/params/application.client'
-import { ApplicationClientNames, ImmichProvisioningMode } from '@/types/enums'
+import { ApplicationClientNames } from '@/types/enums'
 import { ImmichUserResponse, CreateImmichUserRequestDto, immichEndpoints } from './immich.types'
+import { SystemConfigKey } from '@/types/models/SystemConfig'
 
 @Injectable()
 export class ImmichClient implements IApplicationManager {
@@ -24,26 +25,22 @@ export class ImmichClient implements IApplicationManager {
         displayName: false,
     }
 
-    readonly #baseUrl: string
-    readonly #apiKey: string
-    readonly #provisioningMode: ImmichProvisioningMode
-
     constructor(
         @Inject(LoggingProvider) private logger: LoggingProvider,
-        @Inject(EnvRepository) config: EnvRepository
+        @Inject(ConfigService) private configService: ConfigService
     ) {
         this.logger.setContext(this.constructor.name)
+    }
 
-        this.#baseUrl = config.getEnv().immich.baseUrl
-        this.#apiKey = config.getEnv().immich.apiKey
-        this.#provisioningMode = config.getEnv().immich.provisioningMode
+    private get config() {
+        return this.configService.get(SystemConfigKey.IMMICH)
     }
 
     get headers() {
         return {
             Accept: 'application/json',
             'Content-Type': 'application/json',
-            'x-api-key': this.#apiKey,
+            'x-api-key': this.config.apiKey,
         }
     }
 
@@ -77,7 +74,7 @@ export class ImmichClient implements IApplicationManager {
     }
 
     async getAllUsers(): Promise<ApplicationUserModel[] | null> {
-        const url = `${this.#baseUrl}${immichEndpoints.getAllUsers(JSON.stringify(true))}`
+        const url = `${this.config.baseUrl}${immichEndpoints.getAllUsers(JSON.stringify(true))}`
 
         const requestOptions = {
             method: 'GET',
@@ -134,7 +131,7 @@ export class ImmichClient implements IApplicationManager {
             }
         }
 
-        if (this.#provisioningMode !== 'local') {
+        if (this.config.provisioningMode !== 'local') {
             this.logger.error(
                 'The Immich client cannot create local users while in OAuth provisioning mode. Use OAuth auto-registration or identity-provider group access instead.'
             )
@@ -156,7 +153,7 @@ export class ImmichClient implements IApplicationManager {
             }
         }
 
-        const url = `${this.#baseUrl}${immichEndpoints.createUser}`
+        const url = `${this.config.baseUrl}${immichEndpoints.createUser}`
 
         const body = {
             email: user.email,
@@ -244,7 +241,7 @@ export class ImmichClient implements IApplicationManager {
 
             userServiceAccountId = user.id
 
-            const url = `${this.#baseUrl}${immichEndpoints.deleteUser(encodeURIComponent(userServiceAccountId))}`
+            const url = `${this.config.baseUrl}${immichEndpoints.deleteUser(encodeURIComponent(userServiceAccountId))}`
 
             const requestOptions = {
                 method: 'DELETE',
@@ -305,7 +302,7 @@ export class ImmichClient implements IApplicationManager {
 
             userServiceAccountId = user.id
 
-            const url = `${this.#baseUrl}${immichEndpoints.restoreUser(encodeURIComponent(userServiceAccountId))}`
+            const url = `${this.config.baseUrl}${immichEndpoints.restoreUser(encodeURIComponent(userServiceAccountId))}`
 
             const requestOptions = {
                 method: 'POST',
@@ -339,7 +336,7 @@ export class ImmichClient implements IApplicationManager {
 
     // #region private methods
     private async getUserById(userServiceAccountId: string): Promise<ApplicationUserModel | null> {
-        const url = `${this.#baseUrl}${immichEndpoints.getUser(encodeURIComponent(userServiceAccountId))}`
+        const url = `${this.config.baseUrl}${immichEndpoints.getUser(encodeURIComponent(userServiceAccountId))}`
 
         const requestOptions = {
             method: 'GET',
@@ -383,7 +380,7 @@ export class ImmichClient implements IApplicationManager {
     }
 
     private async getUserByEmail(email: string, withDeleted: boolean): Promise<ApplicationUserModel | null> {
-        const url = `${this.#baseUrl}${immichEndpoints.getAllUsers(String(withDeleted))}`
+        const url = `${this.config.baseUrl}${immichEndpoints.getAllUsers(String(withDeleted))}`
 
         const requestOptions = {
             method: 'GET',
