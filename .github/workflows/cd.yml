@@ -65,22 +65,20 @@ jobs:
           rm -rf "$DEPLOY"
           mkdir -p "$DEPLOY"
 
-          # Deployment files (Dockerfile, compose, package.json, prisma, types)
-          gh run download "$RUN" --pattern 'deployment-files-*' --dir "$DEPLOY"
-          mv "$DEPLOY"/deployment-files-*/* "$DEPLOY"/ 2>/dev/null || true
-          rmdir "$DEPLOY"/deployment-files-* 2>/dev/null || true
+          # Deployment files (Dockerfile, compose, package.json, prisma)
+          gh run download "$RUN" --pattern 'deployment-files-*' --dir "$DEPLOY/tmp"
+          mv "$DEPLOY"/tmp/deployment-files-*/* "$DEPLOY/"
+          rm -rf "$DEPLOY/tmp"
 
           # Server build
-          mkdir -p "$DEPLOY/server/dist"
-          gh run download "$RUN" --pattern 'server-build-*' --dir "$DEPLOY/server/dist"
-          mv "$DEPLOY"/server/dist/server-build-*/* "$DEPLOY/server/dist/" 2>/dev/null || true
-          rmdir "$DEPLOY"/server/dist/server-build-* 2>/dev/null || true
+          gh run download "$RUN" --pattern 'server-build-*' --dir "$DEPLOY/tmp"
+          mv "$DEPLOY"/tmp/server-build-*/ "$DEPLOY/server/dist"
+          rm -rf "$DEPLOY/tmp"
 
           # Client build
-          mkdir -p "$DEPLOY/client/out"
-          gh run download "$RUN" --pattern 'client-build-*' --dir "$DEPLOY/client/out"
-          mv "$DEPLOY"/client/out/client-build-*/* "$DEPLOY/client/out/" 2>/dev/null || true
-          rmdir "$DEPLOY"/client/out/client-build-* 2>/dev/null || true
+          gh run download "$RUN" --pattern 'client-build-*' --dir "$DEPLOY/tmp"
+          mv "$DEPLOY"/tmp/client-build-*/ "$DEPLOY/client/out"
+          rm -rf "$DEPLOY/tmp"
 
       - name: Create .env for compose
         working-directory: ${{ steps.cfg.outputs.deploy_dir }}
