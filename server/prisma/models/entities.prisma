@@ -53,12 +53,13 @@ model AuthScheme {
 }
 
 model Service {
-  id           Int           @id @default(autoincrement())
-  name         String        @unique @db.VarChar(64)
-  enabled      Boolean
-  url          String?       @db.VarChar(512)
-  imageUrl     String?       @map("image_url") @db.VarChar(512)
-  userAccounts UserAccount[] @relation("ServiceAccounts")
+  id             Int             @id @default(autoincrement())
+  name           String          @unique @db.VarChar(64)
+  enabled        Boolean
+  url            String?         @db.VarChar(512)
+  imageUrl       String?         @map("image_url") @db.VarChar(512)
+  userAccounts   UserAccount[]   @relation("ServiceAccounts")
+  inviteAccounts InviteAccount[] @relation("InviteServiceAccounts")
 
   @@map("services")
 }
@@ -119,7 +120,7 @@ model Log {
   message       String    @db.Text
   stackTrace    String?   @map("stack_trace")
   createdAt     DateTime  @map("created_at") @db.Timestamptz(6) @default(now())
-  user          User?     @relation("UserLogs", fields: [userId], references: [id], onDelete: NoAction)
+  user          User?     @relation("UserLogs", fields: [userId], references: [id], onDelete: SetNull)
   session       Session?  @relation("SessionLogs", fields: [sessionId], references: [id], onDelete: NoAction)
 
   @@index([createdAt])
@@ -135,7 +136,7 @@ model Invite {
   id              String    @id @default(uuid()) @db.Uuid
   token           String    @unique @db.Char(64)
   email           String?   @db.VarChar(254)
-  //role  TODO: add this property after adding authorization to the code base.
+  isAdmin         Boolean   @default(false) @map("is_admin")
 
   expiresAt       DateTime  @map("expires_at") @db.Timestamptz(6)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -148,12 +149,28 @@ model Invite {
   usedByUserId    String?   @map("used_by_user_id") @db.Uuid
   revokedByUserId String?   @map("revoked_by_user_id") @db.Uuid
 
-  createdBy       User?     @relation("CreatedInvites", fields: [createdByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usedBy          User?     @relation("UsedInvites", fields: [usedByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  revokedBy       User?     @relation("RevokedInvites", fields: [revokedByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy       User?     @relation("CreatedInvites", fields: [createdByUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  usedBy          User?     @relation("UsedInvites", fields: [usedByUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  revokedBy       User?     @relation("RevokedInvites", fields: [revokedByUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  accounts        InviteAccount[] @relation("InviteAccounts")
 
   @@unique([usedByUserId])
   @@map("invites")
+}
+
+model InviteAccount {
+  id        String  @id @default(uuid()) @db.Uuid
+  inviteId  String  @map("invite_id") @db.Uuid
+  serviceId Int     @map("service_id")
+  username  String? @db.VarChar(64)
+  email     String? @db.VarChar(254)
+  accountId String? @map("account_id") @db.VarChar(255)
+
+  invite  Invite  @relation("InviteAccounts", fields: [inviteId], references: [id], onDelete: Cascade)
+  service Service @relation("InviteServiceAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
+
+  @@unique([inviteId, serviceId])
+  @@map("invite_accounts")
 }
 
 enum InviteRevokedReason {

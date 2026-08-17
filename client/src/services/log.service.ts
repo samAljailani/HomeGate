@@ -13,10 +13,14 @@ export type LogResponseDto = components['schemas']['LogResponseDto']
  *  - if a route or DTO changes server-side, only this file needs updating
  */
 class LogService {
-    async getAllLogs(pagination?: PaginationRequestDto): Promise<LogResponseDto[]> {
-        const { data, error } = await apiClient.GET('/api/logs', { params: { query: pagination } })
+    async getAllLogs(
+        pagination?: PaginationRequestDto
+    ): Promise<LogResponseDto[]> {
+        const { data, error } = await apiClient.GET('/api/logs', {
+            params: { query: pagination },
+        })
         if (error) throw error
-        return data
+        return data.data
     }
 }
 

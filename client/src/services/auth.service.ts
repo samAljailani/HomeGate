@@ -12,7 +12,7 @@ class AuthService {
     }
 
     getJoinUrl(token: string): string {
-        return `${path('/api/auth/join')}?token=${encodeURIComponent(token)}`
+        return `${window.location.origin}${path('/api/auth/join')}?token=${encodeURIComponent(token)}`
     }
 
     async logout(): Promise<void> {
@@ -20,6 +20,5 @@ class AuthService {
         if (error) throw error
     }
 }
-
 
 export const authService = new AuthService()

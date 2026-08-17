@@ -4,6 +4,7 @@ import { LogService } from '@/api/services/log.service'
 import { LogListRequestDto } from '@/types/dtos/logDto'
 import { LogLevel } from '@/types/enums'
 import { LogModel } from '@/types/models/logs'
+import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 
 function createLogServiceMock(): jest.Mocked<Pick<LogService, 'list'>> {
     return {
@@ -49,7 +50,7 @@ describe('LogController', () => {
 
     describe('list', () => {
         it('passes empty filter when no query params provided', async () => {
-            logServiceMock.list.mockResolvedValue([])
+            logServiceMock.list.mockResolvedValue(new PaginatedResponseDto([], 0, 0))
 
             await controller.list({} as LogListRequestDto)
 
@@ -57,7 +58,7 @@ describe('LogController', () => {
         })
 
         it('passes userId filter when provided', async () => {
-            logServiceMock.list.mockResolvedValue([])
+            logServiceMock.list.mockResolvedValue(new PaginatedResponseDto([], 0, 0))
             const query: LogListRequestDto = { userId: 'user-uuid-1' }
 
             await controller.list(query)
@@ -70,7 +71,7 @@ describe('LogController', () => {
         })
 
         it('passes logLevel filter when provided', async () => {
-            logServiceMock.list.mockResolvedValue([])
+            logServiceMock.list.mockResolvedValue(new PaginatedResponseDto([], 0, 0))
             const query: LogListRequestDto = { logLevel: LogLevel.Error }
 
             await controller.list(query)
@@ -83,7 +84,7 @@ describe('LogController', () => {
         })
 
         it('passes take and skip when provided', async () => {
-            logServiceMock.list.mockResolvedValue([])
+            logServiceMock.list.mockResolvedValue(new PaginatedResponseDto([], 0, 0))
             const query: LogListRequestDto = { take: 10, skip: 5 }
 
             await controller.list(query)
@@ -92,24 +93,24 @@ describe('LogController', () => {
         })
 
         it('does not include undefined keys in the filter', async () => {
-            logServiceMock.list.mockResolvedValue([])
+            logServiceMock.list.mockResolvedValue(new PaginatedResponseDto([], 0, 0))
             const query: LogListRequestDto = { take: 20 }
 
             await controller.list(query)
 
-            const filterArg = logServiceMock.list.mock.calls[0][0]
+            const filterArg = logServiceMock.list.mock.calls[0]![0]
             expect(filterArg).not.toHaveProperty('userId')
             expect(filterArg).not.toHaveProperty('logLevel')
         })
 
         it('returns logs from the service', async () => {
             const logs = [createLogFixture({ id: 1 }), createLogFixture({ id: 2 })]
-            logServiceMock.list.mockResolvedValue(logs)
+            logServiceMock.list.mockResolvedValue(new PaginatedResponseDto(logs, 2, 0))
 
             const result = await controller.list({} as LogListRequestDto)
 
-            expect(result).toHaveLength(2)
-            expect(result[0].id).toBe(1)
+            expect(result.data).toHaveLength(2)
+            expect(result.data[0]!.id).toBe(1)
         })
     })
 

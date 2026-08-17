@@ -1,7 +1,6 @@
 import { OAuthProviderName } from '@prisma/generated'
 import { ClsModuleOptions } from 'nestjs-cls'
 import { LogFormat, LogLevel, LogTarget } from '@/types/enums'
-import { ImmichProvisioningMode } from '@/types/enums'
 
 export enum AppEnv {
     Development = 'development',
@@ -51,16 +50,5 @@ export interface EnvData {
     }
     cls: {
         config: ClsModuleOptions
-    }
-    jellyfin: {
-        baseUrl: string
-        apiKey: string
-        clientName: string
-        deviceId: string
-    }
-    immich: {
-        baseUrl: string
-        apiKey: string
-        provisioningMode: ImmichProvisioningMode
     }
 }

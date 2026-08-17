@@ -5,7 +5,7 @@ import { IUserRepository } from '@/data/repositories'
 import { createRequestMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 
-function createMockExecutionContext(req: ReturnType<typeof createRequestMock>, _isPublic?: boolean): ExecutionContext {
+function createMockExecutionContext(req: ReturnType<typeof createRequestMock>): ExecutionContext {
     return {
         getHandler: jest.fn(),
         getClass: jest.fn(),

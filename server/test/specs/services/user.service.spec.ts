@@ -8,7 +8,7 @@ import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 
 function createUserRepositoryMock(): jest.Mocked<
-    Pick<IUserRepository, 'findById' | 'softDelete' | 'hardDelete' | 'setEnabled' | 'findMany'>
+    Pick<IUserRepository, 'findById' | 'softDelete' | 'hardDelete' | 'setEnabled' | 'findMany' | 'count'>
 > {
     return {
         findById: jest.fn(),
@@ -16,6 +16,7 @@ function createUserRepositoryMock(): jest.Mocked<
         hardDelete: jest.fn(),
         setEnabled: jest.fn(),
         findMany: jest.fn(),
+        count: jest.fn(),
     }
 }
 
@@ -80,7 +81,7 @@ describe('UserService', () => {
         beforeEach(() => {
             subscriptionServiceMock.disableAllForUser.mockResolvedValue(undefined)
             sessionRepositoryMock.deleteByUserId.mockResolvedValue(undefined)
-            userRepositoryMock.softDelete.mockResolvedValue(undefined)
+            userRepositoryMock.softDelete.mockResolvedValue(true)
         })
 
         it('disables all subscriptions before deleting', async () => {
@@ -111,6 +112,7 @@ describe('UserService', () => {
             })
             userRepositoryMock.softDelete.mockImplementation(async () => {
                 order.push('softDelete')
+                return true
             })
 
             await service.softDeleteUser(userId)
@@ -127,7 +129,7 @@ describe('UserService', () => {
         const userId = 'user-uuid-1'
 
         beforeEach(() => {
-            userRepositoryMock.hardDelete.mockResolvedValue(undefined)
+            userRepositoryMock.hardDelete.mockResolvedValue(true)
         })
 
         it('hard deletes the user', async () => {
@@ -157,7 +159,7 @@ describe('UserService', () => {
         const userId = 'user-uuid-1'
 
         beforeEach(() => {
-            userRepositoryMock.setEnabled.mockResolvedValue(undefined)
+            userRepositoryMock.setEnabled.mockResolvedValue(null)
         })
 
         it('calls setEnabled with false', async () => {
@@ -175,7 +177,7 @@ describe('UserService', () => {
         const userId = 'user-uuid-1'
 
         beforeEach(() => {
-            userRepositoryMock.setEnabled.mockResolvedValue(undefined)
+            userRepositoryMock.setEnabled.mockResolvedValue(null)
         })
 
         it('calls setEnabled with true', async () => {
@@ -190,24 +192,30 @@ describe('UserService', () => {
     // #region listUsers
 
     describe('listUsers', () => {
-        it('returns mapped admin DTOs for all users', async () => {
+        it('returns paginated response with mapped admin DTOs', async () => {
             const users = [createUserFixture({ id: 'a' }), createUserFixture({ id: 'b' })]
             userRepositoryMock.findMany.mockResolvedValue(users)
+            userRepositoryMock.count.mockResolvedValue(2)
 
             const result = await service.listUsers()
 
-            expect(userRepositoryMock.findMany).toHaveBeenCalledWith({}, undefined, undefined)
-            expect(result).toHaveLength(2)
-            expect(result[0].id).toBe('a')
-            expect(result[1].id).toBe('b')
+            expect(userRepositoryMock.findMany).toHaveBeenCalledWith({}, 50, 0)
+            expect(result.data).toHaveLength(2)
+            expect(result.data[0]!.id).toBe('a')
+            expect(result.data[1]!.id).toBe('b')
+            expect(result.total).toBe(2)
+            expect(result.hasMore).toBe(false)
         })
 
-        it('returns empty array when no users exist', async () => {
+        it('returns empty data when no users exist', async () => {
             userRepositoryMock.findMany.mockResolvedValue([])
+            userRepositoryMock.count.mockResolvedValue(0)
 
             const result = await service.listUsers()
 
-            expect(result).toEqual([])
+            expect(result.data).toEqual([])
+            expect(result.total).toBe(0)
+            expect(result.hasMore).toBe(false)
         })
     })
 

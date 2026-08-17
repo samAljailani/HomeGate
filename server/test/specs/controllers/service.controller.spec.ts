@@ -4,6 +4,7 @@ import { ServiceController } from '@/api/controllers/service.controller'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
 import { createServiceFixture } from '../../fixtures/service.stub'
 import { ApplicationClientNames } from '@/types/enums'
+import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 
 function createServiceManagementServiceMock(): jest.Mocked<
     Pick<ServiceManagementService, 'list' | 'enable' | 'disable' | 'updateImageUrl' | 'listExternalAccounts'>
@@ -44,14 +45,14 @@ describe('ServiceController', () => {
                 createServiceFixture({ id: 1, enabled: true }),
                 createServiceFixture({ id: 2, enabled: false }),
             ]
-            serviceManagementMock.list.mockResolvedValue(services)
+            serviceManagementMock.list.mockResolvedValue(new PaginatedResponseDto(services, 2, 0))
 
             const result = await controller.list({})
 
             expect(serviceManagementMock.list).toHaveBeenCalled()
-            expect(result).toHaveLength(2)
-            expect(result[0]).toEqual({ id: 1, name: services[0]!.name, enabled: true, url: null, imageUrl: null })
-            expect(result[1]).toEqual({ id: 2, name: services[1]!.name, enabled: false, url: null, imageUrl: null })
+            expect(result.data).toHaveLength(2)
+            expect(result.data[0]).toEqual({ id: 1, name: services[0]!.name, enabled: true, url: null, imageUrl: null })
+            expect(result.data[1]).toEqual({ id: 2, name: services[1]!.name, enabled: false, url: null, imageUrl: null })
         })
     })
 

@@ -1,6 +1,7 @@
 import { OAuthUserProfileDto } from '@/types/dtos/authDto'
 import { OAuthAuthModel } from '@/types/models/oauthAuth'
 import { Injectable, Inject, forwardRef, BadRequestException, InternalServerErrorException } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { UserService } from './user.service'
 import { IOAuthProviderRepository } from '@/data/repositories'
 import { OAuthProviderModel } from '@/types/models/oauthProvider'
@@ -8,7 +9,10 @@ import { UserStatus } from '@/types/models/user'
 import { SIGNUP_COMPLETION_WINDOW_MINUTES } from '@/types/auth.constants'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { EnvRepository } from '@/data/repositories/env.repository'
 import { InviteService } from './invite.service'
+import { InviteClaimedEvent } from '@/types/events/invite-claimed.event'
+import { AppEvent } from '@/types/enums'
 
 /** Context handed back to the controller after an invite sign-up is initiated. */
 export type BeginSignUpResult = {
@@ -18,13 +22,18 @@ export type BeginSignUpResult = {
 
 @Injectable()
 export class AuthService extends BaseService {
+    readonly cookieName: string
+
     constructor(
         @Inject(forwardRef(() => UserService)) private userService: UserService,
         @Inject(LoggingProvider) logger: LoggingProvider,
         @Inject(IOAuthProviderRepository) private oauthProviderRepository: IOAuthProviderRepository,
-        @Inject(InviteService) private inviteService: InviteService
+        @Inject(InviteService) private inviteService: InviteService,
+        @Inject(EnvRepository) envRepository: EnvRepository,
+        @Inject(EventEmitter2) private eventEmitter: EventEmitter2,
     ) {
         super(logger)
+        this.cookieName = envRepository.getEnv().session.cookieName
     }
 
     async authorize(request: OAuthUserProfileDto): Promise<OAuthAuthModel | null> {
@@ -108,18 +117,9 @@ export class AuthService extends BaseService {
         if (invite.email != null) {
             const existing = await this.userService.getUserByEmail(invite.email)
 
-            if (existing != null && existing.status !== UserStatus.PENDING) {
+            if (existing != null) {
                 this.logger.log(`Sign up attempted for existing account: ${invite.email}`)
                 throw new BadRequestException('An account with this email already exists.')
-            }
-
-            if (existing == null) {
-                await this.userService.createProvisionalUser(invite.email)
-                this.logger.log(`Provisional account created for invite ${invite.id}`)
-            } else {
-                // Existing PENDING account (not ACTIVE, per the guard above): reset its staleness
-                // clock so a renewed sign-up isn't reaped mid-flight by cleanup_pending_users.
-                await this.userService.touchProvisionalUser(existing.id)
             }
         }
 
@@ -144,16 +144,14 @@ export class AuthService extends BaseService {
 
         const existing = await this.userService.getUserByEmail(profile.email)
 
-        if (existing != null && existing.status !== UserStatus.PENDING) {
+        if (existing != null) {
             this.logger.log(`Sign up completion attempted for existing account: ${profile.email}`)
             throw new BadRequestException('An account with this email already exists.')
         }
 
-        const wasProvisional = existing != null
+        const inviteOverrides = this.inviteService.getInviteUserOverrides(invite)
 
-        const account =
-            existing ??
-            (await this.userService.createUser({ email: profile.email, firstName: '', lastName: '' }))
+        const account = await this.userService.createUser({ email: profile.email, firstName: '', lastName: '', ...inviteOverrides })
 
         if (account == null || !account.id) {
             throw new InternalServerErrorException('Failed to create user account.')
@@ -167,8 +165,11 @@ export class AuthService extends BaseService {
 
         await this.inviteService.claimToken(invite.id, account.id)
 
-        if (wasProvisional) {
-            await this.userService.activateUser(account.id)
+        if (invite.accounts.length > 0) {
+            this.eventEmitter.emit(
+                AppEvent.INVITE_CLAIMED,
+                { userId: account.id, accounts: invite.accounts } satisfies InviteClaimedEvent
+            )
         }
 
         this.logger.log(`User ${account.username} registered via invite ${invite.id}`)

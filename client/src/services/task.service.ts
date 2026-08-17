@@ -2,7 +2,8 @@ import type { components } from '@samaljailani/homegate-types'
 
 import { apiClient } from './api-client'
 
-export type TaskConfigResponseDto = components['schemas']['TaskConfigResponseDto']
+export type TaskConfigResponseDto =
+    components['schemas']['TaskConfigResponseDto']
 export type UpdateTaskConfigDto = components['schemas']['UpdateTaskConfigDto']
 
 /**
@@ -20,7 +21,10 @@ class TaskService {
         return data
     }
 
-    async updateTask(name: string, body: UpdateTaskConfigDto): Promise<TaskConfigResponseDto> {
+    async updateTask(
+        name: string,
+        body: UpdateTaskConfigDto
+    ): Promise<TaskConfigResponseDto> {
         const { data, error } = await apiClient.PATCH('/api/tasks/{name}', {
             params: { path: { name } },
             body,

@@ -4,9 +4,10 @@ import { ILoggingRepository } from '@/data/repositories/ILoggingRepository'
 import { LogModel } from '@/types/models/logs'
 import { LogLevel } from '@/types/enums'
 
-function createLoggingRepositoryMock(): jest.Mocked<Pick<ILoggingRepository, 'findMany'>> {
+function createLoggingRepositoryMock(): jest.Mocked<Pick<ILoggingRepository, 'findMany' | 'count'>> {
     return {
         findMany: jest.fn(),
+        count: jest.fn(),
     }
 }
 
@@ -48,6 +49,7 @@ describe('LogService', () => {
     describe('list', () => {
         it('passes filter, take and skip to repository', async () => {
             loggingRepositoryMock.findMany.mockResolvedValue([])
+            loggingRepositoryMock.count.mockResolvedValue(0)
 
             await service.list({ userId: 'user-1', logLevel: LogLevel.Error }, 10, 20)
 
@@ -58,30 +60,38 @@ describe('LogService', () => {
             )
         })
 
-        it('returns logs from repository', async () => {
+        it('returns paginated response with logs', async () => {
             const logs = [createLogFixture({ id: 1 }), createLogFixture({ id: 2 })]
             loggingRepositoryMock.findMany.mockResolvedValue(logs)
+            loggingRepositoryMock.count.mockResolvedValue(2)
 
-            const result = await service.list({})
+            const result = await service.list({}, 50, 0)
 
-            expect(result).toHaveLength(2)
-            expect(result[0].id).toBe(1)
+            expect(result.data).toHaveLength(2)
+            expect(result.data[0]!.id).toBe(1)
+            expect(result.total).toBe(2)
+            expect(result.hasMore).toBe(false)
         })
 
-        it('uses empty filter when none provided', async () => {
-            loggingRepositoryMock.findMany.mockResolvedValue([])
+        it('returns hasMore=true when more records exist', async () => {
+            loggingRepositoryMock.findMany.mockResolvedValue([createLogFixture()])
+            loggingRepositoryMock.count.mockResolvedValue(10)
 
-            await service.list({})
+            const result = await service.list({}, 1, 0)
 
-            expect(loggingRepositoryMock.findMany).toHaveBeenCalledWith({}, undefined, undefined)
+            expect(result.hasMore).toBe(true)
+            expect(result.total).toBe(10)
         })
 
-        it('returns empty array when no logs exist', async () => {
+        it('returns empty data when no logs exist', async () => {
             loggingRepositoryMock.findMany.mockResolvedValue([])
+            loggingRepositoryMock.count.mockResolvedValue(0)
 
-            const result = await service.list({})
+            const result = await service.list({}, 50, 0)
 
-            expect(result).toEqual([])
+            expect(result.data).toEqual([])
+            expect(result.total).toBe(0)
+            expect(result.hasMore).toBe(false)
         })
     })
 

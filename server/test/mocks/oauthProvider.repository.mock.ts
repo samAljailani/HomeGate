@@ -5,6 +5,7 @@ export function createOAuthProviderRepositoryMock(): jest.Mocked<IOAuthProviderR
         findById: jest.fn(),
         findByName: jest.fn(),
         findMany: jest.fn(),
+        count: jest.fn(),
         setEnabled: jest.fn(),
     }
 }

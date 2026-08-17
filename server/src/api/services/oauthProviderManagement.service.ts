@@ -1,8 +1,8 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common'
 import { IOAuthProviderRepository } from '@/data/repositories/IOAuthProviderRepository'
 import { ISessionRepository } from '@/data/repositories/ISessionRepository'
-import { OAuthProviderModel } from '@/types/models/oauthProvider'
-import { OAuthProviderName } from '@prisma/generated'
+import { OAuthProviderModel, OAuthProviderName } from '@/types/models/oauthProvider'
+import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 
 @Injectable()
 export class OAuthProviderManagementService {
@@ -11,8 +11,12 @@ export class OAuthProviderManagementService {
         @Inject(ISessionRepository) private readonly sessionRepository: ISessionRepository
     ) {}
 
-    async list(take?: number, skip?: number): Promise<OAuthProviderModel[]> {
-        return this.oauthProviderRepository.findMany({}, take, skip)
+    async list(take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<OAuthProviderModel>> {
+        const [providers, total] = await Promise.all([
+            this.oauthProviderRepository.findMany({}, take, skip),
+            this.oauthProviderRepository.count({}),
+        ])
+        return new PaginatedResponseDto(providers, total, skip)
     }
 
     async enable(name: OAuthProviderName): Promise<OAuthProviderModel> {

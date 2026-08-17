@@ -9,6 +9,7 @@ export default tseslint.config(
     {
         rules: {
             '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
         },
     },
     {
@@ -30,7 +31,7 @@ export default tseslint.config(
     },
     {
         // Allow Prisma imports only in the data-access layer
-        files: ['src/repositories/**', 'src/types/models/**', 'src/infrastructure/**'],
+        files: ['src/data/repositories/**', 'src/types/models/**', 'src/infrastructure/**', 'test/**'],
         rules: {
             'no-restricted-imports': 'off',
         },

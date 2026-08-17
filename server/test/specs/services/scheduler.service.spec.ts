@@ -252,7 +252,7 @@ describe('SchedulerService', () => {
         it('binds the handler to its provider instance', async () => {
             let capturedThis: unknown
             const handler = jest.fn(function (this: unknown) {
-                capturedThis = this
+                capturedThis = this // eslint-disable-line @typescript-eslint/no-this-alias
             })
             Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, handler)
             const wrapper = createProviderWrapper({ handler })

@@ -49,6 +49,7 @@ export const routes = {
         create: '',
         list: '',
         update: ':id',
+        delete: ':id',
     }),
     users: defineRoutes('/api/users', {
         list: '',

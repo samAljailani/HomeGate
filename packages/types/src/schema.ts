@@ -184,7 +184,8 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete an invite (admin only) */
+        delete: operations["InviteController_delete"];
         options?: never;
         head?: never;
         /** Revoke an invite (admin only) */
@@ -500,21 +501,37 @@ export interface components {
             /** @description Immediately delete the external account instead of cancelling auto-renew */
             immediate?: boolean;
         };
+        InviteAccountDto: {
+            serviceName: string;
+            username?: string;
+            email?: string;
+            accountId?: string;
+        };
         CreateInviteRequestDto: {
             email?: string;
             expiresInDays: number;
+            isAdmin?: boolean;
+            accounts?: components["schemas"]["InviteAccountDto"][];
+        };
+        InviteAccountResponseDto: {
+            serviceName: string;
+            username?: string;
+            email?: string;
+            accountId?: string;
         };
         InviteResponseDto: {
             id: string;
             email?: string;
+            isAdmin: boolean;
             expiresAt: string;
             createdAt: string;
             usedAt?: string;
             revokedAt?: string;
             revokedReason?: string;
-            createdByUserId?: string;
-            usedByUserId?: string;
-            revokedByUserId?: string;
+            createdByUsername?: string;
+            usedByUsername?: string;
+            revokedByUsername?: string;
+            accounts?: components["schemas"]["InviteAccountResponseDto"][];
         };
         CreateInviteResponseDto: {
             rawToken: string;
@@ -522,6 +539,10 @@ export interface components {
         };
         InvitePatchRequestDto: {
             revoked?: boolean;
+            email?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            isAdmin?: boolean;
         };
         UserResponseForAdminDto: {
             id: string;
@@ -959,13 +980,16 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description List of all invites */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InviteResponseDto"][];
+                    "application/json": {
+                        data: components["schemas"]["InviteResponseDto"][];
+                        total: number;
+                        hasMore: boolean;
+                    };
                 };
             };
         };
@@ -1001,6 +1025,26 @@ export interface operations {
             };
         };
     };
+    InviteController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invite not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     InviteController_update: {
         parameters: {
             query?: never;
@@ -1016,7 +1060,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Invite revoked successfully */
+            /** @description Invite updated successfully */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1051,7 +1095,11 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponseForAdminDto"][];
+                    "application/json": {
+                        data: components["schemas"]["UserResponseForAdminDto"][];
+                        total: number;
+                        hasMore: boolean;
+                    };
                 };
             };
         };
@@ -1153,7 +1201,11 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ServiceResponseDto"][];
+                    "application/json": {
+                        data: components["schemas"]["ServiceResponseDto"][];
+                        total: number;
+                        hasMore: boolean;
+                    };
                 };
             };
         };
@@ -1221,7 +1273,11 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OAuthProviderResponseDto"][];
+                    "application/json": {
+                        data: components["schemas"]["OAuthProviderResponseDto"][];
+                        total: number;
+                        hasMore: boolean;
+                    };
                 };
             };
         };
@@ -1270,7 +1326,11 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LogResponseDto"][];
+                    "application/json": {
+                        data: components["schemas"]["LogResponseDto"][];
+                        total: number;
+                        hasMore: boolean;
+                    };
                 };
             };
         };
