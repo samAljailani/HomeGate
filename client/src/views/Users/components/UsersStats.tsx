@@ -12,8 +12,8 @@ export function UsersStats({stats, isLoading, error} : UsersStatsProps) {
     void error
     if (isLoading) {
         return (
-            <div className="w-100 flex justify-center">
-                <Spinner  className="size-10" />
+            <div className="flex min-h-16 w-full items-center justify-center @min-[420px]:min-h-20 @min-[600px]:min-h-24">
+                <Spinner className="size-10" />
             </div>
         )
     }
