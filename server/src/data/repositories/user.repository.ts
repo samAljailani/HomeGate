@@ -230,4 +230,16 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             mapPrismaError(error, repositoryErrorMessages.user)
         }
     }
+
+    async setAdmin(id: string, isAdmin: boolean): Promise<UserModel | null> {
+        try {
+            const user = await this.db.user.update({ where: { id }, data: { isAdmin } })
+            return this.mapUser(user)
+        } catch (error) {
+            this.logger.error(`setAdmin failed for id: ${id}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.user)
+        }
+    }
 }

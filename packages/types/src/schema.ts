@@ -240,7 +240,7 @@ export interface paths {
         delete: operations["UserController_deleteUser"];
         options?: never;
         head?: never;
-        /** Update a user account state — enabled (admin only) */
+        /** Update a user account state — enabled/admin (admin only) */
         patch: operations["UserController_updateUser"];
         trace?: never;
     };
@@ -574,6 +574,7 @@ export interface components {
         };
         UserPatchRequestDto: {
             enabled?: boolean;
+            admin?: boolean;
         };
         UserDeleteRequestDto: {
             /** @description Permanently delete the account. Ignored for non-admin callers. */

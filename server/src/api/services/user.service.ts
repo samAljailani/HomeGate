@@ -174,6 +174,13 @@ export class UserService extends BaseService {
         return user ? this.userModelToLoadRequestForAdmin(user) : null
     }
 
+    async setUserAdmin(userId: string, isAdmin: boolean, actedByUserId: string): Promise<UserResponseForAdminDto | null> {
+        const user = await this.userRepository.setAdmin(userId, isAdmin)
+
+        this.logger.log(`User ${userId} admin set to ${isAdmin} by ${actedByUserId}`)
+        return user ? this.userModelToLoadRequestForAdmin(user) : null
+    }
+
     async listUsers(take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<UserResponseForAdminDto>> {
         const [users, total] = await Promise.all([
             this.userRepository.findMany({}, take, skip),

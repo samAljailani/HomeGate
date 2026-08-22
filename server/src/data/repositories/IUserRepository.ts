@@ -19,4 +19,5 @@ export interface IUserRepository {
     softDelete(id: string): Promise<boolean>
     hardDelete(id: string): Promise<boolean>
     setEnabled(id: string, enabled: boolean): Promise<UserModel | null>
+    setAdmin(id: string, isAdmin: boolean): Promise<UserModel | null>
 }

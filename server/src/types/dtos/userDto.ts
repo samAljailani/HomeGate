@@ -94,6 +94,11 @@ export class UserPatchRequestDto {
     @IsOptional()
     @IsBoolean()
     enabled?: boolean
+
+    @ApiPropertyOptional({ type: Boolean })
+    @IsOptional()
+    @IsBoolean()
+    admin?: boolean
 }
 
 export class UserDeleteRequestDto {

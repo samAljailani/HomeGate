@@ -53,21 +53,32 @@ export class UserController {
 
     @Patch(routes.users.subPath.update)
     @AdminRoute()
-    @ApiOperation({ summary: 'Update a user account state — enabled (admin only)' })
+    @ApiOperation({ summary: 'Update a user account state — enabled/admin (admin only)' })
     @ApiParam({ name: 'id', type: String, format: 'uuid' })
     @ApiBody({ type: UserPatchRequestDto })
     @ApiOkResponse({ description: 'User updated successfully', type: UserResponseForAdminDto })
     async updateUser(
         @Param() params: UserParamsDto,
-        @Body() request: UserPatchRequestDto
+        @Body() request: UserPatchRequestDto,
+        @Request() req: ExpressRequest
     ): Promise<UserResponseForAdminDto | null> {
-        if (request.enabled === undefined) return this.userService.getUserByIdForAdmin(params.id)
-
-        if (request.enabled) {
-            return this.userService.enableUser(params.id)
-        } else {
-            return this.userService.disableUser(params.id)
+        if (request.enabled === undefined && request.admin === undefined) {
+            return this.userService.getUserByIdForAdmin(params.id)
         }
+
+        let updatedUser: UserResponseForAdminDto | null = null
+
+        if (request.admin !== undefined) {
+            updatedUser = await this.userService.setUserAdmin(params.id, request.admin, req.session.userId!)
+        }
+
+        if (request.enabled !== undefined) {
+            updatedUser = request.enabled
+                ? await this.userService.enableUser(params.id)
+                : await this.userService.disableUser(params.id)
+        }
+
+        return updatedUser
     }
 
     @Delete(routes.users.subPath.delete)
