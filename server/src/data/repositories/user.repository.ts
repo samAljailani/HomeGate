@@ -4,10 +4,17 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { BaseRepository } from './base.repository'
 import { IUserRepository } from './IUserRepository'
 import type { UserModel as PrismaUser } from '@prisma/generated/models'
-import { CreateUserModel, UpdateUserModel, UserModel, UserFilterOptions } from '@/types/models/user'
+import {
+    CreateUserModel,
+    UpdateUserModel,
+    UserModel,
+    UserFilterOptions,
+    UserStatusCountModel,
+    UserStatus as AppUserStatus,
+} from '@/types/models/user'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
-import { UserStatus } from '@prisma/generated'
+import { UserStatus as PrismaUserStatus, UserStatus } from '@prisma/generated'
 
 @Injectable()
 export class UserRepository extends BaseRepository implements IUserRepository {
@@ -70,6 +77,19 @@ export class UserRepository extends BaseRepository implements IUserRepository {
 
     async count(filter: UserFilterOptions): Promise<number> {
         return this.db.user.count({ where: { ...filter } })
+    }
+
+    async getUserCounts(userStatuses?: AppUserStatus[]): Promise<UserStatusCountModel[]> {
+        const grouped = await this.db.user.groupBy({
+            by: ['status'],
+            ...(userStatuses ? { where: { status: { in: userStatuses } } } : {}),
+            _count: { _all: true },
+        })
+
+        return grouped.map((item) => ({
+            status: item.status as AppUserStatus,
+            count: item._count._all,
+        }))
     }
 
     async create(request: CreateUserModel): Promise<UserModel | null> {

@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
 import { IsBoolean, IsDate, IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator'
-import { UserStatus } from '@/types/models/user'
+import { UserStatus, UserStatusCountModel } from '@/types/models/user'
 
 export class UserFindOptions {
     withDeleted?: boolean
@@ -120,4 +120,27 @@ export class UserResponseForAdminDto extends UserResponseDto {
     @ApiProperty({ type: Date })
     @IsDate()
     createdAt: Date
+}
+
+export class UserStatusCountDto {
+    @ApiProperty({ enum: UserStatus })
+    status: UserStatus
+
+    @ApiProperty({ type: Number })
+    count: number
+}
+
+export class UserStatsResponseDto {
+    @ApiProperty({
+        type: Number,
+        example: 42,
+        description: 'Total number of users',
+    })
+    total: number
+
+    @ApiProperty({
+        type: () => [UserStatusCountDto],
+        description: 'User counts grouped by status',
+    })
+    byStatus: UserStatusCountDto[]
 }

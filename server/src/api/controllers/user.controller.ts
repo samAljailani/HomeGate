@@ -21,6 +21,7 @@ import {
     UserParamsDto,
     UserPatchRequestDto,
     UserResponseForAdminDto,
+    UserStatsResponseDto,
 } from '@/types/dtos/userDto'
 import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
@@ -29,6 +30,14 @@ import { routes } from '@/types/dtos/routes'
 @Controller(routes.users.basePath)
 export class UserController {
     constructor(@Inject(UserService) private readonly userService: UserService) {}
+
+    @Get(routes.users.subPath.stats)
+    @AdminRoute()
+    @ApiOperation({ summary: 'Get a user statistics' })
+    @ApiOkResponse({ type: UserStatsResponseDto })
+    async getUserStats(): Promise<UserStatsResponseDto> {
+        return await this.userService.getUserStats()
+    }
 
     @Get(routes.users.subPath.list)
     @AdminRoute()

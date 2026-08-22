@@ -7,6 +7,11 @@ export const UserStatus = {
 
 export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus]
 
+export type UserStatusCountModel = {
+    status: UserStatus
+    count: number
+}
+
 export type UserModel = {
     id: string
     email: string
