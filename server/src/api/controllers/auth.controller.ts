@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Request, Inject, Res, UseGuards, Query } from '@nestjs/common'
-import { ApiOperation, ApiQuery } from '@nestjs/swagger'
+import { ApiOkResponse, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { AuthService } from '@/api/services/auth.service'
-import { OAuthUserProfileDto } from '@/types/dtos/authDto'
+import { OAuthUserProfileDto, SessionResponseDto } from '@/types/dtos/authDto'
 import { GoogleOAuthGuard } from '@/api/middleware/google-oauth.guard'
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
 import { routes } from '../../types/dtos/routes'
@@ -17,6 +17,18 @@ export class AuthController {
         @Inject(LoggingProvider) private readonly logger: LoggingProvider,
     ) {
         this.logger.setContext(AuthController.name)
+    }
+
+    @Get(routes.auth.subPath.session)
+    @Throttle({ default: { ttl: 60_000, limit: 30 } })
+    @ApiOperation({ summary: "Get the current session's user identity" })
+    @ApiOkResponse({ type: SessionResponseDto })
+    getSession(@Request() req: ExpressRequest): SessionResponseDto {
+        return {
+            id: req.session.userId!,
+            username: req.session.username!,
+            isAdmin: req.session.isAdmin ?? false,
+        }
     }
 
     @Public()

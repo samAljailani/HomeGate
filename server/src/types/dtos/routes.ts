@@ -34,6 +34,7 @@ export const routes = {
         google: 'google',
         googleRedirect: 'google/redirect',
         signOut: 'signOut',
+        session: 'session',
     }),
     csrf: defineRoutes('/api/csrf', {}),
     subscriptions: defineRoutes('/api/subscriptions', {
@@ -82,6 +83,7 @@ export const clientRoutes = {
     signIn: '/signin',
     admin: '/admin',
     adminInvites: '/admin/invites',
+    adminUsers: '/admin/users',
     error: '/error',
 } as const
 
