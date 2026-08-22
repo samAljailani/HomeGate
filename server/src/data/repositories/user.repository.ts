@@ -4,9 +4,17 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { BaseRepository } from './base.repository'
 import { IUserRepository } from './IUserRepository'
 import type { UserModel as PrismaUser } from '@prisma/generated/models'
-import { CreateUserModel, UpdateUserModel, UserModel, UserFilterOptions } from '@/types/models/user'
+import {
+    CreateUserModel,
+    UpdateUserModel,
+    UserModel,
+    UserFilterOptions,
+    UserStatusCountModel,
+    UserStatus as AppUserStatus,
+} from '@/types/models/user'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
+import { UserStatus as PrismaUserStatus, UserStatus } from '@prisma/generated'
 
 @Injectable()
 export class UserRepository extends BaseRepository implements IUserRepository {
@@ -22,8 +30,6 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             firstName: user.firstName,
             lastName: user.lastName,
             isAdmin: user.isAdmin,
-            isDeleted: user.isDeleted,
-            isEnabled: user.isEnabled,
             status: user.status,
             createdAt: user.createdAt,
         }
@@ -71,6 +77,19 @@ export class UserRepository extends BaseRepository implements IUserRepository {
 
     async count(filter: UserFilterOptions): Promise<number> {
         return this.db.user.count({ where: { ...filter } })
+    }
+
+    async getUserCounts(userStatuses?: AppUserStatus[]): Promise<UserStatusCountModel[]> {
+        const grouped = await this.db.user.groupBy({
+            by: ['status'],
+            ...(userStatuses ? { where: { status: { in: userStatuses } } } : {}),
+            _count: { _all: true },
+        })
+
+        return grouped.map((item) => ({
+            status: item.status as AppUserStatus,
+            count: item._count._all,
+        }))
     }
 
     async create(request: CreateUserModel): Promise<UserModel | null> {
@@ -191,7 +210,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
 
     async softDelete(id: string): Promise<boolean> {
         try {
-            await this.db.user.update({ where: { id }, data: { isDeleted: true, isEnabled: false } })
+            await this.db.user.update({ where: { id }, data: { status: UserStatus.DELETED } })
             return true
         } catch (error) {
             this.logger.error(`softDelete failed for id: ${id}`, {
@@ -221,10 +240,23 @@ export class UserRepository extends BaseRepository implements IUserRepository {
 
     async setEnabled(id: string, enabled: boolean): Promise<UserModel | null> {
         try {
-            const user = await this.db.user.update({ where: { id }, data: { isEnabled: enabled } })
+            const status = enabled ? UserStatus.ACTIVE : UserStatus.DISABLED
+            const user = await this.db.user.update({ where: { id }, data: { status } })
             return this.mapUser(user)
         } catch (error) {
             this.logger.error(`setEnabled failed for id: ${id}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.user)
+        }
+    }
+
+    async setAdmin(id: string, isAdmin: boolean): Promise<UserModel | null> {
+        try {
+            const user = await this.db.user.update({ where: { id }, data: { isAdmin } })
+            return this.mapUser(user)
+        } catch (error) {
+            this.logger.error(`setAdmin failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.user)

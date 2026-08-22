@@ -1,4 +1,4 @@
-import { CreateUserModel, UpdateUserModel, UserModel, UserFilterOptions } from '@/types/models/user'
+import { CreateUserModel, UpdateUserModel, UserModel, UserFilterOptions, UserStatusCountModel, UserStatus } from '@/types/models/user'
 
 export const IUserRepository = Symbol('IUserRepository')
 
@@ -7,6 +7,7 @@ export interface IUserRepository {
     findByEmail(email: string): Promise<UserModel | null>
     findMany(filter: UserFilterOptions, take?: number, skip?: number): Promise<UserModel[]>
     count(filter: UserFilterOptions): Promise<number>
+    getUserCounts(userStatuses?: UserStatus[]): Promise<UserStatusCountModel[]>
     create(request: CreateUserModel): Promise<UserModel | null>
     createProvisional(request: CreateUserModel): Promise<UserModel>
     touchProvisional(id: string): Promise<void>
@@ -19,4 +20,5 @@ export interface IUserRepository {
     softDelete(id: string): Promise<boolean>
     hardDelete(id: string): Promise<boolean>
     setEnabled(id: string, enabled: boolean): Promise<UserModel | null>
+    setAdmin(id: string, isAdmin: boolean): Promise<UserModel | null>
 }

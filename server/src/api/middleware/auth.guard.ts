@@ -4,6 +4,7 @@ import { Injectable, Inject, CanActivate, ExecutionContext } from '@nestjs/commo
 import { Reflector } from '@nestjs/core'
 import { Request } from 'express'
 import 'express-session'
+import { UserStatus } from '@/types/models/user'
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -26,7 +27,7 @@ export class AuthGuard implements CanActivate {
 
         const user = await this.userRepository.findById(request.session.userId)
 
-        if (!user || user.isDeleted || !user.isEnabled) {
+        if (!user || user.status !== UserStatus.ACTIVE) {
             request.session.destroy(() => {})
             return false
         }

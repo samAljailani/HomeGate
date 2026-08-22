@@ -9,7 +9,13 @@ import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 function createUserServiceMock(): jest.Mocked<
     Pick<
         UserService,
-        'softDeleteUser' | 'hardDeleteUser' | 'disableUser' | 'enableUser' | 'listUsers' | 'getUserByIdForAdmin'
+        | 'softDeleteUser'
+        | 'hardDeleteUser'
+        | 'disableUser'
+        | 'enableUser'
+        | 'setUserAdmin'
+        | 'listUsers'
+        | 'getUserByIdForAdmin'
     >
 > {
     return {
@@ -17,6 +23,7 @@ function createUserServiceMock(): jest.Mocked<
         hardDeleteUser: jest.fn(),
         disableUser: jest.fn(),
         enableUser: jest.fn(),
+        setUserAdmin: jest.fn(),
         listUsers: jest.fn(),
         getUserByIdForAdmin: jest.fn(),
     }
@@ -143,8 +150,9 @@ describe('UserController', () => {
 
         it('enables the user when enabled is true', async () => {
             userServiceMock.enableUser.mockResolvedValue(null)
+            const req = createRequestMock()
 
-            await controller.updateUser({ id: userId }, { enabled: true })
+            await controller.updateUser({ id: userId }, { enabled: true }, req)
 
             expect(userServiceMock.enableUser).toHaveBeenCalledWith(userId)
             expect(userServiceMock.disableUser).not.toHaveBeenCalled()
@@ -152,21 +160,48 @@ describe('UserController', () => {
 
         it('disables the user when enabled is false', async () => {
             userServiceMock.disableUser.mockResolvedValue(null)
+            const req = createRequestMock()
 
-            await controller.updateUser({ id: userId }, { enabled: false })
+            await controller.updateUser({ id: userId }, { enabled: false }, req)
 
             expect(userServiceMock.disableUser).toHaveBeenCalledWith(userId)
             expect(userServiceMock.enableUser).not.toHaveBeenCalled()
         })
 
+        it('sets admin flag when admin is provided', async () => {
+            userServiceMock.setUserAdmin.mockResolvedValue(null)
+            const req = createRequestMock()
+            req.session.userId = 'admin-actor-id'
+
+            await controller.updateUser({ id: userId }, { admin: true }, req)
+
+            expect(userServiceMock.setUserAdmin).toHaveBeenCalledWith(userId, true, 'admin-actor-id')
+            expect(userServiceMock.enableUser).not.toHaveBeenCalled()
+            expect(userServiceMock.disableUser).not.toHaveBeenCalled()
+        })
+
+        it('applies admin and enabled updates when both are provided', async () => {
+            userServiceMock.setUserAdmin.mockResolvedValue(null)
+            userServiceMock.disableUser.mockResolvedValue(null)
+            const req = createRequestMock()
+            req.session.userId = 'admin-actor-id'
+
+            await controller.updateUser({ id: userId }, { admin: false, enabled: false }, req)
+
+            expect(userServiceMock.setUserAdmin).toHaveBeenCalledWith(userId, false, 'admin-actor-id')
+            expect(userServiceMock.disableUser).toHaveBeenCalledWith(userId)
+        })
+
         it('does nothing when enabled is not provided', async () => {
             const userId2 = userId
             userServiceMock.getUserByIdForAdmin.mockResolvedValue(null)
+            const req = createRequestMock()
 
-            await controller.updateUser({ id: userId2 }, {})
+            await controller.updateUser({ id: userId2 }, {}, req)
 
             expect(userServiceMock.enableUser).not.toHaveBeenCalled()
             expect(userServiceMock.disableUser).not.toHaveBeenCalled()
+            expect(userServiceMock.setUserAdmin).not.toHaveBeenCalled()
             expect(userServiceMock.getUserByIdForAdmin).toHaveBeenCalledWith(userId2)
         })
     })
@@ -179,7 +214,7 @@ describe('UserController', () => {
         it('returns the list from the service', async () => {
             const user = createUserFixture()
             userServiceMock.listUsers.mockResolvedValue(
-                new PaginatedResponseDto([{ ...user, isDeleted: false, isEnabled: true, createdAt: user.createdAt }], 1, 0)
+                new PaginatedResponseDto([{ ...user, createdAt: user.createdAt }], 1, 0)
             )
 
             const result = await controller.listUsers({})
@@ -199,11 +234,7 @@ describe('UserController', () => {
 
         it('returns the user when found', async () => {
             const user = createUserFixture({ id: userId })
-            userServiceMock.getUserByIdForAdmin.mockResolvedValue({
-                ...user,
-                isDeleted: false,
-                isEnabled: true,
-            })
+            userServiceMock.getUserByIdForAdmin.mockResolvedValue(user)
 
             const result = await controller.getUser({ id: userId })
 

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { AuthService } from '@/api/services/auth.service'
+import { UserStatus } from '@/types/models/user'
 import { UserService } from '@/api/services/user.service'
 import { InviteService } from '@/api/services/invite.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -65,7 +66,7 @@ describe('AuthService', () => {
 
         describe('when the user is soft-deleted', () => {
             it('returns null', async () => {
-                userServiceMock.getUserByEmail.mockResolvedValue({ ...user, isDeleted: true })
+                userServiceMock.getUserByEmail.mockResolvedValue({ ...user, status: UserStatus.DELETED })
 
                 const result = await service.authorize(request)
 

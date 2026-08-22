@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["HealthController_check"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/google": {
         parameters: {
             query?: never;
@@ -192,6 +208,23 @@ export interface paths {
         patch: operations["InviteController_update"];
         trace?: never;
     };
+    "/api/users/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a user statistics */
+        get: operations["UserController_getUserStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users": {
         parameters: {
             query?: never;
@@ -224,7 +257,7 @@ export interface paths {
         delete: operations["UserController_deleteUser"];
         options?: never;
         head?: never;
-        /** Update a user account state — enabled (admin only) */
+        /** Update a user account state — enabled/admin (admin only) */
         patch: operations["UserController_updateUser"];
         trace?: never;
     };
@@ -544,6 +577,20 @@ export interface components {
             expiresAt?: string;
             isAdmin?: boolean;
         };
+        UserStatusCountDto: {
+            /** @enum {string} */
+            status: "ACTIVE" | "PENDING" | "DISABLED" | "DELETED";
+            count: number;
+        };
+        UserStatsResponseDto: {
+            /**
+             * @description Total number of users
+             * @example 42
+             */
+            total: number;
+            /** @description User counts grouped by status */
+            byStatus: components["schemas"]["UserStatusCountDto"][];
+        };
         UserResponseForAdminDto: {
             id: string;
             email: string;
@@ -551,15 +598,14 @@ export interface components {
             firstName: string;
             lastName: string;
             isAdmin: boolean;
-            isDeleted: boolean;
-            isEnabled: boolean;
             /** @enum {string} */
-            status: "PENDING" | "ACTIVE";
+            status: "ACTIVE" | "PENDING" | "DISABLED" | "DELETED";
             /** Format: date-time */
             createdAt: string;
         };
         UserPatchRequestDto: {
             enabled?: boolean;
+            admin?: boolean;
         };
         UserDeleteRequestDto: {
             /** @description Permanently delete the account. Ignored for non-admin callers. */
@@ -631,6 +677,24 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    HealthController_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server is healthy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AuthController_googleAuth: {
         parameters: {
             query?: never;
@@ -1075,6 +1139,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    UserController_getUserStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserStatsResponseDto"];
+                };
             };
         };
     };

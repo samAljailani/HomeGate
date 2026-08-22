@@ -1,9 +1,16 @@
 export const UserStatus = {
-    PENDING: 'PENDING',
     ACTIVE: 'ACTIVE',
+    PENDING: 'PENDING',
+    DISABLED: 'DISABLED',
+    DELETED: 'DELETED'
 } as const
 
 export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus]
+
+export type UserStatusCountModel = {
+    status: UserStatus
+    count: number
+}
 
 export type UserModel = {
     id: string
@@ -12,8 +19,6 @@ export type UserModel = {
     firstName: string
     lastName: string
     isAdmin: boolean
-    isDeleted: boolean
-    isEnabled: boolean
     status: UserStatus
     createdAt: Date
 }
