@@ -1,24 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useInviteList } from '@/views/Invites/hooks/useInviteList'
+import { useInvitesPage } from '@/views/Invites/hooks/useInvitesPage'
 import { useInviteGenerator } from '@/views/Invites/hooks/useInviteGenerator'
 import { useInviteTable } from '@/views/Invites/hooks/useInviteTable'
-import { serviceService } from '@/services/service.service'
 import { InviteGenerator } from './components/InviteGenerator'
 import { InviteTable } from './components/InviteTable'
 
 export function AdminInvites() {
-    const { invites, isLoading, error: listError, refresh } = useInviteList()
+    const { invites, isLoading, error: listError, refresh, serviceOptions } = useInvitesPage()
     const generator = useInviteGenerator(refresh)
     const table = useInviteTable(refresh)
-    const [serviceOptions, setServiceOptions] = useState<string[]>([])
-
-    useEffect(() => {
-        serviceService.getAllServices().then((services) => {
-            setServiceOptions(services.map((s) => s.name))
-        }).catch((e) => { console.error('Failed to load services:', e) })
-    }, [])
 
     return (
         <div className="py-8 space-y-8">
