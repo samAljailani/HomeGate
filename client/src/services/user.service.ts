@@ -3,11 +3,11 @@ import type { components } from '@samaljailani/homegate-types'
 import { apiClient } from './api-client'
 import type { PaginationRequestDto } from '@/lib/apiPath'
 
-export type UserPatchRequestDto = components['schemas']['UserPatchRequestDto']
-export type UserDeleteRequestDto = components['schemas']['UserDeleteRequestDto']
-export type UserResponseForAdminDto =
-    components['schemas']['UserResponseForAdminDto']
-
+export type UserPatchRequestDto     = components['schemas']['UserPatchRequestDto']
+export type UserDeleteRequestDto    = components['schemas']['UserDeleteRequestDto']
+export type UserResponseForAdminDto = components['schemas']['UserResponseForAdminDto']
+export type UserStatsResponseDto    = components['schemas']['UserStatsResponseDto']
+export type UserStatusCountDto      = components['schemas']['UserStatusCountDto']
 /**
  * All user-related API calls live here. Components/hooks call these methods
  * instead of using `apiClient.GET/PATCH/DELETE(...)` directly, so:
@@ -31,6 +31,12 @@ class UserService {
         const { data, error } = await apiClient.GET('/api/users/{id}', {
             params: { path: { id } },
         })
+        if (error) throw error
+        return data
+    }
+
+    async getUserStats(): Promise<UserStatsResponseDto> {
+        const { data, error } = await apiClient.GET('/api/users/stats')
         if (error) throw error
         return data
     }

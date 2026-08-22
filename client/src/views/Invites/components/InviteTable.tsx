@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { usePreferences } from '@/context/preferences-context'
 import { preferences } from '@/constants/preferences'
 import { DataTableColumnToggle, DataTableSortableHead } from '@/components/ui/data-table'
+import { StatusBadge } from '@/components/ui/status-badge'
 import type { InviteResponseDto } from '@/services/invite.service'
 import type { EditingState } from '../hooks/useInviteTable'
 import {
@@ -56,15 +57,15 @@ function truncateId(id: string): string {
 
 function InviteStatusBadge({ invite }: { invite: InviteResponseDto }) {
     if (invite.revokedAt) {
-        return <span className="inline-block rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">Revoked</span>
+        return <StatusBadge tone="error">Revoked</StatusBadge>
     }
     if (invite.usedAt) {
-        return <span className="inline-block rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">Used</span>
+        return <StatusBadge tone="success">Used</StatusBadge>
     }
     if (new Date(invite.expiresAt) < new Date()) {
-        return <span className="inline-block rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Expired</span>
+        return <StatusBadge tone="neutral">Expired</StatusBadge>
     }
-    return <span className="inline-block rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400">Pending</span>
+    return <StatusBadge tone="info">Pending</StatusBadge>
 }
 
 
@@ -225,7 +226,7 @@ export function InviteTable({
                             <TableCell className="font-mono text-xs text-muted-foreground">new</TableCell>
                             {table.getVisibleFlatColumns().find(c => c.id === 'status') && (
                                 <TableCell>
-                                    <span className="inline-block rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400">Pending</span>
+                                    <StatusBadge tone="info">Pending</StatusBadge>
                                 </TableCell>
                             )}
                             {table.getVisibleFlatColumns().find(c => c.id === 'email') && (

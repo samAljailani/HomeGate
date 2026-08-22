@@ -1,5 +1,8 @@
 import { apiClient } from './api-client'
 import { path } from '@/lib/apiPath'
+import type { components } from '@samaljailani/homegate-types'
+
+export type SessionResponseDto = components['schemas']['SessionResponseDto']
 
 /**
  * All auth-related API calls live here. `getGoogleSignInUrl` and `getJoinUrl` are not
@@ -13,6 +16,12 @@ class AuthService {
 
     getJoinUrl(token: string): string {
         return `${window.location.origin}${path('/api/auth/join')}?token=${encodeURIComponent(token)}`
+    }
+
+    async getSession(): Promise<SessionResponseDto> {
+        const { data, error } = await apiClient.GET('/api/auth/session')
+        if (error) throw error
+        return data
     }
 
     async logout(): Promise<void> {

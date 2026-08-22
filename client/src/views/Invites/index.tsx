@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useInviteList } from '@/views/AdminInvites/hooks/useInviteList'
-import { useInviteGenerator } from '@/views/AdminInvites/hooks/useInviteGenerator'
-import { useInviteTable } from '@/views/AdminInvites/hooks/useInviteTable'
+import { useInviteList } from '@/views/Invites/hooks/useInviteList'
+import { useInviteGenerator } from '@/views/Invites/hooks/useInviteGenerator'
+import { useInviteTable } from '@/views/Invites/hooks/useInviteTable'
 import { serviceService } from '@/services/service.service'
 import { InviteGenerator } from './components/InviteGenerator'
 import { InviteTable } from './components/InviteTable'
