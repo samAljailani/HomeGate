@@ -8,13 +8,14 @@ import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 
 function createUserRepositoryMock(): jest.Mocked<
-    Pick<IUserRepository, 'findById' | 'softDelete' | 'hardDelete' | 'setEnabled' | 'findMany' | 'count'>
+    Pick<IUserRepository, 'findById' | 'softDelete' | 'hardDelete' | 'setEnabled' | 'setAdmin' | 'findMany' | 'count'>
 > {
     return {
         findById: jest.fn(),
         softDelete: jest.fn(),
         hardDelete: jest.fn(),
         setEnabled: jest.fn(),
+        setAdmin: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
     }
@@ -189,6 +190,25 @@ describe('UserService', () => {
 
     // #endregion enableUser
 
+    // #region setUserAdmin
+
+    describe('setUserAdmin', () => {
+        const userId = 'user-uuid-1'
+        const actorId = 'admin-user-uuid'
+
+        beforeEach(() => {
+            userRepositoryMock.setAdmin.mockResolvedValue(null)
+        })
+
+        it('calls setAdmin with provided value', async () => {
+            await service.setUserAdmin(userId, true, actorId)
+
+            expect(userRepositoryMock.setAdmin).toHaveBeenCalledWith(userId, true)
+        })
+    })
+
+    // #endregion setUserAdmin
+
     // #region listUsers
 
     describe('listUsers', () => {
@@ -235,8 +255,6 @@ describe('UserService', () => {
             expect(userRepositoryMock.findById).toHaveBeenCalledWith(userId)
             expect(result).not.toBeNull()
             expect(result!.id).toBe(userId)
-            expect(result).toHaveProperty('isEnabled')
-            expect(result).toHaveProperty('isDeleted')
         })
 
         it('returns null when user does not exist', async () => {

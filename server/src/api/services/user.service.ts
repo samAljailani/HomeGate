@@ -6,8 +6,9 @@ import {
     UserLoadRequestDto,
     UserResponseDto,
     UserResponseForAdminDto,
+    UserStatsResponseDto,
 } from '@/types/dtos/userDto'
-import { UserModel, UserFilterOptions } from '@/types/models/user'
+import { UserModel, UserFilterOptions, UserStatus } from '@/types/models/user'
 import { randomInt } from 'crypto'
 import { IUserOAuthIdentityRepository } from '@/data/repositories'
 import { OAuthIdentityCreateRequestDto, OAuthIdentityResponseDto } from '@/types/dtos/userOAuthIdentityDto'
@@ -119,8 +120,6 @@ export class UserService extends BaseService {
             firstName: user.firstName,
             lastName: user.lastName,
             isAdmin: user.isAdmin,
-            isDeleted: user.isDeleted,
-            isEnabled: user.isEnabled,
             status: user.status,
             createdAt: user.createdAt,
         }
@@ -145,6 +144,15 @@ export class UserService extends BaseService {
         return username
     }
 
+    async getUserStats(statuses?: UserStatus[]): Promise<UserStatsResponseDto> {
+        const totalUsers = await this.userRepository.count({});
+        const totalUsersByStatus = await this.userRepository.getUserCounts(statuses)
+
+        return {
+            total: totalUsers, 
+            byStatus: totalUsersByStatus
+        }
+    } 
     // #endregion User Methods
 
     // #region Delete Methods
@@ -173,6 +181,13 @@ export class UserService extends BaseService {
     async enableUser(userId: string): Promise<UserResponseForAdminDto | null> {
         const user = await this.userRepository.setEnabled(userId, true)
         this.logger.log(`User ${userId} enabled`)
+        return user ? this.userModelToLoadRequestForAdmin(user) : null
+    }
+
+    async setUserAdmin(userId: string, isAdmin: boolean, actedByUserId: string): Promise<UserResponseForAdminDto | null> {
+        const user = await this.userRepository.setAdmin(userId, isAdmin)
+
+        this.logger.log(`User ${userId} admin set to ${isAdmin} by ${actedByUserId}`)
         return user ? this.userModelToLoadRequestForAdmin(user) : null
     }
 
@@ -241,8 +256,6 @@ export class UserService extends BaseService {
             firstName: userModel.firstName,
             lastName: userModel.lastName,
             isAdmin: userModel.isAdmin,
-            isDeleted: userModel.isDeleted,
-            isEnabled: userModel.isEnabled,
             status: userModel.status,
             createdAt: userModel.createdAt,
         }

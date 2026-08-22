@@ -56,6 +56,7 @@ export const routes = {
         get: ':id',
         update: ':id',
         delete: ':id',
+        stats: 'stats'
     }),
     services: defineRoutes('/api/services', {
         list: '',

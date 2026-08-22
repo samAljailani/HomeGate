@@ -2,6 +2,7 @@ import { ExecutionContext } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { AuthGuard } from '@/api/middleware/auth.guard'
 import { IUserRepository } from '@/data/repositories'
+import { UserStatus } from '@/types/models/user'
 import { createRequestMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 
@@ -72,7 +73,7 @@ describe('AuthGuard', () => {
 
         describe('when user is soft-deleted', () => {
             it('destroys session and returns false', async () => {
-                const user = createUserFixture({ isDeleted: true })
+                const user = createUserFixture({ status: UserStatus.DELETED })
                 const req = createRequestMock()
                 req.session.userId = user.id
                 const ctx = createMockExecutionContext(req)
@@ -87,7 +88,7 @@ describe('AuthGuard', () => {
 
         describe('when user is disabled', () => {
             it('destroys session and returns false', async () => {
-                const user = createUserFixture({ isEnabled: false })
+                const user = createUserFixture({ status: UserStatus.DISABLED })
                 const req = createRequestMock()
                 req.session.userId = user.id
                 const ctx = createMockExecutionContext(req)

@@ -48,12 +48,6 @@ export class AuthService extends BaseService {
                 return null
             }
 
-            if (user.isDeleted || !user.isEnabled) {
-                this.logger.log(`Attempted login for user with email: ${request.email}, provider: ${request.provider}`)
-
-                return null
-            }
-
             if (user.status !== UserStatus.ACTIVE) {
                 // Only fully active accounts may log in (e.g. provisional PENDING accounts that
                 // have not completed the invite sign-up flow, or any future non-active state).
