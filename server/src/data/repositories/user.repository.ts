@@ -7,6 +7,7 @@ import type { UserModel as PrismaUser } from '@prisma/generated/models'
 import { CreateUserModel, UpdateUserModel, UserModel, UserFilterOptions } from '@/types/models/user'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
+import { UserStatus } from '@prisma/generated'
 
 @Injectable()
 export class UserRepository extends BaseRepository implements IUserRepository {
@@ -22,8 +23,6 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             firstName: user.firstName,
             lastName: user.lastName,
             isAdmin: user.isAdmin,
-            isDeleted: user.isDeleted,
-            isEnabled: user.isEnabled,
             status: user.status,
             createdAt: user.createdAt,
         }
@@ -191,7 +190,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
 
     async softDelete(id: string): Promise<boolean> {
         try {
-            await this.db.user.update({ where: { id }, data: { isDeleted: true, isEnabled: false } })
+            await this.db.user.update({ where: { id }, data: { status: UserStatus.DELETED } })
             return true
         } catch (error) {
             this.logger.error(`softDelete failed for id: ${id}`, {
@@ -221,7 +220,8 @@ export class UserRepository extends BaseRepository implements IUserRepository {
 
     async setEnabled(id: string, enabled: boolean): Promise<UserModel | null> {
         try {
-            const user = await this.db.user.update({ where: { id }, data: { isEnabled: enabled } })
+            const status = enabled ? UserStatus.ACTIVE : UserStatus.DISABLED
+            const user = await this.db.user.update({ where: { id }, data: { status } })
             return this.mapUser(user)
         } catch (error) {
             this.logger.error(`setEnabled failed for id: ${id}`, {

@@ -179,7 +179,7 @@ describe('UserController', () => {
         it('returns the list from the service', async () => {
             const user = createUserFixture()
             userServiceMock.listUsers.mockResolvedValue(
-                new PaginatedResponseDto([{ ...user, isDeleted: false, isEnabled: true, createdAt: user.createdAt }], 1, 0)
+                new PaginatedResponseDto([{ ...user, createdAt: user.createdAt }], 1, 0)
             )
 
             const result = await controller.listUsers({})
@@ -199,11 +199,7 @@ describe('UserController', () => {
 
         it('returns the user when found', async () => {
             const user = createUserFixture({ id: userId })
-            userServiceMock.getUserByIdForAdmin.mockResolvedValue({
-                ...user,
-                isDeleted: false,
-                isEnabled: true,
-            })
+            userServiceMock.getUserByIdForAdmin.mockResolvedValue(user)
 
             const result = await controller.getUser({ id: userId })
 

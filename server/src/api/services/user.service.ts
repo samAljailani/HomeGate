@@ -119,8 +119,6 @@ export class UserService extends BaseService {
             firstName: user.firstName,
             lastName: user.lastName,
             isAdmin: user.isAdmin,
-            isDeleted: user.isDeleted,
-            isEnabled: user.isEnabled,
             status: user.status,
             createdAt: user.createdAt,
         }
@@ -241,8 +239,6 @@ export class UserService extends BaseService {
             firstName: userModel.firstName,
             lastName: userModel.lastName,
             isAdmin: userModel.isAdmin,
-            isDeleted: userModel.isDeleted,
-            isEnabled: userModel.isEnabled,
             status: userModel.status,
             createdAt: userModel.createdAt,
         }

@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["HealthController_check"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/google": {
         parameters: {
             query?: never;
@@ -551,10 +567,8 @@ export interface components {
             firstName: string;
             lastName: string;
             isAdmin: boolean;
-            isDeleted: boolean;
-            isEnabled: boolean;
             /** @enum {string} */
-            status: "PENDING" | "ACTIVE";
+            status: "ACTIVE" | "PENDING" | "DISABLED" | "DELETED";
             /** Format: date-time */
             createdAt: string;
         };
@@ -631,6 +645,24 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    HealthController_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server is healthy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AuthController_googleAuth: {
         parameters: {
             query?: never;

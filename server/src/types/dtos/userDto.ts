@@ -108,14 +108,6 @@ export class UserDeleteRequestDto {
 }
 
 export class UserResponseForAdminDto extends UserResponseDto {
-    @ApiProperty({ type: Boolean })
-    @IsBoolean()
-    isDeleted: boolean
-
-    @ApiProperty({ type: Boolean })
-    @IsBoolean()
-    isEnabled: boolean
-
     @ApiProperty({ enum: UserStatus })
     @IsIn(Object.values(UserStatus))
     status: UserStatus

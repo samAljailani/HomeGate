@@ -235,8 +235,6 @@ describe('UserService', () => {
             expect(userRepositoryMock.findById).toHaveBeenCalledWith(userId)
             expect(result).not.toBeNull()
             expect(result!.id).toBe(userId)
-            expect(result).toHaveProperty('isEnabled')
-            expect(result).toHaveProperty('isDeleted')
         })
 
         it('returns null when user does not exist', async () => {
