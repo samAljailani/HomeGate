@@ -208,6 +208,23 @@ export interface paths {
         patch: operations["InviteController_update"];
         trace?: never;
     };
+    "/api/users/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a user statistics */
+        get: operations["UserController_getUserStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users": {
         parameters: {
             query?: never;
@@ -559,6 +576,20 @@ export interface components {
             /** Format: date-time */
             expiresAt?: string;
             isAdmin?: boolean;
+        };
+        UserStatusCountDto: {
+            /** @enum {string} */
+            status: "ACTIVE" | "PENDING" | "DISABLED" | "DELETED";
+            count: number;
+        };
+        UserStatsResponseDto: {
+            /**
+             * @description Total number of users
+             * @example 42
+             */
+            total: number;
+            /** @description User counts grouped by status */
+            byStatus: components["schemas"]["UserStatusCountDto"][];
         };
         UserResponseForAdminDto: {
             id: string;
@@ -1108,6 +1139,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    UserController_getUserStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserStatsResponseDto"];
+                };
             };
         };
     };
