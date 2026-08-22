@@ -82,6 +82,10 @@ export class UserController {
         }
 
         if (request.enabled !== undefined) {
+            if (params.id === req.session.userId) {
+                throw new ForbiddenException('You cannot disable your own account.')
+            }
+
             updatedUser = request.enabled
                 ? await this.userService.enableUser(params.id)
                 : await this.userService.disableUser(params.id)
@@ -107,6 +111,9 @@ export class UserController {
 
         // Non-admins may only soft-delete their own account; the hard flag is ignored for them.
         if (body?.hard && sessionIsAdmin) {
+            if (params.id === sessionUserId) {
+                throw new ForbiddenException('You cannot permanently delete your own account.')
+            }
             return this.userService.hardDeleteUser(params.id)
         }
 
