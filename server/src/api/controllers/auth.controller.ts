@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Request, Inject, Res, UseGuards, Query } from '@nestjs/common'
 import { ApiOkResponse, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { AuthService } from '@/api/services/auth.service'
+import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
 import { OAuthUserProfileDto, SessionResponseDto } from '@/types/dtos/authDto'
 import { GoogleOAuthGuard } from '@/api/middleware/google-oauth.guard'
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
@@ -14,9 +15,19 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 export class AuthController {
     constructor(
         @Inject(AuthService) private readonly authService: AuthService,
+        @Inject(OAuthProviderManagementService) private readonly oauthProviderManagementService: OAuthProviderManagementService,
         @Inject(LoggingProvider) private readonly logger: LoggingProvider,
     ) {
         this.logger.setContext(AuthController.name)
+    }
+
+    @Public()
+    @Get(routes.auth.subPath.providers)
+    @Throttle({ default: { ttl: 60_000, limit: 30 } })
+    @ApiOperation({ summary: 'List enabled OAuth providers available for sign-in' })
+    @ApiOkResponse({ type: [String] })
+    async getEnabledProviders(): Promise<string[]> {
+        return this.oauthProviderManagementService.listEnabledNames()
     }
 
     @Get(routes.auth.subPath.session)

@@ -1,4 +1,5 @@
 import { AuthService } from '@/api/services/auth.service'
+import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
 import { createAuthServiceMock } from '../../mocks/auth.service.mock'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -10,6 +11,13 @@ import { createUserFixture } from '../../fixtures/user.stub'
 import { clientRoutes } from '@/api/controllers/client-routes'
 import { NotFoundException } from '@nestjs/common'
 import { OAuthAuthModel } from '@/types/models/oauthAuth'
+import { OAuthProviderName } from '@prisma/generated'
+
+function createOAuthProviderManagementServiceMock(): jest.Mocked<Pick<OAuthProviderManagementService, 'listEnabledNames'>> {
+    return {
+        listEnabledNames: jest.fn(),
+    }
+}
 
 function createOAuthAuthResultFixture(overrides: Partial<OAuthAuthModel> = {}): OAuthAuthModel {
     const user = createUserFixture()
@@ -19,12 +27,14 @@ function createOAuthAuthResultFixture(overrides: Partial<OAuthAuthModel> = {}): 
 describe('AuthController', () => {
     let controller: AuthController
     let authServiceMock: ReturnType<typeof createAuthServiceMock>
+    let oauthProviderManagementMock: ReturnType<typeof createOAuthProviderManagementServiceMock>
     let loggingProviderMock: ReturnType<typeof createLoggerMock>
     let expressRequestMock: ReturnType<typeof createRequestMock>
     let expressResponseMock: ReturnType<typeof createResponseMock>
 
     beforeEach(async () => {
         authServiceMock = createAuthServiceMock()
+        oauthProviderManagementMock = createOAuthProviderManagementServiceMock()
         loggingProviderMock = createLoggerMock()
         expressRequestMock = createRequestMock()
         expressResponseMock = createResponseMock()
@@ -32,6 +42,7 @@ describe('AuthController', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 { provide: AuthService, useValue: authServiceMock },
+                { provide: OAuthProviderManagementService, useValue: oauthProviderManagementMock },
                 { provide: LoggingProvider, useValue: loggingProviderMock },
                 AuthController,
             ],
@@ -43,6 +54,21 @@ describe('AuthController', () => {
     it('should be defined', () => {
         expect(controller).toBeDefined()
     })
+
+    // #region getEnabledProviders
+
+    describe('getEnabledProviders', () => {
+        it('returns the enabled provider names from the service', async () => {
+            oauthProviderManagementMock.listEnabledNames.mockResolvedValue([OAuthProviderName.google])
+
+            const result = await controller.getEnabledProviders()
+
+            expect(oauthProviderManagementMock.listEnabledNames).toHaveBeenCalled()
+            expect(result).toEqual([OAuthProviderName.google])
+        })
+    })
+
+    // #endregion getEnabledProviders
 
     // #region join
 

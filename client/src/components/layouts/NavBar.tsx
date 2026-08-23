@@ -21,6 +21,7 @@ const navigationItems: NavItem[] = [
             { label: 'invites', href: config.routes.invites },
             { label: 'users',   href: config.routes.users },
             { label: 'services', href: config.routes.services },
+            { label: 'oauth providers', href: config.routes.oauthProviders },
         ],
     },
 ]

@@ -6,6 +6,7 @@ export const config = Object.freeze({
         admin: '/admin',
         invites: '/admin/invites',
         users: '/admin/users',
-        services: '/admin/services'
+        services: '/admin/services',
+        oauthProviders: '/admin/oauth-providers'
     },
 })

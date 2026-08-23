@@ -62,6 +62,31 @@ describe('OAuthProviderManagementService', () => {
 
     // #endregion list
 
+    // #region listEnabledNames
+
+    describe('listEnabledNames', () => {
+        it('queries the repository filtered to enabled providers', async () => {
+            providerRepositoryMock.findMany.mockResolvedValue([createOAuthProviderFixture({ enabled: true })])
+
+            await service.listEnabledNames()
+
+            expect(providerRepositoryMock.findMany).toHaveBeenCalledWith({ enabled: true })
+        })
+
+        it('returns just the provider names', async () => {
+            const providers = [
+                createOAuthProviderFixture({ id: 1, name: OAuthProviderName.google, enabled: true }),
+            ]
+            providerRepositoryMock.findMany.mockResolvedValue(providers)
+
+            const result = await service.listEnabledNames()
+
+            expect(result).toEqual([OAuthProviderName.google])
+        })
+    })
+
+    // #endregion listEnabledNames
+
     // #region enable
 
     describe('enable', () => {

@@ -24,6 +24,12 @@ class AuthService {
         return data
     }
 
+    async getEnabledProviders(): Promise<string[]> {
+        const { data, error } = await apiClient.GET('/api/auth/providers')
+        if (error) throw error
+        return data
+    }
+
     async logout(): Promise<void> {
         const { error } = await apiClient.POST('/api/auth/signOut')
         if (error) throw error

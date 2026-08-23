@@ -35,6 +35,7 @@ export const routes = {
         googleRedirect: 'google/redirect',
         signOut: 'signOut',
         session: 'session',
+        providers: 'providers',
     }),
     csrf: defineRoutes('/api/csrf', {}),
     subscriptions: defineRoutes('/api/subscriptions', {
@@ -85,6 +86,7 @@ export const clientRoutes = {
     adminInvites: '/admin/invites',
     adminUsers: '/admin/users',
     adminServices: '/admin/services',
+    adminOAuthProviders: '/admin/oauth-providers',
     error: '/error',
 } as const
 
