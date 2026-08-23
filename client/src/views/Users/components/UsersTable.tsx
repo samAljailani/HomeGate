@@ -32,9 +32,9 @@ interface UsersTableProps {
     isLoading: boolean
     pendingId: string | null
     onDisable: (id: string) => void
-    onEnable: (id: string) => void
-    onSoftDelete: (id: string) => void
-    onHardDelete: (id: string) => void
+    onEnable: (id: string, currentStatus: UserResponseForAdminDto['status']) => void
+    onSoftDelete: (id: string, currentStatus: UserResponseForAdminDto['status']) => void
+    onHardDelete: (id: string, currentStatus: UserResponseForAdminDto['status']) => void
     onSetAdmin: (id: string, admin: boolean) => void
 }
 
@@ -246,11 +246,11 @@ export function UsersTable({
         if (!pendingAction) return
         const { type, user } = pendingAction
         if (type === 'disable') onDisable(user.id)
-        if (type === 'enable') onEnable(user.id)
-        if (type === 'recover') onEnable(user.id)
-        if (type === 'softDelete') onSoftDelete(user.id)
+        if (type === 'enable') onEnable(user.id, user.status)
+        if (type === 'recover') onEnable(user.id, user.status)
+        if (type === 'softDelete') onSoftDelete(user.id, user.status)
         if (type === 'setAdmin') onSetAdmin(user.id, pendingAction.nextAdmin)
-        // if (type === 'hardDelete') onHardDelete(user.id)
+        // if (type === 'hardDelete') onHardDelete(user.id, user.status)
     }
 
     if (isLoading) {

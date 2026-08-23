@@ -1,16 +1,17 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { userService, type UserResponseForAdminDto } from '@/services/user.service'
+import { userService, type UserResponseForAdminDto, type UserStatus } from '@/services/user.service'
 import { addToastMessage } from '@/lib/utils'
 
 interface UsersListMutators {
     patchUser: (id: string, patch: Partial<UserResponseForAdminDto>) => void
     removeUser: (id: string) => void
-    refresh: () => void
+    transitionStatus: (from: UserStatus, to: UserStatus) => void
+    decrement: (status: UserStatus) => void
 }
 
-export function useUsersTable({ patchUser, removeUser, refresh }: UsersListMutators) {
+export function useUsersTable({ patchUser, removeUser, transitionStatus, decrement }: UsersListMutators) {
     const [actionError, setActionError] = useState<string | null>(null)
     const [pendingId, setPendingId] = useState<string | null>(null)
 
@@ -20,63 +21,63 @@ export function useUsersTable({ patchUser, removeUser, refresh }: UsersListMutat
         try {
             await userService.updateUser(id, { enabled: false })
             patchUser(id, { status: 'DISABLED' })
+            transitionStatus('ACTIVE', 'DISABLED')
             addToastMessage('success', 'User disabled')
         } catch {
             setActionError('Failed to disable user')
             addToastMessage('error', 'Failed to disable user')
         } finally {
             setPendingId(null)
-            refresh()
         }
-    }, [patchUser])
+    }, [patchUser, transitionStatus])
 
-    const enableUser = useCallback(async (id: string) => {
+    const enableUser = useCallback(async (id: string, currentStatus: UserStatus) => {
         setActionError(null)
         setPendingId(id)
         try {
             await userService.updateUser(id, { enabled: true })
             patchUser(id, { status: 'ACTIVE' })
+            transitionStatus(currentStatus, 'ACTIVE')
             addToastMessage('success', 'User enabled')
         } catch {
             setActionError('Failed to enable user')
             addToastMessage('error', 'Failed to enable user')
         } finally {
             setPendingId(null)
-            refresh()
         }
-    }, [patchUser])
+    }, [patchUser, transitionStatus])
 
-    const softDeleteUser = useCallback(async (id: string) => {
+    const softDeleteUser = useCallback(async (id: string, currentStatus: UserStatus) => {
         setActionError(null)
         setPendingId(id)
         try {
             await userService.deleteUser(id, { hard: false })
             patchUser(id, { status: 'DELETED' })
+            transitionStatus(currentStatus, 'DELETED')
             addToastMessage('success', 'User deleted')
         } catch {
             setActionError('Failed to delete user')
             addToastMessage('error', 'Failed to delete user')
         } finally {
             setPendingId(null)
-            refresh()
         }
-    }, [patchUser])
+    }, [patchUser, transitionStatus])
 
-    const hardDeleteUser = useCallback(async (id: string) => {
+    const hardDeleteUser = useCallback(async (id: string, currentStatus: UserStatus) => {
         setActionError(null)
         setPendingId(id)
         try {
             await userService.deleteUser(id, { hard: true })
             removeUser(id)
+            decrement(currentStatus)
             addToastMessage('success', 'User permanently deleted')
         } catch {
             setActionError('Failed to permanently delete user')
             addToastMessage('error', 'Failed to permanently delete user')
         } finally {
             setPendingId(null)
-            refresh()
         }
-    }, [removeUser])
+    }, [removeUser, decrement])
 
     const setUserAdmin = useCallback(async (id: string, admin: boolean) => {
         setActionError(null)
