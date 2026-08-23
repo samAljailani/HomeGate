@@ -102,7 +102,7 @@ function createProviderWrapper(methods: Record<string, (...args: never[]) => unk
     class FakeProvider extends TaskService {
         constructor() {
             // The mocked TaskService base class takes no constructor arguments at runtime.
-            super(undefined as never, undefined as never, undefined as never)
+            super(undefined as never, undefined as never, undefined as never, undefined as never, undefined as never, undefined as never)
         }
     }
 

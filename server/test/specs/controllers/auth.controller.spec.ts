@@ -28,7 +28,7 @@ function createSessionServiceMock(): jest.Mocked<Pick<SessionService, 'enforceLi
 
 function createOAuthAuthResultFixture(overrides: Partial<OAuthAuthModel> = {}): OAuthAuthModel {
     const user = createUserFixture()
-    return { id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: 1, ...overrides }
+    return { id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: 1, avatarUrl: null, ...overrides }
 }
 
 describe('AuthController', () => {

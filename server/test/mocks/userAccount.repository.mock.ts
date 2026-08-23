@@ -7,6 +7,7 @@ export function createUserAccountRepositoryMock(): jest.Mocked<IUserAccountRepos
         findMany: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        count: jest.fn(),
         delete: jest.fn(),
     }
 }

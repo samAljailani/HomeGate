@@ -9,6 +9,7 @@ export function createUserFixture(overrides: Partial<UserModel> = {}): UserModel
         lastName: 'User',
         isAdmin: false,
         status: UserStatus.ACTIVE,
+        avatarUrl: null,
         createdAt: new Date('2026-01-01T00:00:00Z'),
         ...overrides,
     }
