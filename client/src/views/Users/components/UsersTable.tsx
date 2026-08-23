@@ -39,10 +39,10 @@ interface UsersTableProps {
 }
 
 type PendingAction =
-    | { type: 'disable' | 'enable' | 'softDelete' /* | 'hardDelete' */; user: UserResponseForAdminDto }
+    | { type: 'disable' | 'enable' | 'softDelete' | 'recover' /* | 'hardDelete' */; user: UserResponseForAdminDto }
     | { type: 'setAdmin'; user: UserResponseForAdminDto; nextAdmin: boolean }
 
-const ACTION_CONFIG: Record<'disable' | 'enable' | 'softDelete', {
+const ACTION_CONFIG: Record<'disable' | 'enable' | 'softDelete' | 'recover', {
     title: string
     description: (user: UserResponseForAdminDto) => string
     confirmLabel: string
@@ -64,6 +64,11 @@ const ACTION_CONFIG: Record<'disable' | 'enable' | 'softDelete', {
         description: (user) => `${user.username} will be marked as deleted but can be recovered by an admin.`,
         confirmLabel: 'Delete',
         variant: 'destructive',
+    },
+    recover: {
+        title: 'Recover user?',
+        description: (user) => `${user.username} will be restored to active status.`,
+        confirmLabel: 'Recover',
     },
     // hardDelete: {
     //     title: 'Permanently delete user?',
@@ -242,6 +247,7 @@ export function UsersTable({
         const { type, user } = pendingAction
         if (type === 'disable') onDisable(user.id)
         if (type === 'enable') onEnable(user.id)
+        if (type === 'recover') onEnable(user.id)
         if (type === 'softDelete') onSoftDelete(user.id)
         if (type === 'setAdmin') onSetAdmin(user.id, pendingAction.nextAdmin)
         // if (type === 'hardDelete') onHardDelete(user.id)
@@ -284,7 +290,17 @@ export function UsersTable({
                                         return (
                                             <TableCell key={cell.id}>
                                                 <div className="flex items-center gap-1">
-                                                    {!isSelf && (user.status === 'DISABLED' ? (
+                                                    {!isSelf && (user.status === 'DELETED' ? (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon-sm"
+                                                            title="Recover"
+                                                            disabled={isPending}
+                                                            onClick={() => setPendingAction({ type: 'recover', user })}
+                                                        >
+                                                            <CircleCheckIcon className="size-4 text-green-600" />
+                                                        </Button>
+                                                    ) : user.status === 'DISABLED' ? (
                                                         <Button
                                                             variant="ghost"
                                                             size="icon-sm"
@@ -299,18 +315,18 @@ export function UsersTable({
                                                             variant="ghost"
                                                             size="icon-sm"
                                                             title="Disable"
-                                                            disabled={isPending || user.status === 'DELETED'}
+                                                            disabled={isPending}
                                                             onClick={() => setPendingAction({ type: 'disable', user })}
                                                         >
                                                             <OctagonXIcon className="size-4 text-amber-600" />
                                                         </Button>
                                                     ))}
-                                                    {!isSelf && (
+                                                    {!isSelf && user.status !== 'DELETED' && (
                                                         <Button
                                                             variant="ghost"
                                                             size="icon-sm"
                                                             title="Delete"
-                                                            disabled={isPending || user.status === 'DELETED'}
+                                                            disabled={isPending}
                                                             onClick={() => setPendingAction({ type: 'softDelete', user })}
                                                         >
                                                             <Trash2 className="size-4 text-destructive" />
