@@ -98,6 +98,16 @@ jobs:
           EOF
           sed -i 's/^[[:space:]]*//' .env
 
+      - name: Verify required secrets
+        working-directory: work
+        run: |
+          for key in POSTGRES_PASSWORD SESSION_SECRET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET; do
+            if ! grep -q "^$key=.\+" .env; then
+              echo "::error::Required secret '$key' is empty or missing for environment '${{ inputs.environment }}'. Set it in repo Settings → Environments → ${{ inputs.environment }}."
+              exit 1
+            fi
+          done
+
       - name: Build image
         working-directory: work
         run: |
