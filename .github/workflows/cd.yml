@@ -90,6 +90,7 @@ jobs:
           DOMAIN=${{ vars.DOMAIN }}
           APP_SUBDOMAIN=${{ vars.APP_SUBDOMAIN }}
           SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+          SESSION_COOKIE_NAME=${{ secrets.SESSION_COOKIE_NAME }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
           POSTGRES_USER=${{ vars.POSTGRES_USER }}
@@ -97,6 +98,16 @@ jobs:
           POSTGRES_DB=${{ vars.POSTGRES_DB }}
           EOF
           sed -i 's/^[[:space:]]*//' .env
+
+      - name: Verify required secrets
+        working-directory: work
+        run: |
+          for key in POSTGRES_PASSWORD SESSION_SECRET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET; do
+            if ! grep -q "^$key=.\+" .env; then
+              echo "::error::Required secret '$key' is empty or missing for environment '${{ inputs.environment }}'. Set it in repo Settings → Environments → ${{ inputs.environment }}."
+              exit 1
+            fi
+          done
 
       - name: Build image
         working-directory: work
