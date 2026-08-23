@@ -5,5 +5,6 @@ export const preferences = Object.freeze({
         adminUsers: 'admin-users',
         adminServices: 'admin-services',
         adminOAuthProviders: 'admin-oauth-providers',
+        adminSubscriptions: 'admin-subscriptions',
     },
 })

@@ -23,6 +23,7 @@ export {
     OctagonXIcon,
     Pencil,
     Plus,
+    RefreshCw,
     Save,
     Settings2,
     Sun,

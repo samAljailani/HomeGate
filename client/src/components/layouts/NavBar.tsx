@@ -22,6 +22,7 @@ const navigationItems: NavItem[] = [
             { label: 'users',   href: config.routes.users },
             { label: 'services', href: config.routes.services },
             { label: 'oauth providers', href: config.routes.oauthProviders },
+            { label: 'subscriptions', href: config.routes.subscriptions },
         ],
     },
 ]

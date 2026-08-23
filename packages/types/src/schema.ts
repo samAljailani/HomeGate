@@ -613,6 +613,12 @@ export interface components {
             provisionedAt?: string | null;
             /** Format: date-time */
             cancelledAt?: string | null;
+            /** @description The subscribing user's HomeGate username (admin listings only) */
+            userUsername?: string;
+            /** @description The subscribing user's email (admin listings only) */
+            userEmail?: string;
+            /** @description The subscribed-to service's display name (admin listings only) */
+            serviceName?: string;
         };
         SubscriptionPatchRequestDto: {
             enabled?: boolean;

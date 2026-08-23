@@ -63,6 +63,12 @@ export class ClientRouteController {
         return this.sendPage(res, clientRoutes.adminOAuthProviders)
     }
 
+    @AdminRoute()
+    @Get(clientRoutes.adminSubscriptions)
+    adminSubscriptions(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminSubscriptions)
+    }
+
     @Public()
     @Get('*path')
     notFound(@Res() res: Response) {

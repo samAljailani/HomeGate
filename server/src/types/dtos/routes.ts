@@ -87,6 +87,7 @@ export const clientRoutes = {
     adminUsers: '/admin/users',
     adminServices: '/admin/services',
     adminOAuthProviders: '/admin/oauth-providers',
+    adminSubscriptions: '/admin/subscriptions',
     error: '/error',
 } as const
 

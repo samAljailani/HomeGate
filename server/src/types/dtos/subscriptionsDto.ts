@@ -41,6 +41,15 @@ export class SubscriptionResponseDto {
 
     @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
     cancelledAt: Date | null
+
+    @ApiPropertyOptional({ type: String, description: 'The subscribing user\'s HomeGate username (admin listings only)' })
+    userUsername?: string
+
+    @ApiPropertyOptional({ type: String, description: 'The subscribing user\'s email (admin listings only)' })
+    userEmail?: string
+
+    @ApiPropertyOptional({ type: String, description: 'The subscribed-to service\'s display name (admin listings only)' })
+    serviceName?: string
 }
 
 export class SubscriptionParamsDto {
