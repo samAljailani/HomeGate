@@ -96,6 +96,29 @@ export class UserAccountRepository extends BaseRepository implements IUserAccoun
         }
     }
 
+    async count(filter: UserAccountFilterOptions = {}): Promise<number> {
+        try {
+            const { statuses, expiresBefore, expiresAfter, ...rest } = filter
+            return await this.db.userAccount.count({
+                where: {
+                    ...rest,
+                    ...(statuses && { status: { in: statuses } }),
+                    ...((expiresBefore || expiresAfter) && {
+                        expiresAt: {
+                            ...(expiresBefore && { lt: expiresBefore }),
+                            ...(expiresAfter && { gt: expiresAfter }),
+                        },
+                    }),
+                },
+            })
+        } catch (error) {
+            this.logger.error('count failed', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.userAccount)
+        }
+    }
+
     async create(request: CreateUserAccountModel): Promise<UserAccountModel | null> {
         try {
             const userAccount = await this.db.userAccount.create({ data: request })

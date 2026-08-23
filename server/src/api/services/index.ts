@@ -1,5 +1,6 @@
 import { AuthService } from './auth.service'
 import { ConfigService } from './config.service'
+import { DashboardService } from './dashboard.service'
 import { InviteService } from './invite.service'
 import { InviteAccountLinkingService } from './inviteAccountLinking.service'
 import { LogService } from './log.service'
@@ -24,4 +25,5 @@ export const services = [
     TaskService,
     SchedulerService,
     SessionService,
+    DashboardService,
 ]

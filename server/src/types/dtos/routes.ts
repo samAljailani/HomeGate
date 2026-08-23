@@ -84,6 +84,9 @@ export const routes = {
         revoke: ':id',
         config: 'config',
     }),
+    dashboard: defineRoutes('/api/dashboard', {
+        stats: 'stats',
+    }),
     test: defineRoutes('/api/test', {}),
 } satisfies RoutesConfig
 

@@ -13,7 +13,7 @@ import { config } from '@/constants/app'
 import { NavItem, NavItemLink } from './navItem'
 
 const navigationItems: NavItem[] = [
-    { name: 'Dashboard', href: config.routes.home, current: false },
+    { name: 'Dashboard', href: config.routes.admin, current: false },
     {
         name: 'Admin',
         current: false,

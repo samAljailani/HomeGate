@@ -534,6 +534,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dashboard/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get aggregate admin dashboard statistics */
+        get: operations["DashboardController_getStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/signin": {
         parameters: {
             query?: never;
@@ -943,6 +960,39 @@ export interface components {
         };
         UpdateSessionConfigDto: {
             maxPerUser: number;
+        };
+        DashboardUsersDto: {
+            total: number;
+            active: number;
+            pending: number;
+            disabled: number;
+        };
+        DashboardSessionsDto: {
+            active: number;
+            expired: number;
+        };
+        DashboardSubscriptionsDto: {
+            total: number;
+            active: number;
+        };
+        DashboardTasksDto: {
+            total: number;
+            /** @description Tasks whose most recent run failed */
+            failing: number;
+        };
+        DashboardErrorDto: {
+            id: number;
+            message: string;
+            context: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        DashboardStatsResponseDto: {
+            users: components["schemas"]["DashboardUsersDto"];
+            sessions: components["schemas"]["DashboardSessionsDto"];
+            subscriptions: components["schemas"]["DashboardSubscriptionsDto"];
+            tasks: components["schemas"]["DashboardTasksDto"];
+            recentErrors: components["schemas"]["DashboardErrorDto"][];
         };
         PaginationRequestDto: {
             /** @default 50 */
@@ -1934,6 +1984,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    DashboardController_getStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardStatsResponseDto"];
+                };
             };
         };
     };
