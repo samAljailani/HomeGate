@@ -44,8 +44,10 @@ export const routes = {
         me: 'me',
         get: ':id',
         update: ':id',
+        autoRenew: ':id/auto-renew',
         renew: ':id/renew',
         delete: ':id',
+        resetPassword: ':id/reset-password',
     }),
     invites: defineRoutes('/api/invites', {
         create: '',
@@ -58,7 +60,8 @@ export const routes = {
         get: ':id',
         update: ':id',
         delete: ':id',
-        stats: 'stats'
+        stats: 'stats',
+        avatar: 'me/avatar',
     }),
     services: defineRoutes('/api/services', {
         list: '',
@@ -93,7 +96,9 @@ export const routes = {
 export const clientRoutes = {
     home: '/',
     signIn: '/signin',
+    account: '/account',
     admin: '/admin',
+    adminDashboard: '/admin/dashboard',
     adminInvites: '/admin/invites',
     adminUsers: '/admin/users',
     adminServices: '/admin/services',

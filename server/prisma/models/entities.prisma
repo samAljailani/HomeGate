@@ -9,6 +9,7 @@ model User {
   deletedAt       DateTime?           @map("deleted_at") @db.Timestamptz(6)
   createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   username        String              @unique @db.VarChar(64)
+  avatarUrl       String?             @map("avatar_url") @db.VarChar(512)
   userSessions    Session[]           @relation("UserSessions")
   userAccounts    UserAccount[]       @relation("UserAccounts")
   oauthIdentities UserOAuthIdentity[] @relation("UserOAuthIdentities")

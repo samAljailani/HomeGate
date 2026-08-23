@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Inject, NotFoundException, Par
 import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { SessionService } from '@/api/services/session.service'
-import { SessionResponseDto, SessionParamsDto, SessionConfigResponseDto, UpdateSessionConfigDto } from '@/types/dtos/sessionDto'
+import { AdminSessionResponseDto, SessionParamsDto, SessionConfigResponseDto, UpdateSessionConfigDto } from '@/types/dtos/sessionDto'
 import { PaginatedResponseDto, PaginationRequestDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
@@ -16,8 +16,8 @@ export class SessionController {
     @ApiOperation({ summary: 'List active sessions (admin only)' })
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
-    @ApiPaginatedResponse(SessionResponseDto)
-    async list(@Query() query: PaginationRequestDto): Promise<PaginatedResponseDto<SessionResponseDto>> {
+    @ApiPaginatedResponse(AdminSessionResponseDto)
+    async list(@Query() query: PaginationRequestDto): Promise<PaginatedResponseDto<AdminSessionResponseDto>> {
         return this.sessionService.list(query.take, query.skip)
     }
 

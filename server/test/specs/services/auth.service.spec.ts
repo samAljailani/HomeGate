@@ -137,6 +137,7 @@ describe('AuthService', () => {
                     username: user.username,
                     isAdmin: user.isAdmin,
                     providerId: provider.id,
+                    avatarUrl: null,
                 })
             })
         })
@@ -188,6 +189,7 @@ describe('AuthService', () => {
                     username: user.username,
                     isAdmin: user.isAdmin,
                     providerId: provider.id,
+                    avatarUrl: null,
                 })
             })
         })

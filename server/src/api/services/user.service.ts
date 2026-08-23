@@ -65,6 +65,15 @@ export class UserService extends BaseService {
         return this.userModelToLoadRequestForAdmin(user)
     }
 
+    async updateAvatar(userId: string, avatarUrl: string): Promise<void> {
+        await this.userRepository.setAvatar(userId, avatarUrl)
+    }
+
+    async getAvatarUrl(userId: string): Promise<string | null> {
+        const user = await this.userRepository.findById(userId)
+        return user?.avatarUrl ?? null
+    }
+
     async purgeDeletedUsers(retentionDays: number): Promise<boolean> {
         const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60_000)
         const deleted = await this.userRepository.deleteDeletedOlderThan(cutoff)
@@ -239,6 +248,7 @@ export class UserService extends BaseService {
             lastName: userModel.lastName,
             isAdmin: userModel.isAdmin,
             status: userModel.status,
+            avatarUrl: userModel.avatarUrl,
             createdAt: userModel.createdAt,
         }
 
@@ -253,6 +263,7 @@ export class UserService extends BaseService {
             firstName: userModel.firstName,
             lastName: userModel.lastName,
             isAdmin: userModel.isAdmin,
+            avatarUrl: userModel.avatarUrl,
         }
 
         return dto

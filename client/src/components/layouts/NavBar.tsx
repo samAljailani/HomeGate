@@ -5,19 +5,22 @@ import { usePathname } from 'next/navigation'
 import { classNames } from '@/utils/styles'
 import { IconHamburger } from '@/components/ui/icons/IconHamburger'
 import { IconX } from '@/components/ui/icons/IconX'
-import { IconBell } from '@/components/ui/icons/IconBell'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { authService } from '@/services/auth.service'
+import { useAuthContext } from '@/context/auth-context'
 import { config } from '@/constants/app'
 import { NavItem, NavItemLink } from './navItem'
 
 const navigationItems: NavItem[] = [
-    { name: 'Dashboard', href: config.routes.admin, current: false },
+    { name: 'Dashboard', href: config.routes.home, current: false },
+    { name: 'Account', href: config.routes.account, current: false },
     {
         name: 'Admin',
         current: false,
+        adminOnly: true,
         dropdownItems: [
+            { label: 'dashboard', href: config.routes.adminDashboard },
             { label: 'invites', href: config.routes.invites },
             { label: 'users',   href: config.routes.users },
             { label: 'services', href: config.routes.services },
@@ -32,21 +35,28 @@ const navigationItems: NavItem[] = [
 
 export default function NavBar(): JSX.Element {
     const [mobileOpen, setMobileOpen] = useState<boolean>(false)
+    const [avatarError, setAvatarError] = useState(false)
     const pathname = usePathname()
+    const { user } = useAuthContext()
+
+    const initials = (user?.username ?? '?').slice(0, 2).toUpperCase()
+    const showAvatar = !!user?.avatarUrl && !avatarError
 
     const navigation = useMemo(() =>
-        navigationItems.map((item) => {
-            const href = item.href
-            const childMatch = item.dropdownItems?.some((child) =>
-                child.href && pathname.startsWith(child.href)
-            )
-            if (!href && !childMatch) return item
-            const current =
-                childMatch ||
-                (href === '/' ? pathname === '/' : !!href && pathname.startsWith(href))
-            return { ...item, current }
-        }),
-        [pathname]
+        navigationItems
+            .filter((item) => !item.adminOnly || user?.isAdmin)
+            .map((item) => {
+                const href = item.href
+                const childMatch = item.dropdownItems?.some((child) =>
+                    child.href && pathname.startsWith(child.href)
+                )
+                if (!href && !childMatch) return item
+                const current =
+                    childMatch ||
+                    (href === '/' ? pathname === '/' : !!href && pathname.startsWith(href))
+                return { ...item, current }
+            }),
+        [pathname, user?.isAdmin]
     )
 
     return (
@@ -104,14 +114,6 @@ export default function NavBar(): JSX.Element {
 
                     <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
                         <ThemeToggle />
-                        <button
-                            type="button"
-                            className="relative rounded-full p-1 text-muted hover:text-nav focus:outline-2 focus:outline-offset-2 focus:outline-accent"
-                        >
-                            <span className="absolute -inset-1.5" />
-                            <span className="sr-only">View notifications</span>
-                            <IconBell className="size-6" />
-                        </button>
 
                         {/* Profile dropdown */}
                         <DropdownMenu
@@ -122,16 +124,21 @@ export default function NavBar(): JSX.Element {
                                     <span className="sr-only">
                                         Open user menu
                                     </span>
-                                    <img
-                                        alt=""
-                                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                                        className="size-8 rounded-full bg-nav-active outline -outline-offset-1 outline-default"
-                                    />
+                                    {showAvatar ? (
+                                        <img
+                                            alt=""
+                                            src={`${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''}/api/users/me/avatar`}
+                                            onError={() => setAvatarError(true)}
+                                            className="size-8 rounded-full bg-nav-active outline -outline-offset-1 outline-default"
+                                        />
+                                    ) : (
+                                        <span className="flex size-8 items-center justify-center rounded-full bg-nav-active text-xs font-semibold text-nav-active outline -outline-offset-1 outline-default">
+                                            {initials}
+                                        </span>
+                                    )}
                                 </>
                             }
                             items={[
-                                { label: 'Your profile', href: '/profile' },
-                                { label: 'Settings', href: '/settings' },
                                 {
                                     label: 'Sign out',
                                     className: 'text-error',

@@ -3,4 +3,5 @@ export type OAuthAuthModel = {
     username: string
     isAdmin: boolean
     providerId: number
+    avatarUrl: string | null
 }

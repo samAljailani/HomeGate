@@ -10,10 +10,11 @@ import {
     Patch,
     Query,
     Request,
+    Res,
 } from '@nestjs/common'
 import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
-import type { Request as ExpressRequest } from 'express'
+import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
 import { AdminRoute } from '@/decorators'
 import { UserService } from '@/api/services/user.service'
 import {
@@ -47,6 +48,31 @@ export class UserController {
     @ApiPaginatedResponse(UserResponseForAdminDto)
     async listUsers(@Query() pagination: PaginationRequestDto): Promise<PaginatedResponseDto<UserResponseForAdminDto>> {
         return this.userService.listUsers(pagination.take, pagination.skip)
+    }
+
+    @Get(routes.users.subPath.avatar)
+    @ApiOperation({ summary: "Proxy the current user's avatar image" })
+    async getAvatar(@Request() req: ExpressRequest, @Res() res: ExpressResponse) {
+        const avatarUrl = await this.userService.getAvatarUrl(req.session.userId!)
+        if (!avatarUrl) {
+            return res.status(404).send()
+        }
+
+        try {
+            const upstream = await fetch(avatarUrl)
+            if (!upstream.ok || !upstream.body) {
+                return res.status(502).send()
+            }
+
+            const contentType = upstream.headers.get('content-type')
+            if (contentType) res.setHeader('Content-Type', contentType)
+            res.setHeader('Cache-Control', 'private, max-age=300')
+
+            const buffer = Buffer.from(await upstream.arrayBuffer())
+            return res.send(buffer)
+        } catch {
+            return res.status(502).send()
+        }
     }
 
     @Get(routes.users.subPath.get)

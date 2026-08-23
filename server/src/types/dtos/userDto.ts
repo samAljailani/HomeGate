@@ -68,6 +68,11 @@ export class UserResponseDto {
     @ApiProperty({ type: Boolean })
     @IsBoolean()
     isAdmin: boolean
+
+    @ApiPropertyOptional({ type: String, nullable: true })
+    @IsOptional()
+    @IsString()
+    avatarUrl?: string | null
 }
 
 export class UserUpdateRequestDto {

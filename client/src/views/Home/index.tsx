@@ -8,8 +8,11 @@ export function Home() {
     const { services, subscribedServiceIds, isLoading } = useHomePage()
 
     return (
-        <div className="my-3">
-            <h2 className="font-bold text-lg">Services</h2>
+        <div className="py-8 space-y-8">
+            <div>
+                <h1 className="text-2xl font-bold">Services</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Launch a service or sign up for access.</p>
+            </div>
 
             {isLoading ? (
                 <div className="flex min-h-40 w-full items-center justify-center">

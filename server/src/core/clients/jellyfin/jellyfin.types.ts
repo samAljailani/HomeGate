@@ -17,5 +17,6 @@ export const jellyfinEndpoints = Object.freeze({
     getUser: (userId: string) => `/Users/${userId}`,
     getAllUsers: '/Users',
     updateUserPolicy: (userId: string) => `/Users/${userId}/Policy`,
+    updateUserPassword: (userId: string) => `/Users/${userId}/Password`,
     deleteUser: (userId: string) => `/Users/${userId}`,
 })

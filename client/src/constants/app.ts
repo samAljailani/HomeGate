@@ -3,7 +3,9 @@ export const config = Object.freeze({
     routes: {
         home: '/',
         signIn: '/signin',
+        account: '/account',
         admin: '/admin',
+        adminDashboard: '/admin/dashboard',
         invites: '/admin/invites',
         users: '/admin/users',
         services: '/admin/services',

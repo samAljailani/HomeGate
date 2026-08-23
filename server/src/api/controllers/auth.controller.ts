@@ -41,6 +41,7 @@ export class AuthController {
             id: req.session.userId!,
             username: req.session.username!,
             isAdmin: req.session.isAdmin ?? false,
+            avatarUrl: req.session.avatarUrl ?? null,
         }
     }
 
@@ -160,6 +161,9 @@ export class AuthController {
                     req.session.username = response.username
                     req.session.isAdmin = response.isAdmin
                     req.session.authProviderId = response.providerId
+                    if (response.avatarUrl != null) {
+                        req.session.avatarUrl = response.avatarUrl
+                    }
 
                     req.session.save((err) => {
                         if (err) return reject(err)

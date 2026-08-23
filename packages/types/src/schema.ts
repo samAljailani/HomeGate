@@ -206,6 +206,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/subscriptions/{id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset the service account password (subscription owner only) */
+        post: operations["SubscriptionController_resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subscriptions/{id}/auto-renew": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Toggle auto-renew for the subscription owner */
+        patch: operations["SubscriptionController_setAutoRenew"];
+        trace?: never;
+    };
     "/api/invites": {
         parameters: {
             query?: never;
@@ -599,6 +633,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_account"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -615,14 +665,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin": {
+    "/admin/dashboard": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["ClientRouteController_admin"];
+        get: operations["ClientRouteController_adminDashboard"];
         put?: never;
         post?: never;
         delete?: never;
@@ -764,17 +814,11 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         SessionResponseDto: {
+            /** Format: uuid */
             id: string;
-            userId?: string | null;
-            username?: string | null;
-            provider?: string | null;
-            ipAddress?: string | null;
-            device?: string | null;
-            browser?: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            expiresAt: string;
+            username: string;
+            isAdmin: boolean;
+            avatarUrl: string | null;
         };
         SubscriptionCreateRequestDto: {
             serviceId: number;
@@ -818,6 +862,13 @@ export interface components {
         SubscriptionDeleteRequestDto: {
             /** @description Immediately delete the external account instead of cancelling auto-renew */
             immediate?: boolean;
+        };
+        SubscriptionPasswordResetDto: {
+            newPassword: string;
+            confirmPassword: string;
+        };
+        SubscriptionAutoRenewDto: {
+            autoRenew: boolean;
         };
         InviteAccountDto: {
             serviceName: string;
@@ -883,6 +934,7 @@ export interface components {
             firstName: string;
             lastName: string;
             isAdmin: boolean;
+            avatarUrl?: string | null;
             /** @enum {string} */
             status: "ACTIVE" | "PENDING" | "DISABLED" | "DELETED";
             /** Format: date-time */
@@ -953,6 +1005,19 @@ export interface components {
             enabled?: boolean;
             runOnStartup?: boolean;
             cronExpression?: string;
+        };
+        AdminSessionResponseDto: {
+            id: string;
+            userId?: string | null;
+            username?: string | null;
+            provider?: string | null;
+            ipAddress?: string | null;
+            device?: string | null;
+            browser?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
         };
         SessionConfigResponseDto: {
             /** @description Maximum concurrent sessions allowed per user; oldest are evicted at login */
@@ -1385,6 +1450,84 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Subscription renewed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionResponseDto"];
+                };
+            };
+            /** @description Subscription not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SubscriptionController_resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionPasswordResetDto"];
+            };
+        };
+        responses: {
+            /** @description Password reset successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Passwords do not match or account not provisioned */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Subscription not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description External service unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SubscriptionController_setAutoRenew: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionAutoRenewDto"];
+            };
+        };
+        responses: {
+            /** @description Auto-renew updated */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1917,7 +2060,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        data: components["schemas"]["SessionResponseDto"][];
+                        data: components["schemas"]["AdminSessionResponseDto"][];
                         total: number;
                         hasMore: boolean;
                     };
@@ -2057,6 +2200,23 @@ export interface operations {
             };
         };
     };
+    ClientRouteController_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ClientRouteController_adminUsers: {
         parameters: {
             query?: never;
@@ -2074,7 +2234,7 @@ export interface operations {
             };
         };
     };
-    ClientRouteController_admin: {
+    ClientRouteController_adminDashboard: {
         parameters: {
             query?: never;
             header?: never;

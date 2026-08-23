@@ -21,6 +21,8 @@ export interface IApplicationManager {
     deleteUser(filters: FilterApplicationUserParam): Promise<boolean>
     disableUser(filters: FilterApplicationUserParam): Promise<boolean>
     enableUser(filters: FilterApplicationUserParam): Promise<boolean>
+    /** Resets the service account password using the configured admin API key. Clients resolve the account from whichever filter fields are set. */
+    resetPassword(filters: FilterApplicationUserParam, newPassword: string): Promise<boolean>
     //updateUser(userServiceAccountId: string) : Promise<ApplicationUserModel | null>
     //updatePassword(userServiceAccountId: string, password: string) : Promise<ApplicationUserModel | null>
 }

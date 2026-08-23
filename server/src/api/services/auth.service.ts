@@ -85,9 +85,14 @@ export class AuthService extends BaseService {
                 })
             }
 
+            // Keep the avatar fresh — the provider picture can change between sign-ins.
+            if (request.picture && request.picture !== user.avatarUrl) {
+                await this.userService.updateAvatar(user.id, request.picture)
+            }
+
             this.logger.log(`user ${user.username} successfully logged in`)
 
-            return { id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: provider.id }
+            return { id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: provider.id, avatarUrl: request.picture ?? user.avatarUrl ?? null }
         } catch (error: unknown) {
             const stackTrace = error instanceof Error ? error.stack : undefined
             this.logger.error(
@@ -168,7 +173,7 @@ export class AuthService extends BaseService {
 
         this.logger.log(`User ${account.username} registered via invite ${invite.id}`)
 
-        return { id: account.id, username: account.username, isAdmin: account.isAdmin, providerId: provider.id }
+        return { id: account.id, username: account.username, isAdmin: account.isAdmin, providerId: provider.id, avatarUrl: profile.picture ?? account.avatarUrl ?? null }
     }
 
     async signOut(userId: string | undefined, username?: string | undefined): Promise<void> {

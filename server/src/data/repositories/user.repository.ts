@@ -31,6 +31,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             lastName: user.lastName,
             isAdmin: user.isAdmin,
             status: user.status,
+            avatarUrl: user.avatarUrl,
             createdAt: user.createdAt,
         }
     }
@@ -228,6 +229,18 @@ export class UserRepository extends BaseRepository implements IUserRepository {
             return this.mapUser(user)
         } catch (error) {
             this.logger.error(`setAdmin failed for id: ${id}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.user)
+        }
+    }
+
+    async setAvatar(id: string, avatarUrl: string): Promise<UserModel | null> {
+        try {
+            const user = await this.db.user.update({ where: { id }, data: { avatarUrl } })
+            return this.mapUser(user)
+        } catch (error) {
+            this.logger.error(`setAvatar failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.user)

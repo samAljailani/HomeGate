@@ -5,7 +5,7 @@ import { IOAuthProviderRepository } from '@/data/repositories/IOAuthProviderRepo
 import { ISystemMetadataRepository } from '@/data/repositories/ISystemMetadataRepository'
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
-import { SessionResponseDto, SessionConfigResponseDto, UpdateSessionConfigDto } from '@/types/dtos/sessionDto'
+import { AdminSessionResponseDto, SessionConfigResponseDto, UpdateSessionConfigDto } from '@/types/dtos/sessionDto'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 import { SystemConfigKey } from '@/types/models/SystemConfig'
 
@@ -21,7 +21,7 @@ export class SessionService extends BaseService {
         super(logger)
     }
 
-    async list(take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<SessionResponseDto>> {
+    async list(take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<AdminSessionResponseDto>> {
         const sessions = await this.sessionRepository.findMany({}, take, skip)
         const total = await this.sessionRepository.count()
 
@@ -42,7 +42,7 @@ export class SessionService extends BaseService {
         const usernameById = new Map(users.filter((u) => u != null).map((u) => [u!.id, u!.username]))
         const providerNameById = new Map(providers.filter((p) => p != null).map((p) => [p!.id, p!.name]))
 
-        const data: SessionResponseDto[] = sessions.map((s) => ({
+        const data: AdminSessionResponseDto[] = sessions.map((s) => ({
             id: s.id,
             userId: s.userId,
             username: s.userId != null ? (usernameById.get(s.userId) ?? null) : null,
@@ -68,7 +68,7 @@ export class SessionService extends BaseService {
         }
     }
 
-    async findById(id: string): Promise<SessionResponseDto | null> {
+    async findById(id: string): Promise<AdminSessionResponseDto | null> {
         const session = await this.sessionRepository.findByRecordId(id)
         if (!session) return null
         return {

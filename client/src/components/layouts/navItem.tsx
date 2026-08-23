@@ -6,6 +6,7 @@ export interface NavItem {
     name: string
     href?: string
     current: boolean
+    adminOnly?: boolean
     //onClick?: () => void
     dropdownItems?: DropdownMenuItem[]
 }
@@ -38,6 +39,7 @@ export function NavItemLink({
     return item.dropdownItems?.length ? (
         <DropdownMenu
             className="ml-3"
+            align="left"
             trigger={linkItem}
             items={item.dropdownItems}
         />

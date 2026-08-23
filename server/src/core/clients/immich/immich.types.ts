@@ -17,5 +17,6 @@ export const immichEndpoints = Object.freeze({
     getUser: (userId: string) => `/admin/users/${userId}`,
     getAllUsers: (withDeleted: string) => `/admin/users?withDeleted=${withDeleted}`, //TODO include with deleted query parameter
     restoreUser: (userId: string) => `/admin/users/${userId}/restore`,
+    updateUser: (userId: string) => `/admin/users/${userId}`,
     deleteUser: (userId: string) => `/admin/users/${userId}`,
 })

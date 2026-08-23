@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsInt, IsNotEmpty, IsUUID, Max, Min } from 'class-validator'
 
-export class SessionResponseDto {
+export class AdminSessionResponseDto {
     @ApiProperty({ type: String })
     id!: string
 

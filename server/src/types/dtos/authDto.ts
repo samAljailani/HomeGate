@@ -25,6 +25,11 @@ export class SessionResponseDto {
     @ApiProperty({ type: Boolean })
     @IsBoolean()
     isAdmin: boolean
+
+    @ApiProperty({ type: String, nullable: true })
+    @IsOptional()
+    @IsString()
+    avatarUrl?: string | null
 }
 
 export class OpenIDRequestDto {

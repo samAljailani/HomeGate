@@ -15,11 +15,8 @@ import { IconMoreOptions } from '../../../components/ui/icons/IconMoreOptions'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import { classNames } from '@/utils/styles'
 import { SignUpForm } from '@/views/Home/components/SignUp'
-import {
-    addToastMessage,
-    capitalizeFirstLetter,
-    copyToClipboard,
-} from '@/lib/utils'
+import { addToastMessage, capitalizeFirstLetter, copyToClipboard } from '@/lib/utils'
+import { config } from '@/constants/app'
 
 // const ServiceCardsVariants = cva(
 //   "",
@@ -76,12 +73,11 @@ export function ServiceCard({
         }
     }
     const dropDownMenuItems = [
-        { label: 'Manage subscription', href: '#' },
+        { label: 'Manage subscription', href: config.routes.account },
         {
             label: 'Copy link',
             onClick: copyServiceLink,
         },
-        // { label: "Sign out", onClick: () => console.log("Sign out") },
     ]
 
     let footerButton: React.ReactNode
@@ -110,13 +106,13 @@ export function ServiceCard({
 
     return (
         <div className={classNames('px-0.5 py-1 sm:p-2 w-full', className)}>
-            <Card className="relative text-muted w-full pt-0 flex flex-col shadow-sm transition-shadow hover:shadow-md">
+            <Card className="relative w-full pt-0 flex flex-col rounded-lg border bg-linear-to-br to-card shadow-sm transition-shadow hover:shadow-md">
                 {isLocked && (
-                    <div className="absolute top-0 left-0 w-full h-full bg-stone-500/50 z-10 flex items-center justify-center rounded-xl">
+                    <div className="absolute top-0 left-0 w-full h-full bg-stone-500/50 z-10 flex items-center justify-center rounded-lg">
                         <IconLock className="size-10 " />
                     </div>
                 )}
-                <CardContent className="relative px-0 pt-0 overflow-hidden rounded-t-xl">
+                <CardContent className="relative px-0 pt-0 overflow-hidden rounded-t-lg">
                     {showImage ? (
                         <img
                             src={imageUrl}

@@ -18,4 +18,5 @@ export interface IUserRepository {
     hardDelete(id: string): Promise<boolean>
     setEnabled(id: string, enabled: boolean): Promise<UserModel | null>
     setAdmin(id: string, isAdmin: boolean): Promise<UserModel | null>
+    setAvatar(id: string, avatarUrl: string): Promise<UserModel | null>
 }

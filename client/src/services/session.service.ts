@@ -2,7 +2,7 @@ import type { components } from '@samaljailani/homegate-types'
 
 import { apiClient } from './api-client'
 
-export type SessionResponseDto = components['schemas']['SessionResponseDto']
+export type SessionResponseDto = components['schemas']['AdminSessionResponseDto']
 export type SessionConfigResponseDto = components['schemas']['SessionConfigResponseDto']
 export type SessionsPageResponseDto = {
     data: SessionResponseDto[]

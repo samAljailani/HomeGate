@@ -27,10 +27,12 @@ import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import {
+    SubscriptionAutoRenewDto,
     SubscriptionCreateRequestDto,
     SubscriptionDeleteRequestDto,
     SubscriptionListRequestDto,
     SubscriptionParamsDto,
+    SubscriptionPasswordResetDto,
     SubscriptionPatchRequestDto,
     SubscriptionResponseDto,
 } from '@/types/dtos/subscriptionsDto'
@@ -131,5 +133,37 @@ export class SubscriptionController {
         @Request() req: ExpressRequest
     ): Promise<boolean> {
         return this.subscriptionService.delete(params.id, req.session.userId!, body?.immediate)
+    }
+
+    @Post(routes.subscriptions.subPath.resetPassword)
+    @Throttle({ default: { ttl: 60_000, limit: 5 } })
+    @ApiOperation({ summary: 'Reset the service account password (subscription owner only)' })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
+    @ApiBody({ type: SubscriptionPasswordResetDto })
+    @ApiOkResponse({ description: 'Password reset successfully' })
+    @ApiBadRequestResponse({ description: 'Passwords do not match or account not provisioned' })
+    @ApiNotFoundResponse({ description: 'Subscription not found' })
+    @ApiServiceUnavailableResponse({ description: 'External service unavailable' })
+    async resetPassword(
+        @Param() params: SubscriptionParamsDto,
+        @Body() body: SubscriptionPasswordResetDto,
+        @Request() req: ExpressRequest
+    ): Promise<boolean> {
+        return this.subscriptionService.resetAccountPassword(params.id, req.session.userId!, body.newPassword)
+    }
+
+    @Patch(routes.subscriptions.subPath.autoRenew)
+    @Throttle({ default: { ttl: 60_000, limit: 10 } })
+    @ApiOperation({ summary: 'Toggle auto-renew for the subscription owner' })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
+    @ApiBody({ type: SubscriptionAutoRenewDto })
+    @ApiOkResponse({ description: 'Auto-renew updated', type: SubscriptionResponseDto })
+    @ApiNotFoundResponse({ description: 'Subscription not found' })
+    async setAutoRenew(
+        @Param() params: SubscriptionParamsDto,
+        @Body() body: SubscriptionAutoRenewDto,
+        @Request() req: ExpressRequest
+    ): Promise<SubscriptionResponseDto> {
+        return this.subscriptionService.setAutoRenew(params.id, req.session.userId!, body.autoRenew)
     }
 }
