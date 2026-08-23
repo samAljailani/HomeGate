@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY server/package.json ./server/
 
-RUN npm ci --workspace=server && npm approve-scripts --all
+RUN npm ci --workspace=server --omit=dev && npm approve-scripts --all
 
 # Prisma runtime files
 COPY server/prisma ./server/prisma
