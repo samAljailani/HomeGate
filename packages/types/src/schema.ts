@@ -431,6 +431,57 @@ export interface paths {
         patch: operations["TaskController_updateTask"];
         trace?: never;
     };
+    "/api/tasks/{name}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a scheduled task */
+        post: operations["TaskController_startTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{name}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop a scheduled task */
+        post: operations["TaskController_stopTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{name}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run a task immediately, regardless of its enabled state or schedule */
+        post: operations["TaskController_runTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/signin": {
         parameters: {
             query?: never;
@@ -567,6 +618,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["ClientRouteController_adminSubscriptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/scheduled-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminScheduledTasks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -767,6 +850,12 @@ export interface components {
             runOnStartup: boolean;
             cronExpression: string;
             isActive: boolean;
+            /** Format: date-time */
+            lastAttemptedRunAt?: string | null;
+            /** Format: date-time */
+            lastSuccessfulRunAt?: string | null;
+            /** @description Duration in milliseconds of the last attempted run */
+            lastRunDurationMs?: number | null;
         };
         UpdateTaskConfigDto: {
             enabled?: boolean;
@@ -1615,6 +1704,69 @@ export interface operations {
             };
         };
     };
+    TaskController_startTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskConfigResponseDto"];
+                };
+            };
+        };
+    };
+    TaskController_stopTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskConfigResponseDto"];
+                };
+            };
+        };
+    };
+    TaskController_runTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskConfigResponseDto"];
+                };
+            };
+        };
+    };
     ClientRouteController_signIn: {
         parameters: {
             query?: never;
@@ -1752,6 +1904,40 @@ export interface operations {
         };
     };
     ClientRouteController_adminSubscriptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminLogs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminScheduledTasks: {
         parameters: {
             query?: never;
             header?: never;

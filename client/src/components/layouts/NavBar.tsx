@@ -24,6 +24,7 @@ const navigationItems: NavItem[] = [
             { label: 'oauth providers', href: config.routes.oauthProviders },
             { label: 'subscriptions', href: config.routes.subscriptions },
             { label: 'logs', href: config.routes.logs },
+            { label: 'scheduled tasks', href: config.routes.scheduledTasks },
         ],
     },
 ]

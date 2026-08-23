@@ -14,7 +14,7 @@ import {
 } from '@/types/models/user'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
-import { UserStatus as PrismaUserStatus, UserStatus } from '@prisma/generated'
+import { UserStatus } from '@prisma/generated'
 
 @Injectable()
 export class UserRepository extends BaseRepository implements IUserRepository {
@@ -112,31 +112,6 @@ export class UserRepository extends BaseRepository implements IUserRepository {
         }
     }
 
-    async createProvisional(request: CreateUserModel): Promise<UserModel> {
-        try {
-            const user = await this.db.user.create({
-                data: { ...request, status: 'PENDING', provisionedAt: new Date() },
-            })
-            return this.mapUser(user)
-        } catch (error) {
-            this.logger.error(`createProvisional failed for email: ${request.email}`, {
-                stackTrace: error instanceof Error ? error.stack : undefined,
-            })
-            mapPrismaError(error, repositoryErrorMessages.user)
-        }
-    }
-
-    async touchProvisional(id: string): Promise<void> {
-        try {
-            await this.db.user.update({ where: { id }, data: { provisionedAt: new Date() } })
-        } catch (error) {
-            this.logger.error(`touchProvisional failed for id: ${id}`, {
-                stackTrace: error instanceof Error ? error.stack : undefined,
-            })
-            mapPrismaError(error, repositoryErrorMessages.user)
-        }
-    }
-
     async activate(id: string): Promise<UserModel> {
         try {
             const user = await this.db.user.update({ where: { id }, data: { status: 'ACTIVE' } })
@@ -149,26 +124,14 @@ export class UserRepository extends BaseRepository implements IUserRepository {
         }
     }
 
-    async findPendingByEmail(email: string): Promise<UserModel | null> {
-        try {
-            const user = await this.db.user.findFirst({ where: { email, status: 'PENDING' } })
-            return user ? this.mapUser(user) : null
-        } catch (error) {
-            this.logger.error(`findPendingByEmail failed for email: ${email}`, {
-                stackTrace: error instanceof Error ? error.stack : undefined,
-            })
-            mapPrismaError(error, repositoryErrorMessages.user)
-        }
-    }
-
-    async deletePendingOlderThan(cutoff: Date): Promise<number> {
+    async deleteDeletedOlderThan(cutoff: Date): Promise<number> {
         try {
             const result = await this.db.user.deleteMany({
-                where: { status: 'PENDING', provisionedAt: { lt: cutoff } },
+                where: { status: 'DELETED', deletedAt: { lt: cutoff } },
             })
             return result.count
         } catch (error) {
-            this.logger.error('deletePendingOlderThan failed', {
+            this.logger.error('deleteDeletedOlderThan failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.user)
@@ -218,7 +181,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
 
     async softDelete(id: string): Promise<boolean> {
         try {
-            await this.db.user.update({ where: { id }, data: { status: UserStatus.DELETED } })
+            await this.db.user.update({ where: { id }, data: { status: UserStatus.DELETED, deletedAt: new Date() } })
             return true
         } catch (error) {
             this.logger.error(`softDelete failed for id: ${id}`, {
@@ -249,7 +212,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
     async setEnabled(id: string, enabled: boolean): Promise<UserModel | null> {
         try {
             const status = enabled ? UserStatus.ACTIVE : UserStatus.DISABLED
-            const user = await this.db.user.update({ where: { id }, data: { status } })
+            const user = await this.db.user.update({ where: { id }, data: { status, deletedAt: null } })
             return this.mapUser(user)
         } catch (error) {
             this.logger.error(`setEnabled failed for id: ${id}`, {

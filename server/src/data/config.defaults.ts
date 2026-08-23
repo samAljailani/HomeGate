@@ -18,10 +18,20 @@ const taskDefaults: TasksSystemConfig = Object.freeze({
         runOnStartup: true,
         cronExpression: CronExpression.EVERY_12_HOURS,
     },
-    [ScheduledTasks.CLEANUP_PENDING_USERS]: {
+    [ScheduledTasks.CLEANUP_DELETED_USERS]: {
         enabled: true,
-        runOnStartup: true,
-        cronExpression: '*/2 * * * *',
+        runOnStartup: false,
+        cronExpression: CronExpression.EVERY_DAY_AT_MIDNIGHT,
+    },
+    [ScheduledTasks.PURGE_OLD_LOGS]: {
+        enabled: true,
+        runOnStartup: false,
+        cronExpression: CronExpression.EVERY_DAY_AT_1AM,
+    },
+    [ScheduledTasks.PURGE_OLD_TASK_RUNS]: {
+        enabled: true,
+        runOnStartup: false,
+        cronExpression: CronExpression.EVERY_DAY_AT_2AM,
     },
 }) as TasksSystemConfig
 

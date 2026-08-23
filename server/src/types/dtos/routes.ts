@@ -75,6 +75,9 @@ export const routes = {
     tasks: defineRoutes('/api/tasks', {
         list: '',
         update: ':name',
+        start: ':name/start',
+        stop: ':name/stop',
+        run: ':name/run',
     }),
     test: defineRoutes('/api/test', {}),
 } satisfies RoutesConfig
@@ -89,6 +92,7 @@ export const clientRoutes = {
     adminOAuthProviders: '/admin/oauth-providers',
     adminSubscriptions: '/admin/subscriptions',
     adminLogs: '/admin/logs',
+    adminScheduledTasks: '/admin/scheduled-tasks',
     error: '/error',
 } as const
 

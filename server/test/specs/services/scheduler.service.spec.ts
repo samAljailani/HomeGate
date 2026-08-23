@@ -9,6 +9,7 @@ import { CronJob } from 'cron'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { TaskService } from '@/api/services/tasks.service'
 import { ISystemMetadataRepository } from '@/data/repositories/ISystemMetadataRepository'
+import { ITaskRunRepository } from '@/data/repositories/ITaskRunRepository'
 import { TasksSystemConfig } from '@/types/models/SystemConfig'
 
 // Replace TaskService with a bare class so fake providers can extend it (satisfying the
@@ -26,10 +27,20 @@ const defaultTaskConfig: TasksSystemConfig = {
         runOnStartup: false,
         cronExpression: '0 0 */12 * * *',
     },
-    [ScheduledTasks.CLEANUP_PENDING_USERS]: {
+    [ScheduledTasks.CLEANUP_DELETED_USERS]: {
         enabled: true,
-        runOnStartup: true,
-        cronExpression: '*/2 * * * *',
+        runOnStartup: false,
+        cronExpression: '0 0 0 * * *',
+    },
+    [ScheduledTasks.PURGE_OLD_LOGS]: {
+        enabled: true,
+        runOnStartup: false,
+        cronExpression: '0 0 1 * * *',
+    },
+    [ScheduledTasks.PURGE_OLD_TASK_RUNS]: {
+        enabled: true,
+        runOnStartup: false,
+        cronExpression: '0 0 2 * * *',
     },
 }
 
@@ -40,6 +51,13 @@ function createSystemMetadataRepositoryMock(overrides: Partial<TasksSystemConfig
         set: jest.fn().mockResolvedValue(undefined),
         exists: jest.fn().mockResolvedValue(true),
         syncDefaults: jest.fn().mockResolvedValue([]),
+    }
+}
+
+function createTaskRunRepositoryMock() {
+    return {
+        findLatest: jest.fn().mockResolvedValue(null),
+        findLatestSuccessful: jest.fn().mockResolvedValue(null),
     }
 }
 
@@ -100,12 +118,14 @@ describe('SchedulerService', () => {
     let schedulerRegistryMock: ReturnType<typeof createSchedulerRegistryMock>
     let discoveryServiceMock: ReturnType<typeof createDiscoveryServiceMock>
     let systemMetadataRepositoryMock: ReturnType<typeof createSystemMetadataRepositoryMock>
+    let taskRunRepositoryMock: ReturnType<typeof createTaskRunRepositoryMock>
 
     beforeEach(async () => {
         loggerMock = createLoggerMock()
         schedulerRegistryMock = createSchedulerRegistryMock()
         discoveryServiceMock = createDiscoveryServiceMock()
         systemMetadataRepositoryMock = createSystemMetadataRepositoryMock()
+        taskRunRepositoryMock = createTaskRunRepositoryMock()
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -116,6 +136,7 @@ describe('SchedulerService', () => {
                 { provide: Reflector, useValue: new Reflector() },
                 { provide: MetadataScanner, useValue: new MetadataScanner() },
                 { provide: ISystemMetadataRepository, useValue: systemMetadataRepositoryMock },
+                { provide: ITaskRunRepository, useValue: taskRunRepositoryMock },
             ],
         }).compile()
 
@@ -129,6 +150,38 @@ describe('SchedulerService', () => {
 
     it('should be defined', () => {
         expect(service).toBeDefined()
+    })
+
+    describe('getTaskConfigs', () => {
+        it('includes last attempted run, last successful run, and the last run duration', async () => {
+            const attemptedAt = new Date('2026-08-23T10:00:00Z')
+            const successfulAt = new Date('2026-08-22T10:00:00Z')
+            taskRunRepositoryMock.findLatest.mockResolvedValue({
+                id: 'run-1',
+                taskName: ScheduledTasks.PROCESS_SUBSCRIPTIONS,
+                startedAt: attemptedAt,
+                finishedAt: new Date('2026-08-23T10:00:01.250Z'),
+                success: false,
+                errorMessage: 'External service unavailable',
+            })
+            taskRunRepositoryMock.findLatestSuccessful.mockResolvedValue({
+                id: 'run-2',
+                taskName: ScheduledTasks.PROCESS_SUBSCRIPTIONS,
+                startedAt: successfulAt,
+                finishedAt: new Date('2026-08-22T10:00:00.100Z'),
+                success: true,
+                errorMessage: null,
+            })
+
+            const configs = await service.getTaskConfigs()
+            const config = configs.find((item) => item.name === ScheduledTasks.PROCESS_SUBSCRIPTIONS)
+
+            expect(config).toMatchObject({
+                lastAttemptedRunAt: attemptedAt,
+                lastSuccessfulRunAt: successfulAt,
+                lastRunDurationMs: 1250,
+            })
+        })
     })
 
     // #region startAll / discovery

@@ -75,6 +75,12 @@ export class ClientRouteController {
         return this.sendPage(res, clientRoutes.adminLogs)
     }
 
+    @AdminRoute()
+    @Get(clientRoutes.adminScheduledTasks)
+    adminScheduledTasks(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminScheduledTasks)
+    }
+
     @Public()
     @Get('*path')
     notFound(@Res() res: Response) {

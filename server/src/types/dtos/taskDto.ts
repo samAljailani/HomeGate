@@ -40,4 +40,13 @@ export class TaskConfigResponseDto {
 
     @ApiProperty({ type: Boolean })
     isActive!: boolean
+
+    @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+    lastAttemptedRunAt!: Date | null
+
+    @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+    lastSuccessfulRunAt!: Date | null
+
+    @ApiPropertyOptional({ type: Number, nullable: true, description: 'Duration in milliseconds of the last attempted run' })
+    lastRunDurationMs!: number | null
 }

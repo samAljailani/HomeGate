@@ -509,9 +509,8 @@ export class SubscriptionService {
             const service = serviceMap.get(account.serviceId)
             return {
                 ...this.mapSubscription(account),
-                userUsername: user?.username,
-                userEmail: user?.email,
-                serviceName: service?.name,
+                ...(user ? { userUsername: user.username, userEmail: user.email } : {}),
+                ...(service ? { serviceName: service.name } : {}),
             }
         })
     }
