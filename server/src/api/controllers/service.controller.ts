@@ -31,7 +31,7 @@ export class ServiceController {
     @ApiBody({ type: ServicePatchRequestDto })
     @ApiOkResponse({ type: ServiceResponseDto })
     async update(@Param() params: ServiceParamsDto, @Body() request: ServicePatchRequestDto): Promise<ServiceResponseDto> {
-        if (request.enabled === undefined && request.imageUrl === undefined) {
+        if (request.enabled === undefined && request.url === undefined && request.imageUrl === undefined) {
             throw new BadRequestException('No fields provided to update')
         }
 
@@ -42,6 +42,10 @@ export class ServiceController {
             service = request.enabled
                 ? await this.serviceManagementService.enable(name)
                 : await this.serviceManagementService.disable(name)
+        }
+
+        if (request.url !== undefined) {
+            service = await this.serviceManagementService.updateUrl(name, request.url)
         }
 
         if (request.imageUrl !== undefined) {

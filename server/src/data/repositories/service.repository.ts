@@ -152,6 +152,23 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
+    async setUrl(name: ApplicationClientNames, url: string | null): Promise<ServiceModel | null> {
+        try {
+            const service = await this.db.service.update({
+                where: { name },
+                data: { url },
+            })
+
+            return this.mapService(service)
+        } catch (error) {
+            this.logger.error(`setUrl failed for name: ${name}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+
+            mapPrismaError(error, repositoryErrorMessages.service)
+        }
+    }
+
     async create(request: CreateServiceModel): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.create({

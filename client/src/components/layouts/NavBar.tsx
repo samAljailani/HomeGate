@@ -20,6 +20,7 @@ const navigationItems: NavItem[] = [
         dropdownItems: [
             { label: 'invites', href: config.routes.invites },
             { label: 'users',   href: config.routes.users },
+            { label: 'services', href: config.routes.services },
         ],
     },
 ]

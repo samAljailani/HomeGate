@@ -5,6 +5,7 @@ export const config = Object.freeze({
         signIn: '/signin',
         admin: '/admin',
         invites: '/admin/invites',
-        users: '/admin/users'
+        users: '/admin/users',
+        services: '/admin/services'
     },
 })

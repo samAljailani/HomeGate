@@ -84,6 +84,7 @@ export const clientRoutes = {
     admin: '/admin',
     adminInvites: '/admin/invites',
     adminUsers: '/admin/users',
+    adminServices: '/admin/services',
     error: '/error',
 } as const
 

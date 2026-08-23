@@ -510,6 +510,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminServices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/{path}": {
         parameters: {
             query?: never;
@@ -659,6 +675,7 @@ export interface components {
         };
         ServicePatchRequestDto: {
             enabled?: boolean;
+            url?: string | null;
             imageUrl?: string | null;
         };
         ExternalAccountResponseDto: {
@@ -1606,6 +1623,23 @@ export interface operations {
         };
     };
     ClientRouteController_adminInvites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminServices: {
         parameters: {
             query?: never;
             header?: never;

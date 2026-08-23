@@ -3,5 +3,6 @@ export const preferences = Object.freeze({
     columns: {
         adminInvites: 'admin-invites',
         adminUsers: 'admin-users',
+        adminServices: 'admin-services',
     },
 })

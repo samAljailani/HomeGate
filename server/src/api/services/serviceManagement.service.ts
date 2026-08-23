@@ -79,4 +79,10 @@ export class ServiceManagementService {
         if (!service) throw new NotFoundException(`Service '${name}' not found`)
         return this.serviceModelToResponseDto(service)
     }
+
+    async updateUrl(name: ApplicationClientNames, url: string | null): Promise<ServiceResponseDto> {
+        const service = await this.serviceRepository.setUrl(name, url)
+        if (!service) throw new NotFoundException(`Service '${name}' not found`)
+        return this.serviceModelToResponseDto(service)
+    }
 }

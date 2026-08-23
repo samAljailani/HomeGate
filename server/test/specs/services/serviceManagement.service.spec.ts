@@ -7,7 +7,7 @@ import { createServiceFixture } from '../../fixtures/service.stub'
 import { ApplicationClientNames } from '@/types/enums'
 
 function createServiceRepositoryMock(): jest.Mocked<
-    Pick<IServiceRepository, 'findMany' | 'count' | 'setEnabled' | 'findByName' | 'setImageUrl'>
+    Pick<IServiceRepository, 'findMany' | 'count' | 'setEnabled' | 'findByName' | 'setImageUrl' | 'setUrl'>
 > {
     return {
         findMany: jest.fn(),
@@ -15,6 +15,7 @@ function createServiceRepositoryMock(): jest.Mocked<
         setEnabled: jest.fn(),
         findByName: jest.fn(),
         setImageUrl: jest.fn(),
+        setUrl: jest.fn(),
     }
 }
 
@@ -184,6 +185,30 @@ describe('ServiceManagementService', () => {
     })
 
     // #endregion updateImageUrl
+
+    // #region updateUrl
+
+    describe('updateUrl', () => {
+        const name = ApplicationClientNames.Jellyfin
+
+        it('sets the url via the repository', async () => {
+            const svc = createServiceFixture({ name, url: 'https://jellyfin.example.com' })
+            serviceRepositoryMock.setUrl.mockResolvedValue(svc)
+
+            const result = await service.updateUrl(name, 'https://jellyfin.example.com')
+
+            expect(serviceRepositoryMock.setUrl).toHaveBeenCalledWith(name, 'https://jellyfin.example.com')
+            expect(result).toEqual({ id: svc.id, name: svc.name, enabled: svc.enabled, url: svc.url, imageUrl: svc.imageUrl })
+        })
+
+        it('throws NotFoundException when service record is not found', async () => {
+            serviceRepositoryMock.setUrl.mockResolvedValue(null)
+
+            await expect(service.updateUrl(name, 'https://jellyfin.example.com')).rejects.toThrow(NotFoundException)
+        })
+    })
+
+    // #endregion updateUrl
 
     // #region listExternalAccounts
 
