@@ -90,6 +90,7 @@ jobs:
           DOMAIN=${{ vars.DOMAIN }}
           APP_SUBDOMAIN=${{ vars.APP_SUBDOMAIN }}
           SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+          SESSION_COOKIE_NAME=${{ secrets.SESSION_COOKIE_NAME }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
           POSTGRES_USER=${{ vars.POSTGRES_USER }}
