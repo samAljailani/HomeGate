@@ -78,6 +78,11 @@ export class ServicePatchRequestDto {
     @ApiPropertyOptional({ type: String, nullable: true })
     @IsOptional()
     @IsString()
+    url?: string | null
+
+    @ApiPropertyOptional({ type: String, nullable: true })
+    @IsOptional()
+    @IsString()
     imageUrl?: string | null
 }
 

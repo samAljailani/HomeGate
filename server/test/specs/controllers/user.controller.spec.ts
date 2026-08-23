@@ -117,6 +117,28 @@ describe('UserController', () => {
             })
         })
 
+        describe('when an admin targets their own account', () => {
+            it('throws ForbiddenException', async () => {
+                const req = createRequestMock()
+                req.session.userId = targetUserId
+                req.session.isAdmin = true
+
+                await expect(controller.deleteUser({ id: targetUserId }, { hard: true }, req)).rejects.toThrow(
+                    ForbiddenException
+                )
+            })
+
+            it('does not call hardDeleteUser', async () => {
+                const req = createRequestMock()
+                req.session.userId = targetUserId
+                req.session.isAdmin = true
+
+                await controller.deleteUser({ id: targetUserId }, { hard: true }, req).catch(() => {})
+
+                expect(userServiceMock.hardDeleteUser).not.toHaveBeenCalled()
+            })
+        })
+
         describe('when a non-admin passes hard: true', () => {
             it('soft-deletes their own account instead (hard flag ignored)', async () => {
                 const req = createRequestMock()
@@ -166,6 +188,16 @@ describe('UserController', () => {
 
             expect(userServiceMock.disableUser).toHaveBeenCalledWith(userId)
             expect(userServiceMock.enableUser).not.toHaveBeenCalled()
+        })
+
+        it('throws ForbiddenException when a user tries to disable their own account', async () => {
+            const req = createRequestMock()
+            req.session.userId = userId
+
+            await expect(controller.updateUser({ id: userId }, { enabled: false }, req)).rejects.toThrow(
+                ForbiddenException
+            )
+            expect(userServiceMock.disableUser).not.toHaveBeenCalled()
         })
 
         it('sets admin flag when admin is provided', async () => {

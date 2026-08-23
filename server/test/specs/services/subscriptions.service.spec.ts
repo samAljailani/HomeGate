@@ -1193,4 +1193,88 @@ describe('SubscriptionService', () => {
     })
 
     // #endregion disableAllForUser
+
+    // #region listAll / listByUser / getById — detail hydration
+
+    describe('admin listing detail hydration', () => {
+        const userId = 'user-uuid-1'
+
+        it('listAll includes the owning user\'s username/email and the service name', async () => {
+            const account = createUserAccountFixture({ userId, serviceId: 1 })
+            const user = createUserFixture({ id: userId, username: 'alice', email: 'alice@example.com' })
+            const serviceModel = createServiceFixture({ id: 1, name: 'Jellyfin' })
+
+            userAccountRepoMock.findMany.mockResolvedValue([account])
+            userServiceMock.getUserById.mockResolvedValue(user)
+            serviceRepoMock.findById.mockResolvedValue(serviceModel)
+
+            const result = await service.listAll()
+
+            expect(result[0]).toMatchObject({
+                userUsername: 'alice',
+                userEmail: 'alice@example.com',
+                serviceName: 'Jellyfin',
+            })
+        })
+
+        it('listByUser resolves details for each returned account', async () => {
+            const account = createUserAccountFixture({ userId, serviceId: 2 })
+            const user = createUserFixture({ id: userId, username: 'bob', email: 'bob@example.com' })
+            const serviceModel = createServiceFixture({ id: 2, name: 'Plex' })
+
+            userAccountRepoMock.findMany.mockResolvedValue([account])
+            userServiceMock.getUserById.mockResolvedValue(user)
+            serviceRepoMock.findById.mockResolvedValue(serviceModel)
+
+            const result = await service.listByUser(userId)
+
+            expect(userAccountRepoMock.findMany).toHaveBeenCalledWith({ userId }, undefined, undefined)
+            expect(result[0]).toMatchObject({ userUsername: 'bob', serviceName: 'Plex' })
+        })
+
+        it('getById includes the resolved details', async () => {
+            const account = createUserAccountFixture({ id: 'sub-1', userId, serviceId: 3 })
+            const user = createUserFixture({ id: userId, username: 'carol', email: 'carol@example.com' })
+            const serviceModel = createServiceFixture({ id: 3, name: 'Audiobookshelf' })
+
+            userAccountRepoMock.findById.mockResolvedValue(account)
+            userServiceMock.getUserById.mockResolvedValue(user)
+            serviceRepoMock.findById.mockResolvedValue(serviceModel)
+
+            const result = await service.getById('sub-1')
+
+            expect(result).toMatchObject({ userUsername: 'carol', serviceName: 'Audiobookshelf' })
+        })
+
+        it('only fetches each unique user/service once for multiple accounts', async () => {
+            const accountA = createUserAccountFixture({ id: 'sub-a', userId, serviceId: 1 })
+            const accountB = createUserAccountFixture({ id: 'sub-b', userId, serviceId: 1 })
+            const user = createUserFixture({ id: userId, username: 'dave' })
+            const serviceModel = createServiceFixture({ id: 1, name: 'Jellyfin' })
+
+            userAccountRepoMock.findMany.mockResolvedValue([accountA, accountB])
+            userServiceMock.getUserById.mockResolvedValue(user)
+            serviceRepoMock.findById.mockResolvedValue(serviceModel)
+
+            await service.listAll()
+
+            expect(userServiceMock.getUserById).toHaveBeenCalledTimes(1)
+            expect(serviceRepoMock.findById).toHaveBeenCalledTimes(1)
+        })
+
+        it('leaves details undefined when the user or service can no longer be found', async () => {
+            const account = createUserAccountFixture({ userId, serviceId: 1 })
+
+            userAccountRepoMock.findMany.mockResolvedValue([account])
+            userServiceMock.getUserById.mockResolvedValue(null)
+            serviceRepoMock.findById.mockResolvedValue(null)
+
+            const result = await service.listAll()
+
+            expect(result[0]!.userUsername).toBeUndefined()
+            expect(result[0]!.serviceName).toBeUndefined()
+        })
+    })
+
+    // #endregion listAll / listByUser / getById — detail hydration
 })

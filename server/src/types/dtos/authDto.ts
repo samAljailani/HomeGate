@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 
 export class AuthResponseDto {
@@ -11,6 +11,20 @@ export class AuthResponseDto {
     @IsString()
     @IsNotEmpty()
     refreshToken: string
+}
+
+export class SessionResponseDto {
+    @ApiProperty({ type: String, format: 'uuid' })
+    @IsUUID()
+    id: string
+
+    @ApiProperty({ type: String })
+    @IsString()
+    username: string
+
+    @ApiProperty({ type: Boolean })
+    @IsBoolean()
+    isAdmin: boolean
 }
 
 export class OpenIDRequestDto {

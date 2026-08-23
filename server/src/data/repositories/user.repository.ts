@@ -80,16 +80,24 @@ export class UserRepository extends BaseRepository implements IUserRepository {
     }
 
     async getUserCounts(userStatuses?: AppUserStatus[]): Promise<UserStatusCountModel[]> {
+        const statuses = userStatuses ?? Object.values(AppUserStatus);
+
         const grouped = await this.db.user.groupBy({
             by: ['status'],
-            ...(userStatuses ? { where: { status: { in: userStatuses } } } : {}),
+            where: {
+                status: { in: statuses },
+            },
             _count: { _all: true },
-        })
+        });
 
-        return grouped.map((item) => ({
-            status: item.status as AppUserStatus,
-            count: item._count._all,
-        }))
+        const counts = new Map(
+            grouped.map(item => [item.status, item._count._all])
+        );
+
+        return statuses.map(status => ({
+            status,
+            count: counts.get(status) ?? 0,
+        }));
     }
 
     async create(request: CreateUserModel): Promise<UserModel | null> {

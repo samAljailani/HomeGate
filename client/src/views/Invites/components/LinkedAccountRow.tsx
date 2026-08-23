@@ -17,11 +17,11 @@ interface LinkedAccountRowProps {
 export function LinkedAccountRow({ account, serviceOptions, error, isDuplicateService, onChange, onRemove }: LinkedAccountRowProps) {
     return (
         <div className="space-y-1">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
             <select
                 value={account.serviceName}
                 onChange={(e) => onChange('serviceName', e.target.value)}
-                className={`h-9 rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] ${
+                className={`h-9 w-full rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] sm:w-auto ${
                     isDuplicateService
                         ? 'border-destructive text-destructive focus-visible:border-destructive focus-visible:ring-destructive/50'
                         : 'border-(--border-default) text-(--text-primary) focus-visible:border-ring focus-visible:ring-ring/50'
@@ -36,19 +36,19 @@ export function LinkedAccountRow({ account, serviceOptions, error, isDuplicateSe
                 placeholder="Username"
                 value={account.username ?? ''}
                 onChange={(e) => onChange('username', e.target.value)}
-                className="max-w-36"
+                className="flex-1 min-w-32 sm:max-w-36"
             />
             <Input
                 placeholder="Email"
                 value={account.email ?? ''}
                 onChange={(e) => onChange('email', e.target.value)}
-                className="max-w-44"
+                className="flex-1 min-w-32 sm:max-w-44"
             />
             <Input
                 placeholder="Account ID"
                 value={account.accountId ?? ''}
                 onChange={(e) => onChange('accountId', e.target.value)}
-                className="max-w-36"
+                className="flex-1 min-w-32 sm:max-w-36"
             />
             <Button variant="ghost" size="icon-sm" onClick={onRemove} title="Remove account">
                 <Trash2 className="size-4" />

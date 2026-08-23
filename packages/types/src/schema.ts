@@ -20,6 +20,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List enabled OAuth providers available for sign-in */
+        get: operations["AuthController_getEnabledProviders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current session's user identity */
+        get: operations["AuthController_getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/google": {
         parameters: {
             query?: never;
@@ -445,6 +479,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin": {
         parameters: {
             query?: never;
@@ -477,6 +527,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminServices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/oauth-providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminOAuthProviders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminSubscriptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/{path}": {
         parameters: {
             query?: never;
@@ -497,6 +595,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        SessionResponseDto: {
+            /** Format: uuid */
+            id: string;
+            username: string;
+            isAdmin: boolean;
+        };
         SubscriptionCreateRequestDto: {
             serviceId: number;
             serviceUsername: string;
@@ -525,6 +629,12 @@ export interface components {
             provisionedAt?: string | null;
             /** Format: date-time */
             cancelledAt?: string | null;
+            /** @description The subscribing user's HomeGate username (admin listings only) */
+            userUsername?: string;
+            /** @description The subscribing user's email (admin listings only) */
+            userEmail?: string;
+            /** @description The subscribed-to service's display name (admin listings only) */
+            serviceName?: string;
         };
         SubscriptionPatchRequestDto: {
             enabled?: boolean;
@@ -620,6 +730,7 @@ export interface components {
         };
         ServicePatchRequestDto: {
             enabled?: boolean;
+            url?: string | null;
             imageUrl?: string | null;
         };
         ExternalAccountResponseDto: {
@@ -692,6 +803,44 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    AuthController_getEnabledProviders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+        };
+    };
+    AuthController_getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResponseDto"];
+                };
             };
         };
     };
@@ -1395,7 +1544,11 @@ export interface operations {
             query?: {
                 skip?: number;
                 take?: number;
+                search?: string;
+                createdBefore?: string;
+                createdAfter?: string;
                 logLevel?: "verbose" | "debug" | "log" | "warn" | "error" | "fatal";
+                sessionId?: string;
                 userId?: string;
             };
             header?: never;
@@ -1513,6 +1666,23 @@ export interface operations {
             };
         };
     };
+    ClientRouteController_adminUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ClientRouteController_admin: {
         parameters: {
             query?: never;
@@ -1531,6 +1701,57 @@ export interface operations {
         };
     };
     ClientRouteController_adminInvites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminOAuthProviders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminSubscriptions: {
         parameters: {
             query?: never;
             header?: never;

@@ -34,6 +34,12 @@ export class ClientRouteController {
     }
 
     @AdminRoute()
+    @Get(clientRoutes.adminUsers)
+    adminUsers(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminUsers)
+    }
+
+    @AdminRoute()
     @Get(clientRoutes.admin)
     admin(@Res() res: Response) {
         return this.sendPage(res, 'admin')
@@ -42,7 +48,31 @@ export class ClientRouteController {
     @AdminRoute()
     @Get(clientRoutes.adminInvites)
     adminInvites(@Res() res: Response) {
-        return this.sendPage(res, 'admin/invites')
+        return this.sendPage(res, clientRoutes.adminInvites)
+    }
+
+    @AdminRoute()
+    @Get(clientRoutes.adminServices)
+    adminServices(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminServices)
+    }
+
+    @AdminRoute()
+    @Get(clientRoutes.adminOAuthProviders)
+    adminOAuthProviders(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminOAuthProviders)
+    }
+
+    @AdminRoute()
+    @Get(clientRoutes.adminSubscriptions)
+    adminSubscriptions(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminSubscriptions)
+    }
+
+    @AdminRoute()
+    @Get(clientRoutes.adminLogs)
+    adminLogs(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminLogs)
     }
 
     @Public()
@@ -52,6 +82,10 @@ export class ClientRouteController {
     } //IMPORTANT: this must be the last route in this controller due to its genearlized matching.
 
     private sendPage(res: Response, page: string) {
+        if(page.charAt(0) == '/'){
+            page = page.substring(1)
+        }
+
         return res.sendFile(resolve(this.staticRoot, `${page}.html`))
     }
 }

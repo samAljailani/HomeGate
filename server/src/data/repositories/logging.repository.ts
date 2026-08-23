@@ -31,10 +31,7 @@ export class LoggingRepository implements ILoggingRepository {
 
     public async findMany(filter: LogFilterOptions, take: number = 50, skip: number = 0): Promise<LogModel[]> {
         const logs = await this.db.log.findMany({
-            where: {
-                ...(filter.userId !== undefined ? { userId: filter.userId } : {}),
-                ...(filter.logLevel !== undefined ? { logLevel: filter.logLevel as LogLevel } : {}),
-            },
+            where: this.buildWhere(filter),
             orderBy: { createdAt: 'desc' },
             take,
             skip,
@@ -54,10 +51,28 @@ export class LoggingRepository implements ILoggingRepository {
 
     public async count(filter: LogFilterOptions): Promise<number> {
         return this.db.log.count({
-            where: {
-                ...(filter.userId !== undefined ? { userId: filter.userId } : {}),
-                ...(filter.logLevel !== undefined ? { logLevel: filter.logLevel as LogLevel } : {}),
-            },
+            where: this.buildWhere(filter),
         })
+    }
+
+    private buildWhere(filter: LogFilterOptions) {
+        return {
+            ...(filter.userId !== undefined ? { userId: filter.userId } : {}),
+            ...(filter.sessionId !== undefined ? { sessionId: filter.sessionId } : {}),
+            ...(filter.logLevel !== undefined ? { logLevel: filter.logLevel as LogLevel } : {}),
+            ...((filter.createdAfter || filter.createdBefore) && {
+                createdAt: {
+                    ...(filter.createdAfter && { gte: filter.createdAfter }),
+                    ...(filter.createdBefore && { lte: filter.createdBefore }),
+                },
+            }),
+            ...(filter.search !== undefined && filter.search !== '' && {
+                OR: [
+                    { message: { contains: filter.search, mode: 'insensitive' as const } },
+                    { context: { contains: filter.search, mode: 'insensitive' as const } },
+                    { stackTrace: { contains: filter.search, mode: 'insensitive' as const } },
+                ],
+            }),
+        }
     }
 }

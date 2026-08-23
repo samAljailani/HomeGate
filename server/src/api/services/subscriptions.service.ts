@@ -363,7 +363,8 @@ export class SubscriptionService {
             throw new NotFoundException('Subscription not found')
         }
 
-        return this.mapSubscription(account)
+        const [details] = await this.hydrateSubscriptionDetails([account])
+        return details!
     }
 
     private async getRawById(subscriptionId: string): Promise<UserAccountModel> {
@@ -436,12 +437,12 @@ export class SubscriptionService {
 
     async listAll(take?: number, skip?: number): Promise<SubscriptionResponseDto[]> {
         const accounts = await this.userAccountRepository.findMany({}, take, skip)
-        return accounts.map((a) => this.mapSubscription(a))
+        return this.hydrateSubscriptionDetails(accounts)
     }
 
     async listByUser(userId: string, take?: number, skip?: number): Promise<SubscriptionResponseDto[]> {
         const accounts = await this.userAccountRepository.findMany({ userId }, take, skip)
-        return accounts.map((a) => this.mapSubscription(a))
+        return this.hydrateSubscriptionDetails(accounts)
     }
 
     private async getServiceClient(serviceName: string) {
@@ -488,6 +489,31 @@ export class SubscriptionService {
             provisionedAt: model.provisionedAt,
             cancelledAt: model.cancelledAt,
         }
+    }
+
+    /** Batch-resolves the owning user's username/email and the service's display name for admin listings. */
+    private async hydrateSubscriptionDetails(accounts: UserAccountModel[]): Promise<SubscriptionResponseDto[]> {
+        const userIds = [...new Set(accounts.map((a) => a.userId))]
+        const serviceIds = [...new Set(accounts.map((a) => a.serviceId))]
+
+        const [users, services] = await Promise.all([
+            Promise.all(userIds.map((id) => this.userService.getUserById({ userId: id }))),
+            Promise.all(serviceIds.map((id) => this.serviceRepository.findById(id))),
+        ])
+
+        const userMap = new Map(users.filter((u) => u != null).map((u) => [u.id, u]))
+        const serviceMap = new Map(services.filter((s) => s != null).map((s) => [s.id, s]))
+
+        return accounts.map((account) => {
+            const user = userMap.get(account.userId)
+            const service = serviceMap.get(account.serviceId)
+            return {
+                ...this.mapSubscription(account),
+                userUsername: user?.username,
+                userEmail: user?.email,
+                serviceName: service?.name,
+            }
+        })
     }
 
     // #endregion Mappers

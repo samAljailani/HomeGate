@@ -17,7 +17,14 @@ const navigationItems: NavItem[] = [
     {
         name: 'Admin',
         current: false,
-        dropdownItems: [{ label: 'invites', href: config.routes.invites }],
+        dropdownItems: [
+            { label: 'invites', href: config.routes.invites },
+            { label: 'users',   href: config.routes.users },
+            { label: 'services', href: config.routes.services },
+            { label: 'oauth providers', href: config.routes.oauthProviders },
+            { label: 'subscriptions', href: config.routes.subscriptions },
+            { label: 'logs', href: config.routes.logs },
+        ],
     },
 ]
 

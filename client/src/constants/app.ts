@@ -5,5 +5,10 @@ export const config = Object.freeze({
         signIn: '/signin',
         admin: '/admin',
         invites: '/admin/invites',
+        users: '/admin/users',
+        services: '/admin/services',
+        oauthProviders: '/admin/oauth-providers',
+        subscriptions: '/admin/subscriptions',
+        logs: '/admin/logs'
     },
 })

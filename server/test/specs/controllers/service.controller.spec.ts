@@ -7,13 +7,14 @@ import { ApplicationClientNames } from '@/types/enums'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 
 function createServiceManagementServiceMock(): jest.Mocked<
-    Pick<ServiceManagementService, 'list' | 'enable' | 'disable' | 'updateImageUrl' | 'listExternalAccounts'>
+    Pick<ServiceManagementService, 'list' | 'enable' | 'disable' | 'updateImageUrl' | 'updateUrl' | 'listExternalAccounts'>
 > {
     return {
         list: jest.fn(),
         enable: jest.fn(),
         disable: jest.fn(),
         updateImageUrl: jest.fn(),
+        updateUrl: jest.fn(),
         listExternalAccounts: jest.fn(),
     }
 }
@@ -102,6 +103,18 @@ describe('ServiceController', () => {
             expect(serviceManagementMock.enable).not.toHaveBeenCalled()
             expect(serviceManagementMock.disable).not.toHaveBeenCalled()
             expect(result).toEqual({ id: 1, name: svc.name, enabled: true, url: null, imageUrl: 'https://example.com/logo.png' })
+        })
+
+        it('updates the url when provided', async () => {
+            const svc = createServiceFixture({ id: 1, url: 'https://jellyfin.example.com' })
+            serviceManagementMock.updateUrl.mockResolvedValue(svc)
+
+            const result = await controller.update({ name }, { url: 'https://jellyfin.example.com' })
+
+            expect(serviceManagementMock.updateUrl).toHaveBeenCalledWith(name, 'https://jellyfin.example.com')
+            expect(serviceManagementMock.enable).not.toHaveBeenCalled()
+            expect(serviceManagementMock.disable).not.toHaveBeenCalled()
+            expect(result).toEqual({ id: 1, name: svc.name, enabled: true, url: 'https://jellyfin.example.com', imageUrl: null })
         })
 
         it('throws BadRequestException when no fields provided', async () => {

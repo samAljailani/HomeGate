@@ -9,6 +9,13 @@ import React from 'react'
 
 export function OAuthSignInPage() {
     const [open, setOpen] = React.useState(true)
+    const [enabledProviders, setEnabledProviders] = React.useState<string[] | null>(null)
+
+    React.useEffect(() => {
+        authService.getEnabledProviders()
+            .then(setEnabledProviders)
+            .catch(() => setEnabledProviders([]))
+    }, [])
 
     function onOAuthSignInClick(href: string) {
         window.location.href = href
@@ -35,17 +42,24 @@ export function OAuthSignInPage() {
                 description="Sign in to a world of mistery"
                 className="data-[state=open]:slide-in-from-bottom-1/4 data-[state=open]:duration-500"
             >
-                <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full"
-                    onClick={() =>
-                        onOAuthSignInClick(authService.getGoogleSignInUrl())
-                    }
-                >
-                    <IconGoogle />
-                    Continue with Google
-                </Button>
+                {enabledProviders?.includes('google') && (
+                    <Button
+                        variant="outline"
+                        size="lg"
+                        className="w-full"
+                        onClick={() =>
+                            onOAuthSignInClick(authService.getGoogleSignInUrl())
+                        }
+                    >
+                        <IconGoogle />
+                        Continue with Google
+                    </Button>
+                )}
+                {enabledProviders?.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                        Sign-in is currently unavailable. Please contact an administrator.
+                    </p>
+                )}
             </ResponsiveModal>
         </>
     )

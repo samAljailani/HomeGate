@@ -1,9 +1,14 @@
-import type { components } from '@samaljailani/homegate-types'
+import type { components, operations } from '@samaljailani/homegate-types'
 
 import { apiClient } from './api-client'
-import type { PaginationRequestDto } from '@/lib/apiPath'
 
 export type LogResponseDto = components['schemas']['LogResponseDto']
+export type LogListRequestDto = NonNullable<operations['LogController_list']['parameters']['query']>
+export type LogsPageResponseDto = {
+    data: LogResponseDto[]
+    total: number
+    hasMore: boolean
+}
 
 /**
  * All log-related API calls live here. Components/hooks call these methods
@@ -14,13 +19,13 @@ export type LogResponseDto = components['schemas']['LogResponseDto']
  */
 class LogService {
     async getAllLogs(
-        pagination?: PaginationRequestDto
-    ): Promise<LogResponseDto[]> {
+        query?: LogListRequestDto
+    ): Promise<LogsPageResponseDto> {
         const { data, error } = await apiClient.GET('/api/logs', {
-            params: { query: pagination },
+            params: { query },
         })
         if (error) throw error
-        return data.data
+        return data
     }
 }
 

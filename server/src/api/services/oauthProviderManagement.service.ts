@@ -19,6 +19,11 @@ export class OAuthProviderManagementService {
         return new PaginatedResponseDto(providers, total, skip)
     }
 
+    async listEnabledNames(): Promise<OAuthProviderName[]> {
+        const providers = await this.oauthProviderRepository.findMany({ enabled: true })
+        return providers.map((p) => p.name)
+    }
+
     async enable(name: OAuthProviderName): Promise<OAuthProviderModel> {
         const provider = await this.oauthProviderRepository.setEnabled(name, true)
         if (!provider) throw new NotFoundException(`OAuth provider '${name}' not found`)
