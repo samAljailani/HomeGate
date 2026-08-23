@@ -56,15 +56,14 @@ services:
       start_period: 60s
     networks:
       - traefik
-      
   adminer:
-    container_name: homegate-qa-adminer
+    container_name: homegate-prod-adminer
     image: adminer
     restart: always
     environment:
       TZ: America/New_York
     ports:
-      - "8754:8080"
+      - "8755:8080"
     depends_on:
       - db
     networks:
