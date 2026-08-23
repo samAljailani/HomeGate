@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing'
+import { BadRequestException } from '@nestjs/common'
 import { UserService } from '@/api/services/user.service'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import { IUserRepository } from '@/data/repositories/IUserRepository'
@@ -6,6 +7,7 @@ import { IUserOAuthIdentityRepository, ISessionRepository } from '@/data/reposit
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
+import { UserStatus } from '@/types/models/user'
 
 function createUserRepositoryMock(): jest.Mocked<
     Pick<IUserRepository, 'findById' | 'softDelete' | 'hardDelete' | 'setEnabled' | 'setAdmin' | 'findMany' | 'count'>
@@ -200,10 +202,37 @@ describe('UserService', () => {
             userRepositoryMock.setAdmin.mockResolvedValue(null)
         })
 
-        it('calls setAdmin with provided value', async () => {
-            await service.setUserAdmin(userId, true, actorId)
+        describe('when granting admin', () => {
+            it('calls setAdmin when the target user is active', async () => {
+                userRepositoryMock.findById.mockResolvedValue(createUserFixture({ id: userId, status: UserStatus.ACTIVE }))
 
-            expect(userRepositoryMock.setAdmin).toHaveBeenCalledWith(userId, true)
+                await service.setUserAdmin(userId, true, actorId)
+
+                expect(userRepositoryMock.setAdmin).toHaveBeenCalledWith(userId, true)
+            })
+
+            it('throws BadRequestException when the target user is not active', async () => {
+                userRepositoryMock.findById.mockResolvedValue(createUserFixture({ id: userId, status: UserStatus.DISABLED }))
+
+                await expect(service.setUserAdmin(userId, true, actorId)).rejects.toThrow(BadRequestException)
+                expect(userRepositoryMock.setAdmin).not.toHaveBeenCalled()
+            })
+
+            it('throws BadRequestException when the target user does not exist', async () => {
+                userRepositoryMock.findById.mockResolvedValue(null)
+
+                await expect(service.setUserAdmin(userId, true, actorId)).rejects.toThrow(BadRequestException)
+                expect(userRepositoryMock.setAdmin).not.toHaveBeenCalled()
+            })
+        })
+
+        describe('when revoking admin', () => {
+            it('calls setAdmin without checking the target user status', async () => {
+                await service.setUserAdmin(userId, false, actorId)
+
+                expect(userRepositoryMock.findById).not.toHaveBeenCalled()
+                expect(userRepositoryMock.setAdmin).toHaveBeenCalledWith(userId, false)
+            })
         })
     })
 

@@ -7,8 +7,11 @@ import { UsersTable } from './components/UsersTable'
 
 
 export function AdminUsers() {
-    const { usersList, statsList, refresh } = useUsersPage()
-    const usersTable = useUsersTable(refresh)
+    const { usersList, statsList } = useUsersPage()
+    const usersTable = useUsersTable({
+        patchUser: usersList.patchUser,
+        removeUser: usersList.removeUser,
+    })
 
     return (
         <div className="py-8 space-y-8">
@@ -24,6 +27,7 @@ export function AdminUsers() {
                 onEnable={usersTable.enableUser}
                 onSoftDelete={usersTable.softDeleteUser}
                 onHardDelete={usersTable.hardDeleteUser}
+                onSetAdmin={usersTable.setUserAdmin}
             />
         </div>
     )

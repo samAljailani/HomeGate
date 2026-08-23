@@ -23,10 +23,20 @@ export function useUsersList(){
         load()
     }, [load])
 
+    const patchUser = useCallback((id: string, patch: Partial<UserResponseForAdminDto>) => {
+        setUsers((prev) => prev.map((u) => u.id === id ? { ...u, ...patch } : u))
+    }, [])
+
+    const removeUser = useCallback((id: string) => {
+        setUsers((prev) => prev.filter((u) => u.id !== id))
+    }, [])
+
     return {
         users,
         isLoading, 
         error,
-        refresh: load
+        refresh: load,
+        patchUser,
+        removeUser,
     }
 }

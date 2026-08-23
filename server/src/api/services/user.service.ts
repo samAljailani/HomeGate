@@ -1,6 +1,6 @@
 import { IUserRepository } from '@/data/repositories/IUserRepository'
 import { ISessionRepository } from '@/data/repositories/ISessionRepository'
-import { Injectable, Inject, forwardRef } from '@nestjs/common'
+import { BadRequestException, Injectable, Inject, forwardRef } from '@nestjs/common'
 import {
     UserCreateRequestDto,
     UserLoadRequestDto,
@@ -185,6 +185,13 @@ export class UserService extends BaseService {
     }
 
     async setUserAdmin(userId: string, isAdmin: boolean, actedByUserId: string): Promise<UserResponseForAdminDto | null> {
+        if (isAdmin) {
+            const existingUser = await this.userRepository.findById(userId)
+            if (!existingUser || existingUser.status !== UserStatus.ACTIVE) {
+                throw new BadRequestException('Only active users can be granted admin access.')
+            }
+        }
+
         const user = await this.userRepository.setAdmin(userId, isAdmin)
 
         this.logger.log(`User ${userId} admin set to ${isAdmin} by ${actedByUserId}`)

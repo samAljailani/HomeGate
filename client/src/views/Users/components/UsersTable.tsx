@@ -35,14 +35,14 @@ interface UsersTableProps {
     onEnable: (id: string) => void
     onSoftDelete: (id: string) => void
     onHardDelete: (id: string) => void
+    onSetAdmin: (id: string, admin: boolean) => void
 }
 
-type PendingAction = {
-    type: 'disable' | 'enable' | 'softDelete' /* | 'hardDelete' */
-    user: UserResponseForAdminDto
-}
+type PendingAction =
+    | { type: 'disable' | 'enable' | 'softDelete' /* | 'hardDelete' */; user: UserResponseForAdminDto }
+    | { type: 'setAdmin'; user: UserResponseForAdminDto; nextAdmin: boolean }
 
-const ACTION_CONFIG: Record<PendingAction['type'], {
+const ACTION_CONFIG: Record<'disable' | 'enable' | 'softDelete', {
     title: string
     description: (user: UserResponseForAdminDto) => string
     confirmLabel: string
@@ -71,6 +71,34 @@ const ACTION_CONFIG: Record<PendingAction['type'], {
     //     confirmLabel: 'Delete Permanently',
     //     variant: 'destructive',
     // },
+}
+
+function getDialogConfig(action: PendingAction | null): {
+    title: string
+    description: string
+    confirmLabel: string
+    variant?: 'default' | 'destructive'
+} {
+    if (!action) return { title: '', description: '', confirmLabel: '' }
+
+    if (action.type === 'setAdmin') {
+        return action.nextAdmin
+            ? {
+                title: 'Grant admin access?',
+                description: `${action.user.username} will gain full admin privileges.`,
+                confirmLabel: 'Make Admin',
+                variant: 'destructive',
+            }
+            : {
+                title: 'Revoke admin access?',
+                description: `${action.user.username} will lose admin privileges.`,
+                confirmLabel: 'Remove Admin',
+                variant: 'destructive',
+            }
+    }
+
+    const config = ACTION_CONFIG[action.type]
+    return { ...config, description: config.description(action.user) }
 }
 
 function formatDate(value?: string | null): string {
@@ -108,6 +136,7 @@ export function UsersTable({
     onEnable,
     onSoftDelete,
     onHardDelete,
+    onSetAdmin,
 }: UsersTableProps) {
     void onHardDelete // hard delete is disabled for now
     const { user: currentUser } = useAuthContext()
@@ -165,7 +194,20 @@ export function UsersTable({
             id: 'isAdmin',
             accessorKey: 'isAdmin',
             header: 'Admin',
-            cell: ({ row }) => row.original.isAdmin ? 'Yes' : 'No',
+            cell: ({ row }) => {
+                const user = row.original
+                const isSelf = currentUser?.id === user.id
+                const canGrantAdmin = user.isAdmin || user.status === 'ACTIVE'
+                return (
+                    <input
+                        type="checkbox"
+                        checked={user.isAdmin}
+                        disabled={isSelf || pendingId === user.id || !canGrantAdmin}
+                        onChange={(e) => setPendingAction({ type: 'setAdmin', user, nextAdmin: e.target.checked })}
+                        className="size-4"
+                    />
+                )
+            },
         },
         {
             id: 'createdAt',
@@ -180,7 +222,7 @@ export function UsersTable({
             enableHiding: false,
             cell: () => null,
         },
-    ], [])
+    ], [currentUser, pendingId])
 
     // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
@@ -201,6 +243,7 @@ export function UsersTable({
         if (type === 'disable') onDisable(user.id)
         if (type === 'enable') onEnable(user.id)
         if (type === 'softDelete') onSoftDelete(user.id)
+        if (type === 'setAdmin') onSetAdmin(user.id, pendingAction.nextAdmin)
         // if (type === 'hardDelete') onHardDelete(user.id)
     }
 
@@ -304,10 +347,10 @@ export function UsersTable({
             <ConfirmDialog
                 open={pendingAction !== null}
                 setOpen={(open) => !open && closeConfirm()}
-                title={pendingAction ? ACTION_CONFIG[pendingAction.type].title : ''}
-                description={pendingAction ? ACTION_CONFIG[pendingAction.type].description(pendingAction.user) : ''}
-                confirmLabel={pendingAction ? ACTION_CONFIG[pendingAction.type].confirmLabel : ''}
-                variant={pendingAction ? ACTION_CONFIG[pendingAction.type].variant : 'default'}
+                title={getDialogConfig(pendingAction).title}
+                description={getDialogConfig(pendingAction).description}
+                confirmLabel={getDialogConfig(pendingAction).confirmLabel}
+                variant={getDialogConfig(pendingAction).variant}
                 onConfirm={async () => runPendingAction()}
             />
         </div>
