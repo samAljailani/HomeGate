@@ -44,7 +44,7 @@ jobs:
           if [ -n "${{ inputs.run_id }}" ]; then
             echo "run_id=${{ inputs.run_id }}" >> $GITHUB_OUTPUT
           else
-            RUN_ID=$(gh run list --workflow=ci.yml --status=success --limit=1 --json databaseId -q '.[0].databaseId')
+            RUN_ID=$(gh run list --repo ${{ github.repository }} --workflow=ci.yml --status=success --limit=1 --json databaseId -q '.[0].databaseId')
             echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
           fi
 
@@ -66,18 +66,18 @@ jobs:
           mkdir -p work
 
           # Deployment files (Dockerfile, compose, package.json, prisma)
-          gh run download "$RUN" --pattern 'deployment-files-*' --dir work/tmp
+          gh run download "$RUN" --repo ${{ github.repository }} --pattern 'deployment-files-*' --dir work/tmp
           mv work/tmp/deployment-files-*/* work/
           rm -rf work/tmp
 
           # Server build
-          gh run download "$RUN" --pattern 'server-build-*' --dir work/tmp
+          gh run download "$RUN" --repo ${{ github.repository }} --pattern 'server-build-*' --dir work/tmp
           mkdir -p work/server
           mv work/tmp/server-build-*/ work/server/dist
           rm -rf work/tmp
 
           # Client build
-          gh run download "$RUN" --pattern 'client-build-*' --dir work/tmp
+          gh run download "$RUN" --repo ${{ github.repository }} --pattern 'client-build-*' --dir work/tmp
           mkdir -p work/client
           mv work/tmp/client-build-*/ work/client/out
           rm -rf work/tmp
