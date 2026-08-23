@@ -83,6 +83,46 @@ describe('LogController', () => {
             )
         })
 
+        it('passes sessionId filter when provided', async () => {
+            logServiceMock.list.mockResolvedValue(new PaginatedResponseDto([], 0, 0))
+            const query: LogListRequestDto = { sessionId: 'session-uuid-1' }
+
+            await controller.list(query)
+
+            expect(logServiceMock.list).toHaveBeenCalledWith(
+                expect.objectContaining({ sessionId: 'session-uuid-1' }),
+                undefined,
+                undefined
+            )
+        })
+
+        it('converts createdAfter/createdBefore to Dates when provided', async () => {
+            logServiceMock.list.mockResolvedValue(new PaginatedResponseDto([], 0, 0))
+            const query: LogListRequestDto = {
+                createdAfter: '2026-01-01T00:00:00Z',
+                createdBefore: '2026-02-01T00:00:00Z',
+            }
+
+            await controller.list(query)
+
+            const filterArg = logServiceMock.list.mock.calls[0]![0]
+            expect(filterArg.createdAfter).toEqual(new Date('2026-01-01T00:00:00Z'))
+            expect(filterArg.createdBefore).toEqual(new Date('2026-02-01T00:00:00Z'))
+        })
+
+        it('passes search filter when provided', async () => {
+            logServiceMock.list.mockResolvedValue(new PaginatedResponseDto([], 0, 0))
+            const query: LogListRequestDto = { search: 'timeout' }
+
+            await controller.list(query)
+
+            expect(logServiceMock.list).toHaveBeenCalledWith(
+                expect.objectContaining({ search: 'timeout' }),
+                undefined,
+                undefined
+            )
+        })
+
         it('passes take and skip when provided', async () => {
             logServiceMock.list.mockResolvedValue(new PaginatedResponseDto([], 0, 0))
             const query: LogListRequestDto = { take: 10, skip: 5 }

@@ -5,7 +5,11 @@ export const ILoggingRepository = Symbol('ILoggingRepository')
 
 export type LogFilterOptions = {
     userId?: string
+    sessionId?: string
     logLevel?: LogLevel
+    createdAfter?: Date
+    createdBefore?: Date
+    search?: string
 }
 
 export interface ILoggingRepository {

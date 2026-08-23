@@ -559,6 +559,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminSubscriptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/{path}": {
         parameters: {
             query?: never;
@@ -1528,7 +1544,11 @@ export interface operations {
             query?: {
                 skip?: number;
                 take?: number;
+                search?: string;
+                createdBefore?: string;
+                createdAfter?: string;
                 logLevel?: "verbose" | "debug" | "log" | "warn" | "error" | "fatal";
+                sessionId?: string;
                 userId?: string;
             };
             header?: never;
@@ -1715,6 +1735,23 @@ export interface operations {
         };
     };
     ClientRouteController_adminOAuthProviders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminSubscriptions: {
         parameters: {
             query?: never;
             header?: never;

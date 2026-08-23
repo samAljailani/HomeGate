@@ -17,14 +17,22 @@ export class LogController {
     @AdminRoute()
     @ApiOperation({ summary: 'List application logs (admin only)' })
     @ApiQuery({ name: 'userId', type: String, required: false })
+    @ApiQuery({ name: 'sessionId', type: String, required: false })
     @ApiQuery({ name: 'logLevel', enum: LogLevel, required: false })
+    @ApiQuery({ name: 'createdAfter', type: String, required: false })
+    @ApiQuery({ name: 'createdBefore', type: String, required: false })
+    @ApiQuery({ name: 'search', type: String, required: false })
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
     @ApiPaginatedResponse(LogResponseDto)
     async list(@Query() query: LogListRequestDto): Promise<PaginatedResponseDto<LogResponseDto>> {
         const filter: LogFilterOptions = {}
         if (query.userId !== undefined) filter.userId = query.userId
+        if (query.sessionId !== undefined) filter.sessionId = query.sessionId
         if (query.logLevel !== undefined) filter.logLevel = query.logLevel
+        if (query.createdAfter !== undefined) filter.createdAfter = new Date(query.createdAfter)
+        if (query.createdBefore !== undefined) filter.createdBefore = new Date(query.createdBefore)
+        if (query.search !== undefined) filter.search = query.search
         return this.logService.list(filter, query.take, query.skip)
     }
 }

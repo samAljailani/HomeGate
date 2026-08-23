@@ -8,6 +8,7 @@ export const config = Object.freeze({
         users: '/admin/users',
         services: '/admin/services',
         oauthProviders: '/admin/oauth-providers',
-        subscriptions: '/admin/subscriptions'
+        subscriptions: '/admin/subscriptions',
+        logs: '/admin/logs'
     },
 })
