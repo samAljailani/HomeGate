@@ -482,6 +482,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List active sessions (admin only) */
+        get: operations["SessionController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get session configuration (admin only) */
+        get: operations["SessionController_getConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update session configuration (admin only) */
+        patch: operations["SessionController_updateConfig"];
+        trace?: never;
+    };
+    "/api/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke a session (admin only) */
+        delete: operations["SessionController_revoke"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/signin": {
         parameters: {
             query?: never;
@@ -658,6 +710,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/{path}": {
         parameters: {
             query?: never;
@@ -679,10 +747,17 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         SessionResponseDto: {
-            /** Format: uuid */
             id: string;
-            username: string;
-            isAdmin: boolean;
+            userId?: string | null;
+            username?: string | null;
+            provider?: string | null;
+            ipAddress?: string | null;
+            device?: string | null;
+            browser?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
         };
         SubscriptionCreateRequestDto: {
             serviceId: number;
@@ -861,6 +936,13 @@ export interface components {
             enabled?: boolean;
             runOnStartup?: boolean;
             cronExpression?: string;
+        };
+        SessionConfigResponseDto: {
+            /** @description Maximum concurrent sessions allowed per user; oldest are evicted at login */
+            maxPerUser: number;
+        };
+        UpdateSessionConfigDto: {
+            maxPerUser: number;
         };
         PaginationRequestDto: {
             /** @default 50 */
@@ -1767,6 +1849,94 @@ export interface operations {
             };
         };
     };
+    SessionController_list: {
+        parameters: {
+            query?: {
+                skip?: number;
+                take?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SessionResponseDto"][];
+                        total: number;
+                        hasMore: boolean;
+                    };
+                };
+            };
+        };
+    };
+    SessionController_getConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionConfigResponseDto"];
+                };
+            };
+        };
+    };
+    SessionController_updateConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSessionConfigDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionConfigResponseDto"];
+                };
+            };
+        };
+    };
+    SessionController_revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session revoked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ClientRouteController_signIn: {
         parameters: {
             query?: never;
@@ -1938,6 +2108,23 @@ export interface operations {
         };
     };
     ClientRouteController_adminScheduledTasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminSessions: {
         parameters: {
             query?: never;
             header?: never;

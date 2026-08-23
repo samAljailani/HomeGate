@@ -6,6 +6,7 @@ import { InviteController } from './invite.controller'
 import { LogController } from './log.controller'
 import { OAuthProviderController } from './oauthProvider.controller'
 import { ServiceController } from './service.controller'
+import { SessionController } from './session.controller'
 import { SubscriptionController } from './subscriptions.controller'
 import { TaskController } from './task.controller'
 import { UserController } from './user.controller'
@@ -21,5 +22,6 @@ export const controllers = [
     OAuthProviderController,
     LogController,
     TaskController,
+    SessionController,
     ClientRouteController, //must be registered last due to its generatlized pattern matching
 ]

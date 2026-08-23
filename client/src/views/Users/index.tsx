@@ -7,10 +7,11 @@ import { UsersTable } from './components/UsersTable'
 
 
 export function AdminUsers() {
-    const { usersList, statsList } = useUsersPage()
+    const { usersList, statsList, refresh } = useUsersPage()
     const usersTable = useUsersTable({
         patchUser: usersList.patchUser,
         removeUser: usersList.removeUser,
+        refresh
     })
 
     return (

@@ -66,6 +66,7 @@ export enum ScheduledTasks {
     CLEANUP_DELETED_USERS = 'cleanup_deleted_users',
     PURGE_OLD_LOGS = 'purge_old_logs',
     PURGE_OLD_TASK_RUNS = 'purge_old_task_runs',
+    PURGE_EXPIRED_SESSIONS = 'purge_expired_sessions',
 }
 
 export enum AppEvent {

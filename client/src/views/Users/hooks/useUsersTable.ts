@@ -7,9 +7,10 @@ import { addToastMessage } from '@/lib/utils'
 interface UsersListMutators {
     patchUser: (id: string, patch: Partial<UserResponseForAdminDto>) => void
     removeUser: (id: string) => void
+    refresh: () => void
 }
 
-export function useUsersTable({ patchUser, removeUser }: UsersListMutators) {
+export function useUsersTable({ patchUser, removeUser, refresh }: UsersListMutators) {
     const [actionError, setActionError] = useState<string | null>(null)
     const [pendingId, setPendingId] = useState<string | null>(null)
 
@@ -25,6 +26,7 @@ export function useUsersTable({ patchUser, removeUser }: UsersListMutators) {
             addToastMessage('error', 'Failed to disable user')
         } finally {
             setPendingId(null)
+            refresh()
         }
     }, [patchUser])
 
@@ -40,6 +42,7 @@ export function useUsersTable({ patchUser, removeUser }: UsersListMutators) {
             addToastMessage('error', 'Failed to enable user')
         } finally {
             setPendingId(null)
+            refresh()
         }
     }, [patchUser])
 
@@ -55,6 +58,7 @@ export function useUsersTable({ patchUser, removeUser }: UsersListMutators) {
             addToastMessage('error', 'Failed to delete user')
         } finally {
             setPendingId(null)
+            refresh()
         }
     }, [patchUser])
 
@@ -70,6 +74,7 @@ export function useUsersTable({ patchUser, removeUser }: UsersListMutators) {
             addToastMessage('error', 'Failed to permanently delete user')
         } finally {
             setPendingId(null)
+            refresh()
         }
     }, [removeUser])
 

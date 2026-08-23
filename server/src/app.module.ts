@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common'
 import { controllers } from '@/api/controllers'
 import { strategies } from '@/api/middleware/strategies'
 import { EnvRepository } from '@/data/repositories/env.repository'
@@ -13,6 +13,7 @@ import { ClsModule } from 'nestjs-cls'
 import { ApplicationClientRegistry } from './core/clients/applicationClientRegistry'
 import { ScheduleModule } from '@nestjs/schedule'
 import { DiscoveryModule } from '@nestjs/core'
+import { SessionClientInfoMiddleware } from '@/api/middleware/sessionClientInfo.middleware'
 
 const configRepository: EnvRepository = new EnvRepository()
 const env = configRepository.getEnv()
@@ -42,4 +43,8 @@ const env = configRepository.getEnv()
         ApplicationClientRegistry,
     ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer): void {
+        consumer.apply(SessionClientInfoMiddleware).forRoutes('*')
+    }
+}

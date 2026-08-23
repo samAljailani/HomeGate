@@ -148,6 +148,11 @@ describe('SystemMetadataRepository', () => {
                     runOnStartup: false,
                     cronExpression: '0 0 0 * * *',
                 },
+                [ScheduledTasks.PURGE_EXPIRED_SESSIONS]: {
+                    enabled: false,
+                    runOnStartup: false,
+                    cronExpression: '0 0 0 * * *',
+                },
             }
 
             prismaMock.systemMetadata.findUnique.mockResolvedValue({

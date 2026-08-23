@@ -6,6 +6,7 @@ import { Task } from '@/decorators'
 import { SubscriptionService } from './subscriptions.service'
 import { UserService } from './user.service'
 import { ITaskRunRepository } from '@/data/repositories/ITaskRunRepository'
+import { ISessionRepository } from '@/data/repositories/ISessionRepository'
 import { DELETED_USER_RETENTION_DAYS, LOG_RETENTION_DAYS, TASK_RUN_RETENTION_DAYS } from '@/types/task.constants'
 import { LogService } from './log.service'
 
@@ -16,6 +17,7 @@ export class TaskService extends BaseService {
         @Inject(SubscriptionService) private subscriptionService: SubscriptionService,
         @Inject(UserService) private userService: UserService,
         @Inject(LogService) private logService: LogService,
+        @Inject(ISessionRepository) private sessionRepository: ISessionRepository,
         @Inject(ITaskRunRepository) private taskRunRepository: ITaskRunRepository
     ) {
         super(logger)
@@ -57,6 +59,17 @@ export class TaskService extends BaseService {
             const deleted = await this.taskRunRepository.deleteOlderThan(cutoff)
             if (deleted > 0) {
                 this.logger.log(`Purged ${deleted} task run record(s) older than ${TASK_RUN_RETENTION_DAYS} days`)
+            }
+            return true
+        })
+    }
+
+    @Task(ScheduledTasks.PURGE_EXPIRED_SESSIONS)
+    async purgeExpiredSessionsHandler(): Promise<boolean> {
+        return this.runTask(ScheduledTasks.PURGE_EXPIRED_SESSIONS, async () => {
+            const deleted = await this.sessionRepository.deleteExpired(new Date())
+            if (deleted > 0) {
+                this.logger.log(`Purged ${deleted} expired session(s)`)
             }
             return true
         })

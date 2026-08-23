@@ -42,6 +42,11 @@ const defaultTaskConfig: TasksSystemConfig = {
         runOnStartup: false,
         cronExpression: '0 0 2 * * *',
     },
+    [ScheduledTasks.PURGE_EXPIRED_SESSIONS]: {
+        enabled: true,
+        runOnStartup: false,
+        cronExpression: '0 0 3 * * *',
+    },
 }
 
 function createSystemMetadataRepositoryMock(overrides: Partial<TasksSystemConfig> = {}) {

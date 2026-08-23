@@ -81,6 +81,12 @@ export class ClientRouteController {
         return this.sendPage(res, clientRoutes.adminScheduledTasks)
     }
 
+    @AdminRoute()
+    @Get(clientRoutes.adminSessions)
+    adminSessions(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminSessions)
+    }
+
     @Public()
     @Get('*path')
     notFound(@Res() res: Response) {

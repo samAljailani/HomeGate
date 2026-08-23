@@ -79,6 +79,11 @@ export const routes = {
         stop: ':name/stop',
         run: ':name/run',
     }),
+    sessions: defineRoutes('/api/sessions', {
+        list: '',
+        revoke: ':id',
+        config: 'config',
+    }),
     test: defineRoutes('/api/test', {}),
 } satisfies RoutesConfig
 
@@ -93,6 +98,7 @@ export const clientRoutes = {
     adminSubscriptions: '/admin/subscriptions',
     adminLogs: '/admin/logs',
     adminScheduledTasks: '/admin/scheduled-tasks',
+    adminSessions: '/admin/sessions',
     error: '/error',
 } as const
 

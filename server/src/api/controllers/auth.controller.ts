@@ -2,6 +2,7 @@ import { Controller, Post, Get, Request, Inject, Res, UseGuards, Query } from '@
 import { ApiOkResponse, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { AuthService } from '@/api/services/auth.service'
 import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
+import { SessionService } from '@/api/services/session.service'
 import { OAuthUserProfileDto, SessionResponseDto } from '@/types/dtos/authDto'
 import { GoogleOAuthGuard } from '@/api/middleware/google-oauth.guard'
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
@@ -16,6 +17,7 @@ export class AuthController {
     constructor(
         @Inject(AuthService) private readonly authService: AuthService,
         @Inject(OAuthProviderManagementService) private readonly oauthProviderManagementService: OAuthProviderManagementService,
+        @Inject(SessionService) private readonly sessionService: SessionService,
         @Inject(LoggingProvider) private readonly logger: LoggingProvider,
     ) {
         this.logger.setContext(AuthController.name)
@@ -138,6 +140,15 @@ export class AuthController {
 
         if (!response || response.id === '' || response.id == null) {
             return res.redirect(`${clientRoutes.signIn}?error=auth_failed`)
+        }
+
+        try {
+            await this.sessionService.enforceLimitForUser(response.id)
+        } catch (error) {
+            // Eviction failure must not block login.
+            this.logger.error('Failed to enforce session limit', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
         }
 
         try {

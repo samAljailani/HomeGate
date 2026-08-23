@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common'
 import session from 'express-session'
 import { ISessionRepository } from '@/data/repositories/ISessionRepository'
 import { CryptographyProvider } from '@/infrastructure/cryptography.provider'
+import { parseUserAgent } from '@/lib/userAgent'
 
 @Injectable()
 export class PrismaSessionStore extends session.Store {
@@ -45,14 +46,30 @@ export class PrismaSessionStore extends session.Store {
 
             const existing = await this.sessionRepository.findById(hashedSid)
 
+            const ipAddress = (sessionData as any).ipAddress ?? null
+            const userAgent = (sessionData as any).userAgent ?? null
+            const { device, browser } = parseUserAgent(userAgent)
+
             if (existing) {
-                await this.sessionRepository.update({ sid: hashedSid, data: sessionData, expiresAt: expiresAt })
+                await this.sessionRepository.update({
+                    sid: hashedSid,
+                    data: sessionData,
+                    expiresAt: expiresAt,
+                    ipAddress,
+                    userAgent,
+                    device,
+                    browser,
+                })
             } else {
                 await this.sessionRepository.create({
                     sid: hashedSid,
                     data: sessionData,
                     expiresAt,
                     userId: (sessionData as any).userId || undefined,
+                    ipAddress,
+                    userAgent,
+                    device,
+                    browser,
                 })
             }
 

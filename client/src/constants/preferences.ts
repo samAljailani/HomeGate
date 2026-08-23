@@ -8,5 +8,6 @@ export const preferences = Object.freeze({
         adminSubscriptions: 'admin-subscriptions',
         adminLogs: 'admin-logs',
         adminScheduledTasks: 'admin-scheduled-tasks',
+        adminSessions: 'admin-sessions',
     },
 })

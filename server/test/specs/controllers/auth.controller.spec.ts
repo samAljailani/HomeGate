@@ -1,5 +1,6 @@
 import { AuthService } from '@/api/services/auth.service'
 import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
+import { SessionService } from '@/api/services/session.service'
 import { createAuthServiceMock } from '../../mocks/auth.service.mock'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -16,6 +17,12 @@ import { OAuthProviderName } from '@prisma/generated'
 function createOAuthProviderManagementServiceMock(): jest.Mocked<Pick<OAuthProviderManagementService, 'listEnabledNames'>> {
     return {
         listEnabledNames: jest.fn(),
+    }
+}
+
+function createSessionServiceMock(): jest.Mocked<Pick<SessionService, 'enforceLimitForUser'>> {
+    return {
+        enforceLimitForUser: jest.fn().mockResolvedValue(undefined),
     }
 }
 
@@ -43,6 +50,7 @@ describe('AuthController', () => {
             providers: [
                 { provide: AuthService, useValue: authServiceMock },
                 { provide: OAuthProviderManagementService, useValue: oauthProviderManagementMock },
+                { provide: SessionService, useValue: createSessionServiceMock() },
                 { provide: LoggingProvider, useValue: loggingProviderMock },
                 AuthController,
             ],
