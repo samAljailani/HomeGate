@@ -8,6 +8,7 @@ import '@/styles/index.css'
 
 export const metadata = {
     title: config.appName,
+    icons: { icon: '/images/logo.svg' },
 }
 
 // Inline script to apply theme before first paint, preventing flash

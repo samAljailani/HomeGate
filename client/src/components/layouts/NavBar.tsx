@@ -95,12 +95,15 @@ export default function NavBar(): JSX.Element {
                     </div>
 
                     <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-                        <div className="flex shrink-0 items-center">
+                        <div className="flex shrink-0 items-center gap-2">
                             <img
-                                alt="Your Company"
-                                src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=500"
-                                className="h-8 w-auto"
+                                alt="HomeGate"
+                                src="/images/logo.svg"
+                                className="h-8 w-8"
                             />
+                            <span className="hidden sm:block text-lg font-semibold text-nav">
+                                {config.appName}
+                            </span>
                         </div>
 
                         <div className="hidden sm:ml-6 sm:block">
