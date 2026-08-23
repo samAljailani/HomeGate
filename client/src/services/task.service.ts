@@ -32,6 +32,30 @@ class TaskService {
         if (error) throw error
         return data
     }
+
+    async startTask(name: string): Promise<TaskConfigResponseDto> {
+        const { data, error } = await apiClient.POST('/api/tasks/{name}/start', {
+            params: { path: { name } },
+        })
+        if (error) throw error
+        return data
+    }
+
+    async stopTask(name: string): Promise<TaskConfigResponseDto> {
+        const { data, error } = await apiClient.POST('/api/tasks/{name}/stop', {
+            params: { path: { name } },
+        })
+        if (error) throw error
+        return data
+    }
+
+    async runTask(name: string): Promise<TaskConfigResponseDto> {
+        const { data, error } = await apiClient.POST('/api/tasks/{name}/run', {
+            params: { path: { name } },
+        })
+        if (error) throw error
+        return data
+    }
 }
 
 export const taskService = new TaskService()

@@ -118,6 +118,24 @@ export class SubscriptionPatchRequestDto {
     autoRenew?: boolean
 }
 
+export class SubscriptionAutoRenewDto {
+    @ApiProperty({ type: Boolean })
+    @IsBoolean()
+    autoRenew!: boolean
+}
+
+export class SubscriptionPasswordResetDto {
+    @ApiProperty({ type: String })
+    @IsString()
+    @IsNotEmpty()
+    newPassword!: string
+
+    @ApiProperty({ type: String })
+    @IsString()
+    @Match('newPassword', { message: 'Passwords do not match' })
+    confirmPassword!: string
+}
+
 export class SubscriptionListRequestDto extends PaginationRequestDto {
     @ApiPropertyOptional({ type: String, description: 'Filter subscriptions by user id' })
     @IsOptional()

@@ -3,6 +3,8 @@ import { LogService } from '@/api/services/log.service'
 import { ILoggingRepository } from '@/data/repositories/ILoggingRepository'
 import { LogModel } from '@/types/models/logs'
 import { LogLevel } from '@/types/enums'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { createLoggerMock } from '../../mocks/logger.provider.mock'
 
 function createLoggingRepositoryMock(): jest.Mocked<Pick<ILoggingRepository, 'findMany' | 'count'>> {
     return {
@@ -34,7 +36,11 @@ describe('LogService', () => {
         loggingRepositoryMock = createLoggingRepositoryMock()
 
         const module: TestingModule = await Test.createTestingModule({
-            providers: [LogService, { provide: ILoggingRepository, useValue: loggingRepositoryMock }],
+            providers: [
+                LogService,
+                { provide: ILoggingRepository, useValue: loggingRepositoryMock },
+                { provide: LoggingProvider, useValue: createLoggerMock() },
+            ],
         }).compile()
 
         service = module.get<LogService>(LogService)

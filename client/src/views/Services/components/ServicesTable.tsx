@@ -42,7 +42,6 @@ function ServiceThumbnail({ service }: { service: ServiceResponseDto }) {
         )
     }
 
-    // eslint-disable-next-line @next/next/no-img-element
     return <img src={service.imageUrl} alt={service.name} className="h-8 w-28 rounded-md object-contain" />
 }
 

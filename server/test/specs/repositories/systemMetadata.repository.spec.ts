@@ -133,7 +133,22 @@ describe('SystemMetadataRepository', () => {
                     runOnStartup: false,
                     cronExpression: '0 0 0 * * *',
                 },
-                [ScheduledTasks.CLEANUP_PENDING_USERS]: {
+                [ScheduledTasks.CLEANUP_DELETED_USERS]: {
+                    enabled: false,
+                    runOnStartup: false,
+                    cronExpression: '0 0 0 * * *',
+                },
+                [ScheduledTasks.PURGE_OLD_LOGS]: {
+                    enabled: false,
+                    runOnStartup: false,
+                    cronExpression: '0 0 0 * * *',
+                },
+                [ScheduledTasks.PURGE_OLD_TASK_RUNS]: {
+                    enabled: false,
+                    runOnStartup: false,
+                    cronExpression: '0 0 0 * * *',
+                },
+                [ScheduledTasks.PURGE_EXPIRED_SESSIONS]: {
                     enabled: false,
                     runOnStartup: false,
                     cronExpression: '0 0 0 * * *',

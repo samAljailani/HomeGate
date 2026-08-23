@@ -20,10 +20,13 @@ export type UserModel = {
     lastName: string
     isAdmin: boolean
     status: UserStatus
+    avatarUrl: string | null
     createdAt: Date
 }
 
-export type CreateUserModel = Omit<UserModel, 'id' | 'isAdmin' | 'isDeleted' | 'isEnabled' | 'status' | 'createdAt'>
+export type CreateUserModel = Omit<UserModel, 'id' | 'isAdmin' | 'isDeleted' | 'isEnabled' | 'status' | 'createdAt' | 'avatarUrl'> & {
+    avatarUrl?: string | null
+}
 
 export type UpdateUserModel = Omit<UserModel, 'isAdmin' | 'isDeleted' | 'isEnabled' | 'status' | 'createdAt' | 'email'>
 

@@ -44,8 +44,10 @@ export const routes = {
         me: 'me',
         get: ':id',
         update: ':id',
+        autoRenew: ':id/auto-renew',
         renew: ':id/renew',
         delete: ':id',
+        resetPassword: ':id/reset-password',
     }),
     invites: defineRoutes('/api/invites', {
         create: '',
@@ -58,7 +60,8 @@ export const routes = {
         get: ':id',
         update: ':id',
         delete: ':id',
-        stats: 'stats'
+        stats: 'stats',
+        avatar: 'me/avatar',
     }),
     services: defineRoutes('/api/services', {
         list: '',
@@ -75,6 +78,17 @@ export const routes = {
     tasks: defineRoutes('/api/tasks', {
         list: '',
         update: ':name',
+        start: ':name/start',
+        stop: ':name/stop',
+        run: ':name/run',
+    }),
+    sessions: defineRoutes('/api/sessions', {
+        list: '',
+        revoke: ':id',
+        config: 'config',
+    }),
+    dashboard: defineRoutes('/api/dashboard', {
+        stats: 'stats',
     }),
     test: defineRoutes('/api/test', {}),
 } satisfies RoutesConfig
@@ -82,13 +96,17 @@ export const routes = {
 export const clientRoutes = {
     home: '/',
     signIn: '/signin',
+    account: '/account',
     admin: '/admin',
+    adminDashboard: '/admin/dashboard',
     adminInvites: '/admin/invites',
     adminUsers: '/admin/users',
     adminServices: '/admin/services',
     adminOAuthProviders: '/admin/oauth-providers',
     adminSubscriptions: '/admin/subscriptions',
     adminLogs: '/admin/logs',
+    adminScheduledTasks: '/admin/scheduled-tasks',
+    adminSessions: '/admin/sessions',
     error: '/error',
 } as const
 

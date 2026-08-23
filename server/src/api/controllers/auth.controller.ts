@@ -2,6 +2,7 @@ import { Controller, Post, Get, Request, Inject, Res, UseGuards, Query } from '@
 import { ApiOkResponse, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { AuthService } from '@/api/services/auth.service'
 import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
+import { SessionService } from '@/api/services/session.service'
 import { OAuthUserProfileDto, SessionResponseDto } from '@/types/dtos/authDto'
 import { GoogleOAuthGuard } from '@/api/middleware/google-oauth.guard'
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
@@ -16,6 +17,7 @@ export class AuthController {
     constructor(
         @Inject(AuthService) private readonly authService: AuthService,
         @Inject(OAuthProviderManagementService) private readonly oauthProviderManagementService: OAuthProviderManagementService,
+        @Inject(SessionService) private readonly sessionService: SessionService,
         @Inject(LoggingProvider) private readonly logger: LoggingProvider,
     ) {
         this.logger.setContext(AuthController.name)
@@ -39,6 +41,7 @@ export class AuthController {
             id: req.session.userId!,
             username: req.session.username!,
             isAdmin: req.session.isAdmin ?? false,
+            avatarUrl: req.session.avatarUrl ?? null,
         }
     }
 
@@ -141,6 +144,15 @@ export class AuthController {
         }
 
         try {
+            await this.sessionService.enforceLimitForUser(response.id)
+        } catch (error) {
+            // Eviction failure must not block login.
+            this.logger.error('Failed to enforce session limit', {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+        }
+
+        try {
             await new Promise<void>((resolve, reject) => {
                 req.session.regenerate((err) => {
                     if (err) return reject(err)
@@ -149,6 +161,9 @@ export class AuthController {
                     req.session.username = response.username
                     req.session.isAdmin = response.isAdmin
                     req.session.authProviderId = response.providerId
+                    if (response.avatarUrl != null) {
+                        req.session.avatarUrl = response.avatarUrl
+                    }
 
                     req.session.save((err) => {
                         if (err) return reject(err)

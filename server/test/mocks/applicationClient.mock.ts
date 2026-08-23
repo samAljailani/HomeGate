@@ -13,6 +13,7 @@ export function createApplicationClientMock(
         deleteUser: jest.fn(),
         disableUser: jest.fn(),
         enableUser: jest.fn(),
+        resetPassword: jest.fn(),
         ...overrides,
     }
 }

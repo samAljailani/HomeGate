@@ -332,6 +332,46 @@ export class ImmichClient implements IApplicationManager {
             return false
         }
     }
+
+    async resetPassword(filters: FilterApplicationUserParam, newPassword: string): Promise<boolean> {
+        if (filters.userServiceAccountId == null && filters.email == null && filters.username == null) {
+            this.logger.warn('Immich client received a bad reset password request')
+            return false
+        }
+
+        const userResult = await this.getUser(filters)
+        const userServiceAccountId = userResult.ok && userResult.user ? userResult.user.id : null
+
+        if (userServiceAccountId == null) {
+            this.logger.warn('Immich user not found for password reset')
+            return false
+        }
+
+        // updateUserAdmin accepts a password field and clears the change-on-login flag.
+        const url = `${this.config.baseUrl}${immichEndpoints.updateUser(encodeURIComponent(userServiceAccountId))}`
+
+        try {
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: this.headers,
+                body: JSON.stringify({ password: newPassword, shouldChangePassword: false }),
+            })
+
+            if (!response.ok) {
+                this.logger.error(
+                    `Failed to reset Immich password for service account '${userServiceAccountId}'. Status: ${response.status}`
+                )
+                return false
+            }
+
+            return true
+        } catch (error) {
+            this.logger.error(`Error resetting Immich password for service account '${userServiceAccountId}'.`, {
+                stackTrace: error instanceof Error ? error.stack : String(error),
+            })
+            return false
+        }
+    }
     // #endregion
 
     // #region private methods

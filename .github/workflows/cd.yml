@@ -52,8 +52,9 @@ jobs:
         run: |
           DEPLOY=${{ steps.cfg.outputs.deploy_dir }}
           COMPOSE=${{ steps.cfg.outputs.compose }}
-          if [ -f "$DEPLOY/$COMPOSE" ]; then
-            docker compose -p ${{ steps.cfg.outputs.project }} -f "$DEPLOY/$COMPOSE" down --remove-orphans || true
+          # The running stack was created from build/ — use that compose file to stop it.
+          if [ -f "$DEPLOY/build/$COMPOSE" ]; then
+            docker compose -p ${{ steps.cfg.outputs.project }} -f "$DEPLOY/build/$COMPOSE" down --remove-orphans || true
           fi
 
       - name: Download artifacts
@@ -107,11 +108,17 @@ jobs:
         run: |
           DEPLOY=${{ steps.cfg.outputs.deploy_dir }}
           COMPOSE=${{ steps.cfg.outputs.compose }}
-          # Promote only the compose file (and its .env) after a successful build
+          # Promote the full build context (Dockerfile, dist, client out, prisma, package.json)
+          # into a build/ subfolder so the stack can be rebuilt/restarted after deploy.
           mkdir -p "$DEPLOY"
-          mv "work/$COMPOSE" "$DEPLOY/$COMPOSE"
-          cp work/.env "$DEPLOY/.env"
-          docker compose -p ${{ steps.cfg.outputs.project }} -f "$DEPLOY/$COMPOSE" up -d
+          rm -rf "$DEPLOY/build"
+          mkdir -p "$DEPLOY/build"
+          cp -r work/. "$DEPLOY/build/"
+          # Keep a top-level copy of the compose file and .env for convenience.
+          cp "$DEPLOY/build/$COMPOSE" "$DEPLOY/$COMPOSE"
+          cp "$DEPLOY/build/.env" "$DEPLOY/.env"
+          # Run from build/ so the compose build context (deploy/Dockerfile) resolves.
+          docker compose -p ${{ steps.cfg.outputs.project }} -f "$DEPLOY/build/$COMPOSE" up -d
 
       - name: Wait for healthy
         run: |
@@ -124,7 +131,7 @@ jobs:
             sleep 2
           done
           echo "Server did not become healthy in time"
-          docker compose -p ${{ steps.cfg.outputs.project }} -f ${{ steps.cfg.outputs.deploy_dir }}/${{ steps.cfg.outputs.compose }} logs server --tail=50
+          docker compose -p ${{ steps.cfg.outputs.project }} -f ${{ steps.cfg.outputs.deploy_dir }}/build/${{ steps.cfg.outputs.compose }} logs server --tail=50
           exit 1
 
       - name: Cleanup

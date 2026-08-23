@@ -278,6 +278,51 @@ export class JellyfinClient implements IApplicationManager {
         return this.updateUserDisabledStatus(filters, false)
     }
 
+    async resetPassword(filters: FilterApplicationUserParam, newPassword: string): Promise<boolean> {
+        if (filters.userServiceAccountId == undefined && filters.username == undefined) {
+            this.logger.warn('Jellyfin client received a bad reset password request')
+            return false
+        }
+
+        // Admin-authenticated reset: the caller (API key) is an administrator, so the
+        // current-password check is skipped server-side. See Jellyfin UserController.UpdateUserPassword.
+        let userServiceAccountId = filters.userServiceAccountId
+
+        if (userServiceAccountId == undefined) {
+            const user = await this.getUserByUsername(filters.username!)
+            userServiceAccountId = user?.id
+        }
+
+        if (userServiceAccountId == undefined) {
+            this.logger.warn(`Jellyfin user not found for password reset. username: '${filters.username ?? ''}'`)
+            return false
+        }
+
+        const url = `${this.config.baseUrl}${jellyfinEndpoints.updateUserPassword(encodeURIComponent(userServiceAccountId))}`
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: this.headers,
+                body: JSON.stringify({ NewPw: newPassword }),
+            })
+
+            if (!response.ok) {
+                this.logger.error(
+                    `Failed to reset Jellyfin password for service account '${userServiceAccountId}'. Status: ${response.status}`
+                )
+                return false
+            }
+
+            return true
+        } catch (error) {
+            this.logger.error(`Error resetting Jellyfin password for service account '${userServiceAccountId}'.`, {
+                stackTrace: error instanceof Error ? error.stack : String(error),
+            })
+            return false
+        }
+    }
+
     // #endregion
 
     // #region private methods

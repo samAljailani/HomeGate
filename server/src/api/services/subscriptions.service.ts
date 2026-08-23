@@ -1,6 +1,7 @@
 import {
     BadRequestException,
     ConflictException,
+    ForbiddenException,
     Inject,
     Injectable,
     InternalServerErrorException,
@@ -411,6 +412,67 @@ export class SubscriptionService {
         return this.getById(subscriptionId)
     }
 
+    /**
+     * Toggles auto-renew for the subscription owner (self-service). Admins use `update`.
+     */
+    async setAutoRenew(subscriptionId: string, currentUserId: string, autoRenew: boolean): Promise<SubscriptionResponseDto> {
+        const account = await this.getRawById(subscriptionId)
+        if (account.userId !== currentUserId) {
+            throw new ForbiddenException('You can only modify your own subscription')
+        }
+
+        const updated = await this.userAccountRepository.update({
+            userId: account.userId,
+            serviceId: account.serviceId,
+            autoRenew,
+        })
+
+        if (!updated) {
+            throw new BadRequestException('Failed to update auto-renew')
+        }
+
+        this.logger.log(`User '${currentUserId}' set autoRenew=${autoRenew} for subscription '${subscriptionId}'`)
+
+        return this.getById(subscriptionId)
+    }
+
+    /**
+     * Resets the external service account password for the subscription owner.
+     * Uses the service's admin API key, so no current password is required.
+     */
+    async resetAccountPassword(subscriptionId: string, currentUserId: string, newPassword: string): Promise<boolean> {
+        const account = await this.getRawById(subscriptionId)
+        if (account.userId !== currentUserId) {
+            throw new ForbiddenException('You can only reset a password on your own subscription')
+        }
+
+        if (!account.userServiceAccountId) {
+            throw new BadRequestException('Service account is not provisioned yet')
+        }
+
+        const service = await this.serviceRepository.findById(account.serviceId)
+        if (!service) {
+            throw new BadRequestException('Service does not exist')
+        }
+
+        const client = await this.getServiceClient(service.name)
+        const ok = await client.resetPassword(
+            {
+                userServiceAccountId: account.userServiceAccountId,
+                username: account.username,
+                email: undefined,
+            },
+            newPassword
+        )
+
+        if (!ok) {
+            throw new ServiceUnavailableException('Failed to reset the service account password')
+        }
+
+        this.logger.log(`User '${currentUserId}' reset password for subscription '${subscriptionId}'`)
+        return true
+    }
+
     async renew(subscriptionId: string): Promise<SubscriptionResponseDto> {
         const account = await this.getRawById(subscriptionId)
 
@@ -509,9 +571,8 @@ export class SubscriptionService {
             const service = serviceMap.get(account.serviceId)
             return {
                 ...this.mapSubscription(account),
-                userUsername: user?.username,
-                userEmail: user?.email,
-                serviceName: service?.name,
+                ...(user ? { userUsername: user.username, userEmail: user.email } : {}),
+                ...(service ? { serviceName: service.name } : {}),
             }
         })
     }

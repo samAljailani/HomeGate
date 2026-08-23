@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, NotFoundException, Param, Patch } from '@nestjs/common'
+import { Body, Controller, Get, Inject, NotFoundException, Param, Patch, Post } from '@nestjs/common'
 import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { routes } from '@/types/dtos/routes'
@@ -26,10 +26,47 @@ export class TaskController {
     @ApiBody({ type: UpdateTaskConfigDto })
     @ApiOkResponse({ type: TaskConfigResponseDto })
     async updateTask(@Param() params: TaskParamsDto, @Body() dto: UpdateTaskConfigDto): Promise<TaskConfigResponseDto> {
-        if (!Object.values(ScheduledTasks).includes(params.name as ScheduledTasks)) {
-            throw new NotFoundException(`Task '${params.name}' does not exist`)
+        return this.schedulerService.updateTask(this.getTaskName(params.name), dto)
+    }
+
+    @Post(routes.tasks.subPath.start)
+    @AdminRoute()
+    @ApiOperation({ summary: 'Start a scheduled task' })
+    @ApiParam({ name: 'name', type: String })
+    @ApiOkResponse({ type: TaskConfigResponseDto })
+    async startTask(@Param() params: TaskParamsDto): Promise<TaskConfigResponseDto> {
+        const taskName = this.getTaskName(params.name)
+        this.schedulerService.start(taskName)
+        return this.schedulerService.getTaskConfig(taskName)
+    }
+
+    @Post(routes.tasks.subPath.stop)
+    @AdminRoute()
+    @ApiOperation({ summary: 'Stop a scheduled task' })
+    @ApiParam({ name: 'name', type: String })
+    @ApiOkResponse({ type: TaskConfigResponseDto })
+    async stopTask(@Param() params: TaskParamsDto): Promise<TaskConfigResponseDto> {
+        const taskName = this.getTaskName(params.name)
+        this.schedulerService.stop(taskName)
+        return this.schedulerService.getTaskConfig(taskName)
+    }
+
+    @Post(routes.tasks.subPath.run)
+    @AdminRoute()
+    @ApiOperation({ summary: 'Run a task immediately, regardless of its enabled state or schedule' })
+    @ApiParam({ name: 'name', type: String })
+    @ApiOkResponse({ type: TaskConfigResponseDto })
+    async runTask(@Param() params: TaskParamsDto): Promise<TaskConfigResponseDto> {
+        const taskName = this.getTaskName(params.name)
+        await this.schedulerService.runNow(taskName)
+        return this.schedulerService.getTaskConfig(taskName)
+    }
+
+    private getTaskName(name: string): ScheduledTasks {
+        if (!Object.values(ScheduledTasks).includes(name as ScheduledTasks)) {
+            throw new NotFoundException(`Task '${name}' does not exist`)
         }
 
-        return this.schedulerService.updateTask(params.name as ScheduledTasks, dto)
+        return name as ScheduledTasks
     }
 }

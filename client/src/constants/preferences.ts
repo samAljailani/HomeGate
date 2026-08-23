@@ -7,5 +7,7 @@ export const preferences = Object.freeze({
         adminOAuthProviders: 'admin-oauth-providers',
         adminSubscriptions: 'admin-subscriptions',
         adminLogs: 'admin-logs',
+        adminScheduledTasks: 'admin-scheduled-tasks',
+        adminSessions: 'admin-sessions',
     },
 })

@@ -206,6 +206,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/subscriptions/{id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset the service account password (subscription owner only) */
+        post: operations["SubscriptionController_resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subscriptions/{id}/auto-renew": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Toggle auto-renew for the subscription owner */
+        patch: operations["SubscriptionController_setAutoRenew"];
+        trace?: never;
+    };
     "/api/invites": {
         parameters: {
             query?: never;
@@ -431,6 +465,126 @@ export interface paths {
         patch: operations["TaskController_updateTask"];
         trace?: never;
     };
+    "/api/tasks/{name}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a scheduled task */
+        post: operations["TaskController_startTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{name}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop a scheduled task */
+        post: operations["TaskController_stopTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{name}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run a task immediately, regardless of its enabled state or schedule */
+        post: operations["TaskController_runTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List active sessions (admin only) */
+        get: operations["SessionController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get session configuration (admin only) */
+        get: operations["SessionController_getConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update session configuration (admin only) */
+        patch: operations["SessionController_updateConfig"];
+        trace?: never;
+    };
+    "/api/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke a session (admin only) */
+        delete: operations["SessionController_revoke"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get aggregate admin dashboard statistics */
+        get: operations["DashboardController_getStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/signin": {
         parameters: {
             query?: never;
@@ -479,6 +633,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_account"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -495,14 +665,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin": {
+    "/admin/dashboard": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["ClientRouteController_admin"];
+        get: operations["ClientRouteController_adminDashboard"];
         put?: never;
         post?: never;
         delete?: never;
@@ -575,6 +745,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/scheduled-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminScheduledTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/{path}": {
         parameters: {
             query?: never;
@@ -600,6 +818,7 @@ export interface components {
             id: string;
             username: string;
             isAdmin: boolean;
+            avatarUrl: string | null;
         };
         SubscriptionCreateRequestDto: {
             serviceId: number;
@@ -643,6 +862,13 @@ export interface components {
         SubscriptionDeleteRequestDto: {
             /** @description Immediately delete the external account instead of cancelling auto-renew */
             immediate?: boolean;
+        };
+        SubscriptionPasswordResetDto: {
+            newPassword: string;
+            confirmPassword: string;
+        };
+        SubscriptionAutoRenewDto: {
+            autoRenew: boolean;
         };
         InviteAccountDto: {
             serviceName: string;
@@ -708,6 +934,7 @@ export interface components {
             firstName: string;
             lastName: string;
             isAdmin: boolean;
+            avatarUrl?: string | null;
             /** @enum {string} */
             status: "ACTIVE" | "PENDING" | "DISABLED" | "DELETED";
             /** Format: date-time */
@@ -767,11 +994,70 @@ export interface components {
             runOnStartup: boolean;
             cronExpression: string;
             isActive: boolean;
+            /** Format: date-time */
+            lastAttemptedRunAt?: string | null;
+            /** Format: date-time */
+            lastSuccessfulRunAt?: string | null;
+            /** @description Duration in milliseconds of the last attempted run */
+            lastRunDurationMs?: number | null;
         };
         UpdateTaskConfigDto: {
             enabled?: boolean;
             runOnStartup?: boolean;
             cronExpression?: string;
+        };
+        AdminSessionResponseDto: {
+            id: string;
+            userId?: string | null;
+            username?: string | null;
+            provider?: string | null;
+            ipAddress?: string | null;
+            device?: string | null;
+            browser?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        SessionConfigResponseDto: {
+            /** @description Maximum concurrent sessions allowed per user; oldest are evicted at login */
+            maxPerUser: number;
+        };
+        UpdateSessionConfigDto: {
+            maxPerUser: number;
+        };
+        DashboardUsersDto: {
+            total: number;
+            active: number;
+            pending: number;
+            disabled: number;
+        };
+        DashboardSessionsDto: {
+            active: number;
+            expired: number;
+        };
+        DashboardSubscriptionsDto: {
+            total: number;
+            active: number;
+        };
+        DashboardTasksDto: {
+            total: number;
+            /** @description Tasks whose most recent run failed */
+            failing: number;
+        };
+        DashboardErrorDto: {
+            id: number;
+            message: string;
+            context: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        DashboardStatsResponseDto: {
+            users: components["schemas"]["DashboardUsersDto"];
+            sessions: components["schemas"]["DashboardSessionsDto"];
+            subscriptions: components["schemas"]["DashboardSubscriptionsDto"];
+            tasks: components["schemas"]["DashboardTasksDto"];
+            recentErrors: components["schemas"]["DashboardErrorDto"][];
         };
         PaginationRequestDto: {
             /** @default 50 */
@@ -1164,6 +1450,84 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Subscription renewed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionResponseDto"];
+                };
+            };
+            /** @description Subscription not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SubscriptionController_resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionPasswordResetDto"];
+            };
+        };
+        responses: {
+            /** @description Password reset successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Passwords do not match or account not provisioned */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Subscription not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description External service unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SubscriptionController_setAutoRenew: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionAutoRenewDto"];
+            };
+        };
+        responses: {
+            /** @description Auto-renew updated */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1615,6 +1979,176 @@ export interface operations {
             };
         };
     };
+    TaskController_startTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskConfigResponseDto"];
+                };
+            };
+        };
+    };
+    TaskController_stopTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskConfigResponseDto"];
+                };
+            };
+        };
+    };
+    TaskController_runTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskConfigResponseDto"];
+                };
+            };
+        };
+    };
+    SessionController_list: {
+        parameters: {
+            query?: {
+                skip?: number;
+                take?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AdminSessionResponseDto"][];
+                        total: number;
+                        hasMore: boolean;
+                    };
+                };
+            };
+        };
+    };
+    SessionController_getConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionConfigResponseDto"];
+                };
+            };
+        };
+    };
+    SessionController_updateConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSessionConfigDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionConfigResponseDto"];
+                };
+            };
+        };
+    };
+    SessionController_revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session revoked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DashboardController_getStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardStatsResponseDto"];
+                };
+            };
+        };
+    };
     ClientRouteController_signIn: {
         parameters: {
             query?: never;
@@ -1666,6 +2200,23 @@ export interface operations {
             };
         };
     };
+    ClientRouteController_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ClientRouteController_adminUsers: {
         parameters: {
             query?: never;
@@ -1683,7 +2234,7 @@ export interface operations {
             };
         };
     };
-    ClientRouteController_admin: {
+    ClientRouteController_adminDashboard: {
         parameters: {
             query?: never;
             header?: never;
@@ -1752,6 +2303,57 @@ export interface operations {
         };
     };
     ClientRouteController_adminSubscriptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminLogs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminScheduledTasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminSessions: {
         parameters: {
             query?: never;
             header?: never;

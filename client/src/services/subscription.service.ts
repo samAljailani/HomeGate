@@ -91,6 +91,24 @@ class SubscriptionService {
         if (error) throw error
         return data!
     }
+
+    async setAutoRenew(id: string, autoRenew: boolean): Promise<SubscriptionResponseDto> {
+        const { data, error } = await apiClient.PATCH(
+            '/api/subscriptions/{id}/auto-renew',
+            { params: { path: { id } }, body: { autoRenew } }
+        )
+        if (error) throw error
+        return data!
+    }
+
+    async resetPassword(id: string, newPassword: string, confirmPassword: string): Promise<boolean> {
+        const { data, error } = await apiClient.POST(
+            '/api/subscriptions/{id}/reset-password',
+            { params: { path: { id } }, body: { newPassword, confirmPassword } }
+        )
+        if (error) throw error
+        return data!
+    }
 }
 
 export const subscriptionService = new SubscriptionService()

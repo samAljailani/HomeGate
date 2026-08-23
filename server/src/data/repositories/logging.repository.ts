@@ -55,6 +55,13 @@ export class LoggingRepository implements ILoggingRepository {
         })
     }
 
+    public async deleteOlderThan(cutoff: Date): Promise<number> {
+        const result = await this.db.log.deleteMany({
+            where: { createdAt: { lt: cutoff } },
+        })
+        return result.count
+    }
+
     private buildWhere(filter: LogFilterOptions) {
         return {
             ...(filter.userId !== undefined ? { userId: filter.userId } : {}),

@@ -1,5 +1,6 @@
 import { AuthService } from '@/api/services/auth.service'
 import { OAuthProviderManagementService } from '@/api/services/oauthProviderManagement.service'
+import { SessionService } from '@/api/services/session.service'
 import { createAuthServiceMock } from '../../mocks/auth.service.mock'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -19,9 +20,15 @@ function createOAuthProviderManagementServiceMock(): jest.Mocked<Pick<OAuthProvi
     }
 }
 
+function createSessionServiceMock(): jest.Mocked<Pick<SessionService, 'enforceLimitForUser'>> {
+    return {
+        enforceLimitForUser: jest.fn().mockResolvedValue(undefined),
+    }
+}
+
 function createOAuthAuthResultFixture(overrides: Partial<OAuthAuthModel> = {}): OAuthAuthModel {
     const user = createUserFixture()
-    return { id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: 1, ...overrides }
+    return { id: user.id, username: user.username, isAdmin: user.isAdmin, providerId: 1, avatarUrl: null, ...overrides }
 }
 
 describe('AuthController', () => {
@@ -43,6 +50,7 @@ describe('AuthController', () => {
             providers: [
                 { provide: AuthService, useValue: authServiceMock },
                 { provide: OAuthProviderManagementService, useValue: oauthProviderManagementMock },
+                { provide: SessionService, useValue: createSessionServiceMock() },
                 { provide: LoggingProvider, useValue: loggingProviderMock },
                 AuthController,
             ],

@@ -8,19 +8,23 @@ import { DiscoveredTask, TaskHandler } from '@/types/models/tasks'
 import { CronJob, CronTime, validateCronExpression } from 'cron'
 import { TaskService } from './tasks.service'
 import { ISystemMetadataRepository } from '@/data/repositories/ISystemMetadataRepository'
+import { ITaskRunRepository } from '@/data/repositories/ITaskRunRepository'
 import { SystemConfigKey, TaskConfig } from '@/types/models/SystemConfig'
 import { ScheduledTasks } from '@/types/enums'
 import { TaskConfigResponseDto, UpdateTaskConfigDto } from '@/types/dtos/taskDto'
 
 @Injectable()
 export class SchedulerService extends BaseService implements OnApplicationBootstrap, OnModuleDestroy {
+    private discoveredTasks: DiscoveredTask[] = []
+
     constructor(
         @Inject(LoggingProvider) logger: LoggingProvider,
         @Inject(Reflector) private reflector: Reflector,
         @Inject(DiscoveryService) private discoveryService: DiscoveryService,
         @Inject(MetadataScanner) private metadataScanner: MetadataScanner,
         @Inject(SchedulerRegistry) private schedulerRegistry: SchedulerRegistry,
-        @Inject(ISystemMetadataRepository) private systemMetadataRepository: ISystemMetadataRepository
+        @Inject(ISystemMetadataRepository) private systemMetadataRepository: ISystemMetadataRepository,
+        @Inject(ITaskRunRepository) private taskRunRepository: ITaskRunRepository
     ) {
         super(logger)
     }
@@ -37,6 +41,7 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
 
     async startAll(): Promise<void> {
         const tasks = this.discoverTasks()
+        this.discoveredTasks = tasks
 
         // Persist any new keys found in the default configuration that is not currently saved in the database.
         const newKeys = await this.systemMetadataRepository.syncDefaults(SystemConfigKey.TASKS)
@@ -104,22 +109,45 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
     // #region Task Configuration
 
     async getTaskConfigs(): Promise<TaskConfigResponseDto[]> {
+        return Promise.all(Object.values(ScheduledTasks).map((name) => this.getTaskConfig(name)))
+    }
+
+    async getTaskConfig(taskName: ScheduledTasks): Promise<TaskConfigResponseDto> {
         const taskConfig = await this.systemMetadataRepository.get(SystemConfigKey.TASKS)
+        const config = taskConfig[taskName]
+        const isActive = this.schedulerRegistry.doesExist('cron', taskName)
+            ? this.schedulerRegistry.getCronJob(taskName).isActive
+            : false
 
-        return Object.values(ScheduledTasks).map((name) => {
-            const config = taskConfig[name]
-            const isActive = this.schedulerRegistry.doesExist('cron', name)
-                ? this.schedulerRegistry.getCronJob(name).isActive
-                : false
+        const lastRunInfo = await this.getLastRunInfo(taskName)
 
-            return {
-                name,
-                enabled: config.enabled,
-                runOnStartup: config.runOnStartup,
-                cronExpression: config.cronExpression,
-                isActive,
-            }
-        })
+        return {
+            name: taskName,
+            enabled: config.enabled,
+            runOnStartup: config.runOnStartup,
+            cronExpression: config.cronExpression,
+            isActive,
+            ...lastRunInfo,
+        }
+    }
+
+    private async getLastRunInfo(taskName: ScheduledTasks): Promise<{
+        lastAttemptedRunAt: Date | null
+        lastSuccessfulRunAt: Date | null
+        lastRunDurationMs: number | null
+    }> {
+        const [lastAttempted, lastSuccessful] = await Promise.all([
+            this.taskRunRepository.findLatest(taskName),
+            this.taskRunRepository.findLatestSuccessful(taskName),
+        ])
+
+        return {
+            lastAttemptedRunAt: lastAttempted?.startedAt ?? null,
+            lastSuccessfulRunAt: lastSuccessful?.startedAt ?? null,
+            lastRunDurationMs: lastAttempted
+                ? lastAttempted.finishedAt.getTime() - lastAttempted.startedAt.getTime()
+                : null,
+        }
     }
 
     async updateTask(taskName: ScheduledTasks, dto: UpdateTaskConfigDto): Promise<TaskConfigResponseDto> {
@@ -146,22 +174,24 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
 
         this.applyTaskConfig(taskName, updated)
 
-        const isActive = this.schedulerRegistry.doesExist('cron', taskName)
-            ? this.schedulerRegistry.getCronJob(taskName).isActive
-            : false
-
-        return {
-            name: taskName,
-            enabled: updated.enabled,
-            runOnStartup: updated.runOnStartup,
-            cronExpression: updated.cronExpression,
-            isActive,
-        }
+        return this.getTaskConfig(taskName)
     }
 
     private applyTaskConfig(taskName: ScheduledTasks, config: TaskConfig): void {
         if (!this.schedulerRegistry.doesExist('cron', taskName)) {
-            this.logger.warn(`Cannot update task '${taskName}': job is not registered`)
+            // Job was never created (task was disabled at startup).
+            // Create it on the spot using the discovered handler.
+            const discovered = this.discoveredTasks.find((t) => t.name === taskName)
+            if (!discovered) {
+                this.logger.warn(`Cannot apply config for '${taskName}': no discovered handler found`)
+                return
+            }
+            this.create(taskName, config.cronExpression, discovered.handler)
+            if (!config.enabled) {
+                // Created but immediately disabled — stop it.
+                this.schedulerRegistry.getCronJob(taskName).stop()
+            }
+            this.logger.log(`Late-registered task '${taskName}' — cron='${config.cronExpression}', enabled=${config.enabled}`)
             return
         }
 
@@ -213,6 +243,20 @@ export class SchedulerService extends BaseService implements OnApplicationBootst
             task.stop()
             this.logger.log(`Stopped cron job '${taskName}'`)
         }
+    }
+
+    /**
+     * Executes a task handler once, immediately, regardless of its enabled state or cron schedule.
+     * Runs outside the SchedulerRegistry, so it works even when no cron job is registered.
+     */
+    async runNow(taskName: ScheduledTasks): Promise<void> {
+        const discovered = this.discoveredTasks.find((t) => t.name === taskName)
+        if (!discovered) {
+            throw new BadRequestException(`Task '${taskName}' has no discovered handler`)
+        }
+
+        this.logger.log(`Manually triggering task '${taskName}'`)
+        await discovered.handler()
     }
 
     create(taskName: ScheduledTasks, cronExpression: string, handler: TaskHandler): CronJob | undefined {

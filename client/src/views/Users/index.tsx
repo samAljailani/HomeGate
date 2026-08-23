@@ -11,10 +11,16 @@ export function AdminUsers() {
     const usersTable = useUsersTable({
         patchUser: usersList.patchUser,
         removeUser: usersList.removeUser,
+        transitionStatus: statsList.transitionStatus,
+        decrement: statsList.decrement,
     })
 
     return (
         <div className="py-8 space-y-8">
+            <div>
+                <h1 className="text-2xl font-bold">Users</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Manage user accounts, roles, and access.</p>
+            </div>
             <UsersStats
                 stats={statsList.stats}
                 isLoading={statsList.isLoading}

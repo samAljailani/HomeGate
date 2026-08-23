@@ -9,11 +9,8 @@ export interface IUserRepository {
     count(filter: UserFilterOptions): Promise<number>
     getUserCounts(userStatuses?: UserStatus[]): Promise<UserStatusCountModel[]>
     create(request: CreateUserModel): Promise<UserModel | null>
-    createProvisional(request: CreateUserModel): Promise<UserModel>
-    touchProvisional(id: string): Promise<void>
     activate(id: string): Promise<UserModel>
-    findPendingByEmail(email: string): Promise<UserModel | null>
-    deletePendingOlderThan(cutoff: Date): Promise<number>
+    deleteDeletedOlderThan(cutoff: Date): Promise<number>
     createWithOAuthIdentity(request: CreateUserModel, providerId: number, profileId: string): Promise<UserModel>
     update(request: UpdateUserModel): Promise<UserModel | null>
     usernameExists(username: string): Promise<boolean>
@@ -21,4 +18,5 @@ export interface IUserRepository {
     hardDelete(id: string): Promise<boolean>
     setEnabled(id: string, enabled: boolean): Promise<UserModel | null>
     setAdmin(id: string, isAdmin: boolean): Promise<UserModel | null>
+    setAvatar(id: string, avatarUrl: string): Promise<UserModel | null>
 }

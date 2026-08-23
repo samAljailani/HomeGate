@@ -20,6 +20,8 @@ import { ILoggingRepository } from './ILoggingRepository'
 import { LoggingRepository } from './logging.repository'
 import { ISystemMetadataRepository } from './ISystemMetadataRepository'
 import { SystemMetadataRepository } from './systemMetadata.repository'
+import { ITaskRunRepository } from './ITaskRunRepository'
+import { TaskRunRepository } from './taskRun.repository'
 
 export { IUserRepository } from './IUserRepository'
 export { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository'
@@ -30,6 +32,7 @@ export { IServiceRepository } from './IServiceRepository'
 export { IUserAccountRepository } from './IUserAccountRepository'
 export { ISessionRepository } from './ISessionRepository'
 export { ISystemMetadataRepository } from './ISystemMetadataRepository'
+export { ITaskRunRepository } from './ITaskRunRepository'
 
 export const repositories = [
     EnvRepository,
@@ -46,4 +49,5 @@ export const repositories = [
     { provide: ISessionRepository, useClass: SessionRepository },
     { provide: IInviteRepository, useClass: InviteRepository },
     { provide: ISystemMetadataRepository, useClass: SystemMetadataRepository },
+    { provide: ITaskRunRepository, useClass: TaskRunRepository },
 ]

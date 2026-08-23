@@ -1,6 +1,6 @@
 import { CronExpression } from '@nestjs/schedule'
 import { ScheduledTasks, ImmichProvisioningMode } from '@/types/enums'
-import { SystemConfigKey, SystemConfigMap, TasksSystemConfig, JellyfinSystemConfig, ImmichSystemConfig } from '@/types/models/SystemConfig'
+import { SystemConfigKey, SystemConfigMap, TasksSystemConfig, JellyfinSystemConfig, ImmichSystemConfig, SessionsSystemConfig } from '@/types/models/SystemConfig'
 
 const taskDefaults: TasksSystemConfig = Object.freeze({
     [ScheduledTasks.PROCESS_SUBSCRIPTIONS]: {
@@ -18,10 +18,25 @@ const taskDefaults: TasksSystemConfig = Object.freeze({
         runOnStartup: true,
         cronExpression: CronExpression.EVERY_12_HOURS,
     },
-    [ScheduledTasks.CLEANUP_PENDING_USERS]: {
+    [ScheduledTasks.CLEANUP_DELETED_USERS]: {
         enabled: true,
-        runOnStartup: true,
-        cronExpression: '*/2 * * * *',
+        runOnStartup: false,
+        cronExpression: CronExpression.EVERY_DAY_AT_MIDNIGHT,
+    },
+    [ScheduledTasks.PURGE_OLD_LOGS]: {
+        enabled: true,
+        runOnStartup: false,
+        cronExpression: CronExpression.EVERY_DAY_AT_1AM,
+    },
+    [ScheduledTasks.PURGE_OLD_TASK_RUNS]: {
+        enabled: true,
+        runOnStartup: false,
+        cronExpression: CronExpression.EVERY_DAY_AT_2AM,
+    },
+    [ScheduledTasks.PURGE_EXPIRED_SESSIONS]: {
+        enabled: true,
+        runOnStartup: false,
+        cronExpression: CronExpression.EVERY_DAY_AT_3AM,
     },
 }) as TasksSystemConfig
 
@@ -38,8 +53,13 @@ const immichDefaults: ImmichSystemConfig = Object.freeze({
     provisioningMode: ImmichProvisioningMode.Local,
 })
 
+const sessionsDefaults: SessionsSystemConfig = Object.freeze({
+    maxPerUser: 10,
+})
+
 export const systemDefaults: Readonly<SystemConfigMap> = Object.freeze({
     [SystemConfigKey.TASKS]: taskDefaults,
     [SystemConfigKey.JELLYFIN]: jellyfinDefaults,
     [SystemConfigKey.IMMICH]: immichDefaults,
+    [SystemConfigKey.SESSIONS]: sessionsDefaults,
 })

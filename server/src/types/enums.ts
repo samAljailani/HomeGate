@@ -63,7 +63,10 @@ export enum ScheduledTasks {
     PROCESS_SUBSCRIPTIONS = 'process_subscriptions',
     CLEANUP_STALE_LOCAL_ACCOUNTS = 'cleanup_stale_local_accounts',
     SYNC_CLIENT_ACCOUNTS = 'sync_client_accounts',
-    CLEANUP_PENDING_USERS = 'cleanup_pending_users',
+    CLEANUP_DELETED_USERS = 'cleanup_deleted_users',
+    PURGE_OLD_LOGS = 'purge_old_logs',
+    PURGE_OLD_TASK_RUNS = 'purge_old_task_runs',
+    PURGE_EXPIRED_SESSIONS = 'purge_expired_sessions',
 }
 
 export enum AppEvent {

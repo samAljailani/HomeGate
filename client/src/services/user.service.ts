@@ -8,6 +8,7 @@ export type UserDeleteRequestDto    = components['schemas']['UserDeleteRequestDt
 export type UserResponseForAdminDto = components['schemas']['UserResponseForAdminDto']
 export type UserStatsResponseDto    = components['schemas']['UserStatsResponseDto']
 export type UserStatusCountDto      = components['schemas']['UserStatusCountDto']
+export type UserStatus              = UserResponseForAdminDto['status']
 /**
  * All user-related API calls live here. Components/hooks call these methods
  * instead of using `apiClient.GET/PATCH/DELETE(...)` directly, so:

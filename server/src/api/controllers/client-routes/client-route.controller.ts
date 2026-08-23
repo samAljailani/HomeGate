@@ -33,6 +33,11 @@ export class ClientRouteController {
         return res.sendFile(resolve(this.staticRoot, 'index.html'))
     }
 
+    @Get(clientRoutes.account)
+    account(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.account)
+    }
+
     @AdminRoute()
     @Get(clientRoutes.adminUsers)
     adminUsers(@Res() res: Response) {
@@ -40,9 +45,9 @@ export class ClientRouteController {
     }
 
     @AdminRoute()
-    @Get(clientRoutes.admin)
-    admin(@Res() res: Response) {
-        return this.sendPage(res, 'admin')
+    @Get(clientRoutes.adminDashboard)
+    adminDashboard(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminDashboard)
     }
 
     @AdminRoute()
@@ -73,6 +78,18 @@ export class ClientRouteController {
     @Get(clientRoutes.adminLogs)
     adminLogs(@Res() res: Response) {
         return this.sendPage(res, clientRoutes.adminLogs)
+    }
+
+    @AdminRoute()
+    @Get(clientRoutes.adminScheduledTasks)
+    adminScheduledTasks(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminScheduledTasks)
+    }
+
+    @AdminRoute()
+    @Get(clientRoutes.adminSessions)
+    adminSessions(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminSessions)
     }
 
     @Public()

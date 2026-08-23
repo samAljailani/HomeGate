@@ -60,41 +60,25 @@ export class UserService extends BaseService {
         return this.userModelToLoadRequestForAdmin(user)
     }
 
-    /**
-     * Creates a provisional (PENDING) account for a bound invite. The account is activated on the
-     * user's first successful OAuth sign-in; abandoned provisional accounts are reaped by the
-     * `cleanup_pending_users` scheduled task.
-     */
-    async createProvisionalUser(email: string): Promise<UserResponseForAdminDto> {
-        const username = await this.generateUsername(email)
-        const user = await this.userRepository.createProvisional({ email, username, firstName: '', lastName: '' })
-        return this.userModelToLoadRequestForAdmin(user)
-    }
-
     async activateUser(userId: string): Promise<UserResponseForAdminDto> {
         const user = await this.userRepository.activate(userId)
         return this.userModelToLoadRequestForAdmin(user)
     }
 
-    /**
-     * Resets a provisional account's staleness clock so a renewed sign-up attempt (e.g. redeeming a
-     * fresh invite for the same email) isn't reaped mid-flight by the `cleanup_pending_users` task.
-     */
-    async touchProvisionalUser(userId: string): Promise<void> {
-        await this.userRepository.touchProvisional(userId)
+    async updateAvatar(userId: string, avatarUrl: string): Promise<void> {
+        await this.userRepository.setAvatar(userId, avatarUrl)
     }
 
-    async getPendingUserByEmail(email: string): Promise<UserResponseForAdminDto | null> {
-        const user = await this.userRepository.findPendingByEmail(email)
-        if (!user) return null
-        return this.userModelToLoadRequestForAdmin(user)
+    async getAvatarUrl(userId: string): Promise<string | null> {
+        const user = await this.userRepository.findById(userId)
+        return user?.avatarUrl ?? null
     }
 
-    async deleteStalePendingUsers(olderThanMinutes: number): Promise<boolean> {
-        const cutoff = new Date(Date.now() - olderThanMinutes * 60_000)
-        const deleted = await this.userRepository.deletePendingOlderThan(cutoff)
+    async purgeDeletedUsers(retentionDays: number): Promise<boolean> {
+        const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60_000)
+        const deleted = await this.userRepository.deleteDeletedOlderThan(cutoff)
         if (deleted > 0) {
-            this.logger.log(`Cleaned up ${deleted} stale pending user account(s)`)
+            this.logger.log(`Purged ${deleted} deleted user account(s) older than ${retentionDays} days`)
         }
         return true
     }
@@ -264,6 +248,7 @@ export class UserService extends BaseService {
             lastName: userModel.lastName,
             isAdmin: userModel.isAdmin,
             status: userModel.status,
+            avatarUrl: userModel.avatarUrl,
             createdAt: userModel.createdAt,
         }
 
@@ -278,6 +263,7 @@ export class UserService extends BaseService {
             firstName: userModel.firstName,
             lastName: userModel.lastName,
             isAdmin: userModel.isAdmin,
+            avatarUrl: userModel.avatarUrl,
         }
 
         return dto
