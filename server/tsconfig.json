@@ -7,8 +7,8 @@
     "outDir": "./dist",
     "paths": {
       "@/*": ["./src/*"],
-      "@homepage/types": ["../packages/types/src"],
-      "@homepage/types/*": ["../packages/types/src/*"]
+      "@prisma/generated": ["./prisma/generated/client.ts"],
+      "@prisma/generated/*": ["./prisma/generated/*"],
     },
 
     // Environment Settings
@@ -47,8 +47,5 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true
-  },
-  "references": [
-    { "path": "../packages/types" }
-  ]
+  }
 }

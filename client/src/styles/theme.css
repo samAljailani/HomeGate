@@ -1,13 +1,14 @@
-@import "./tailwind-colors.css";
+@import './tailwind-colors.css';
 
 /* ============================================
    Light Mode (Default)
    ============================================ */
 :root {
+    color-scheme: light;
     /* -- Background Colors -- */
     background-color: oklch(var(--tw-gray-100));
     --bg-main: oklch(var(--tw-gray-500));
-    --bg-nav: oklch(var(--tw-gray-300) / 0.50);
+    --bg-nav: oklch(var(--tw-gray-300) / 0.5);
     --bg-nav-active: oklch(var(--tw-gray-500) / 0.25);
     --bg-nav-hover: oklch(var(--tw-white) / 0.05);
     --bg-dropdown: oklch(var(--tw-white));
@@ -52,7 +53,7 @@
 
     /* -- Button Colors -- */
     --btn-primary: oklch(var(--tw-indigo-600));
-    --btn-primary-hover: #646cff;/*oklch(var(--tw-indigo-700));*/
+    --btn-primary-hover: #646cff; /*oklch(var(--tw-indigo-700));*/
     --btn-primary-text: oklch(var(--tw-white));
 
     --btn-secondary: oklch(var(--tw-gray-200));
@@ -125,7 +126,7 @@
 
     /* -- Button Colors -- */
     --btn-primary: oklch(var(--tw-indigo-500));
-    --btn-primary-hover: #646cff;/*oklch(var(--tw-indigo-400));*/
+    --btn-primary-hover: #646cff; /*oklch(var(--tw-indigo-400));*/
     --btn-primary-text: oklch(var(--tw-white));
 
     --btn-secondary: oklch(var(--tw-gray-700));

@@ -1,22 +1,35 @@
 import type { ReactNode } from 'react'
-import NavBar from '@/layouts/NavBar'
+import { Toaster } from '@/components/ui/toast'
+import { PreferencesProvider } from '@/context/preferences-context'
+import { AuthProvider } from '@/context/auth-context'
+import { config } from '@/constants/app'
+import { preferences } from '@/constants/preferences'
 import '@/styles/index.css'
 
 export const metadata = {
-  title: 'HomeGate',
+    title: config.appName,
+    icons: { icon: '/images/logo.svg' },
 }
 
+// Inline script to apply theme before first paint, preventing flash
+const themeScript = `(function(){try{var p=JSON.parse(localStorage.getItem('${preferences.storageKey}'));var t=p&&p.theme;if(t==='light')document.documentElement.classList.remove('dark');else if(t==='dark')document.documentElement.classList.add('dark');else{if(window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark')}}catch(e){}})();`
+
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en" className="dark">
-      <body>
-        <div className="app">
-          <NavBar />
-          <main className="content">
-            {children}
-          </main>
-        </div>
-      </body>
-    </html>
-  )
+    return (
+        <html lang="en" suppressHydrationWarning>
+            <head>
+                <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+            </head>
+            <body>
+                <PreferencesProvider>
+                    <AuthProvider>
+                        <div className="app">
+                            <main className="content">{children}</main>
+                        </div>
+                        <Toaster />
+                    </AuthProvider>
+                </PreferencesProvider>
+            </body>
+        </html>
+    )
 }

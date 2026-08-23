@@ -1,0 +1,23 @@
+{
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "tabWidth": 4,
+    "printWidth": 120,
+    "parser": "babel-ts",
+    "plugins": [
+        "@trivago/prettier-plugin-sort-imports"
+    ],
+    "importOrder": [
+        "^dotenv/config$",
+        "^reflect-metadata$",
+        "^@nestjs/(.*)$",
+        "^@prisma/(.*)$",
+        "^passport(.*)$",
+        "^express(.*)$",
+        "^@/(.*)$",
+        "^[./]"
+    ],
+    "importOrderSeparation": true,
+    "importOrderSortSpecifiers": true
+}

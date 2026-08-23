@@ -1,0 +1,154 @@
+name: Deploy to Raspberry Pi
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - QA
+          - PROD
+      run_id:
+        description: 'CI workflow run ID to deploy (leave blank for latest)'
+        required: false
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy (${{ inputs.environment }})
+    runs-on: [self-hosted, linux, ARM64]
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Set deploy config
+        id: cfg
+        run: |
+          echo "deploy_dir=${{ vars.DEPLOY_PATH }}" >> $GITHUB_OUTPUT
+          echo "project=homegate-$(echo '${{ inputs.environment }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          if [ "${{ inputs.environment }}" = "PROD" ]; then
+            echo "compose=docker-compose.prod.yml" >> $GITHUB_OUTPUT
+          elif [ "${{ inputs.environment }}" = "QA" ]; then
+            echo "compose=docker-compose.qa.yml" >> $GITHUB_OUTPUT
+          else
+            echo "Unknown environment: ${{ inputs.environment }}" >&2
+            exit 1
+          fi
+
+      - name: Resolve CI run ID
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "${{ inputs.run_id }}" ]; then
+            echo "run_id=${{ inputs.run_id }}" >> $GITHUB_OUTPUT
+          else
+            RUN_ID=$(gh run list --repo ${{ github.repository }} --workflow=ci.yml --status=success --limit=1 --json databaseId -q '.[0].databaseId')
+            echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Stop existing containers
+        run: |
+          DEPLOY=${{ steps.cfg.outputs.deploy_dir }}
+          COMPOSE=${{ steps.cfg.outputs.compose }}
+          # The running stack was created from build/ — use that compose file to stop it.
+          if [ -f "$DEPLOY/build/$COMPOSE" ]; then
+            docker compose -p ${{ steps.cfg.outputs.project }} -f "$DEPLOY/build/$COMPOSE" down --remove-orphans || true
+          fi
+
+      - name: Download artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN=${{ steps.resolve.outputs.run_id }}
+          rm -rf work
+          mkdir -p work
+
+          # Deployment files (Dockerfile, compose, package.json, prisma)
+          gh run download "$RUN" --repo ${{ github.repository }} --pattern 'deployment-files-*' --dir work/tmp
+          mv work/tmp/deployment-files-*/* work/
+          rm -rf work/tmp
+
+          # Server build
+          gh run download "$RUN" --repo ${{ github.repository }} --pattern 'server-build-*' --dir work/tmp
+          mkdir -p work/server
+          mv work/tmp/server-build-*/ work/server/dist
+          rm -rf work/tmp
+
+          # Client build
+          gh run download "$RUN" --repo ${{ github.repository }} --pattern 'client-build-*' --dir work/tmp
+          mkdir -p work/client
+          mv work/tmp/client-build-*/ work/client/out
+          rm -rf work/tmp
+
+      - name: Create .env for compose
+        working-directory: work
+        run: |
+          cat > .env <<'EOF'
+          PORT=${{ vars.PORT }}
+          DOMAIN=${{ vars.DOMAIN }}
+          APP_SUBDOMAIN=${{ vars.APP_SUBDOMAIN }}
+          SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+          SESSION_COOKIE_NAME=${{ secrets.SESSION_COOKIE_NAME }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          POSTGRES_USER=${{ vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ vars.POSTGRES_DB }}
+          DATABASE_URL=postgres://${{ vars.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@db:5432/${{ vars.POSTGRES_DB }}
+          EOF
+          sed -i 's/^[[:space:]]*//' .env
+
+      - name: Verify required secrets
+        working-directory: work
+        run: |
+          for key in POSTGRES_PASSWORD SESSION_SECRET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET; do
+            if ! grep -q "^$key=.\+" .env; then
+              echo "::error::Required secret '$key' is empty or missing for environment '${{ inputs.environment }}'. Set it in repo Settings → Environments → ${{ inputs.environment }}."
+              exit 1
+            fi
+          done
+
+      - name: Build image
+        working-directory: work
+        run: |
+          COMPOSE=${{ steps.cfg.outputs.compose }}
+          docker compose --progress=plain -p ${{ steps.cfg.outputs.project }} -f "$COMPOSE" build --no-cache server
+
+      - name: Deploy containers
+        run: |
+          DEPLOY=${{ steps.cfg.outputs.deploy_dir }}
+          COMPOSE=${{ steps.cfg.outputs.compose }}
+          # Promote the full build context (Dockerfile, dist, client out, prisma, package.json)
+          # into a build/ subfolder so the stack can be rebuilt/restarted after deploy.
+          mkdir -p "$DEPLOY"
+          rm -rf "$DEPLOY/build"
+          mkdir -p "$DEPLOY/build"
+          cp -r work/. "$DEPLOY/build/"
+          # Keep a top-level copy of the compose file and .env for convenience.
+          cp "$DEPLOY/build/$COMPOSE" "$DEPLOY/$COMPOSE"
+          cp "$DEPLOY/build/.env" "$DEPLOY/.env"
+          # Run from build/ so the compose build context (deploy/Dockerfile) resolves.
+          docker compose -p ${{ steps.cfg.outputs.project }} -f "$DEPLOY/build/$COMPOSE" up -d
+
+      - name: Wait for healthy
+        run: |
+          echo "Waiting for server to be healthy..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:${{ vars.PORT }}/api/health > /dev/null 2>&1; then
+              echo "Server is healthy!"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Server did not become healthy in time"
+          docker compose -p ${{ steps.cfg.outputs.project }} -f ${{ steps.cfg.outputs.deploy_dir }}/build/${{ steps.cfg.outputs.compose }} logs server --tail=50
+          exit 1
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Wipe the entire workflow workspace (_work/HomeGate/HomeGate)
+          rm -rf "$GITHUB_WORKSPACE"/* "$GITHUB_WORKSPACE"/.[!.]*
+          docker image prune -f

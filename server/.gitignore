@@ -1,0 +1,17 @@
+node_modules
+dist/
+*.tsbuildinfo
+coverage/
+openapi.json
+
+# Environment variables - keep .env.example for reference
+.env
+.env.local
+.env.*.local
+
+# Prisma
+/prisma/generated
+
+# custom scripts
+/scripts/*
+

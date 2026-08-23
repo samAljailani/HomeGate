@@ -1,14 +1,36 @@
 {
-  "name": "@homepage/types",
-  "version": "1.0.0",
-  "private": true,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc -b",
-    "build:watch": "tsc -b --watch"
-  },
-  "devDependencies": {
-    "typescript": "^5.9.3"
-  }
+    "name": "@samaljailani/homegate-types",
+    "version": "1.0.0",
+    "description": "Shared TypeScript types and typed API client for HomeGate, generated from the server's OpenAPI schema.",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/samAljailani/HomeGate.git"
+    },
+    "author": "Sami Al-Jailani",
+    "license": "UNLICENSED",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+        "generate:openapi": "npm run generate:openapi --prefix ../../server",
+        "generate:schema": "openapi-typescript ../../server/openapi.json -o src/schema.ts",
+        "build": "npm run clean && npm run generate:openapi && npm run generate:schema && tsc -p tsconfig.json",
+        "build:ci": "npm run clean && tsc -p tsconfig.json"
+    },
+    "dependencies": {
+        "openapi-fetch": "^0.17.0"
+    },
+    "devDependencies": {
+        "openapi-typescript": "^7.13.0",
+        "typescript": "^5.9.3"
+    }
 }
