@@ -109,24 +109,24 @@ export function ServiceCard({
     }
 
     return (
-        <div className={classNames('p-2 w-full', className)}>
-            <Card className="relative text-muted w-full pt-0 flex flex-col">
+        <div className={classNames('px-0.5 py-1 sm:p-2 w-full', className)}>
+            <Card className="relative text-muted w-full pt-0 flex flex-col shadow-sm transition-shadow hover:shadow-md">
                 {isLocked && (
                     <div className="absolute top-0 left-0 w-full h-full bg-stone-500/50 z-10 flex items-center justify-center rounded-xl">
                         <IconLock className="size-10 " />
                     </div>
                 )}
-                <CardContent className="relative px-0 flex-1 basis-1/4 min-h-0 pt-0 overflow-hidden rounded-t-xl">
+                <CardContent className="relative px-0 pt-0 overflow-hidden rounded-t-xl">
                     {showImage ? (
                         <img
                             src={imageUrl}
                             alt={`${capitalizeFirstLetter(name)} logo`}
                             loading="lazy"
-                            className="w-full h-45 object-cover"
+                            className="w-full aspect-video object-cover"
                             onError={() => setImageFailed(true)}
                         />
                     ) : (
-                        <div className="w-full h-45 flex items-center justify-center bg-muted text-muted-foreground text-2xl font-semibold">
+                        <div className="w-full aspect-video flex items-center justify-center bg-muted text-muted-foreground text-2xl font-semibold">
                             {capitalizeFirstLetter(name)}
                         </div>
                     )}

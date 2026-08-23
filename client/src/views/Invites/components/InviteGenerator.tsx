@@ -54,7 +54,7 @@ export function InviteGenerator({
     return (
         <div className="space-y-4">
             {/* Generated link display + Generate button */}
-            <div className="flex items-end gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="flex flex-1 items-center gap-0">
                     <Input
                         readOnly
@@ -73,7 +73,7 @@ export function InviteGenerator({
                         {copied ? <Check className="size-4" /> : <ClipboardCopy className="size-4" />}
                     </Button>
                 </div>
-                <Button onClick={onGenerate} disabled={isGenerating}>
+                <Button className="w-full sm:w-auto" onClick={onGenerate} disabled={isGenerating}>
                     {isGenerating && <Loader2 className="size-4 animate-spin" />}
                     Generate
                 </Button>
@@ -82,8 +82,8 @@ export function InviteGenerator({
             {error && <p className="text-sm text-destructive">{error}</p>}
 
             {/* Invite metadata */}
-            <div className="flex flex-wrap items-end gap-4">
-                <div className="grid gap-1.5 min-w-50">
+            <div className="grid grid-cols-1 gap-4 sm:flex sm:flex-wrap sm:items-end">
+                <div className="grid gap-1.5 sm:min-w-50">
                     <Label htmlFor="invite-email">Attach email (optional)</Label>
                     <Input
                         id="invite-email"
@@ -102,7 +102,7 @@ export function InviteGenerator({
                         id="invite-expiry"
                         value={expiresInDays}
                         onChange={(e) => onExpiresInDaysChange(Number(e.target.value))}
-                        className="h-9 rounded-md border border-default bg-dropdown px-3 text-sm text-primary shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        className="h-9 w-full rounded-md border border-default bg-dropdown px-3 text-sm text-primary shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:w-auto"
                     >
                         {EXPIRY_OPTIONS.map((days) => (
                             <option key={days} value={days}>

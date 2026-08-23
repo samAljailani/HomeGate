@@ -42,7 +42,11 @@ function Toast({ className, ...props }: ToastPrimitive.Root.Props) {
         <ToastPrimitive.Root
             data-slot="toast"
             className={cn(
-                'group/toast pointer-events-auto absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] w-full origin-bottom rounded-2xl border bg-popover text-popover-foreground shadow-lg will-change-transform outline-none select-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                'group/toast pointer-events-auto absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] w-full origin-bottom overflow-hidden rounded-2xl border bg-popover text-popover-foreground shadow-lg will-change-transform outline-none select-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                'data-[type=success]:border-green-500/30 data-[type=success]:bg-green-50 data-[type=success]:text-green-900 dark:data-[type=success]:bg-green-950/40 dark:data-[type=success]:text-green-100',
+                'data-[type=info]:border-blue-500/30 data-[type=info]:bg-blue-50 data-[type=info]:text-blue-900 dark:data-[type=info]:bg-blue-950/40 dark:data-[type=info]:text-blue-100',
+                'data-[type=warning]:border-amber-500/30 data-[type=warning]:bg-amber-50 data-[type=warning]:text-amber-900 dark:data-[type=warning]:bg-amber-950/40 dark:data-[type=warning]:text-amber-100',
+                'data-[type=error]:border-red-500/30 data-[type=error]:bg-red-50 data-[type=error]:text-red-900 dark:data-[type=error]:bg-red-950/40 dark:data-[type=error]:text-red-100',
                 '[--gap:0.75rem] [--height:var(--toast-frontmost-height,var(--toast-height))] [--offset-y:calc(var(--toast-offset-y)*-1+calc(var(--toast-index)*var(--gap)*-1)+var(--toast-swipe-movement-y))] [--peek:0.75rem] [--scale:calc(max(0,1-(var(--toast-index)*0.1)))] [--shrink:calc(1-var(--scale))]',
                 'h-(--height) [transform:translateX(var(--toast-swipe-movement-x))_translateY(calc(var(--toast-swipe-movement-y)-(var(--toast-index)*var(--peek))-(var(--shrink)*var(--height))))_scale(var(--scale))] [transition:transform_500ms_cubic-bezier(0.22,1,0.36,1),opacity_500ms,height_150ms]',
                 "after:absolute after:top-full after:left-0 after:h-[calc(var(--gap)+1px)] after:w-full after:content-['']",
@@ -141,15 +145,15 @@ function ToastIcon({ type }: { type: string | undefined }) {
     let icon: React.ReactNode = null
 
     if (type === 'success') {
-        icon = <CircleCheckIcon aria-hidden="true" />
+        icon = <CircleCheckIcon className="text-green-600 dark:text-green-400" aria-hidden="true" />
     }
 
     if (type === 'info') {
-        icon = <InfoIcon aria-hidden="true" />
+        icon = <InfoIcon className="text-blue-600 dark:text-blue-400" aria-hidden="true" />
     }
 
     if (type === 'warning') {
-        icon = <TriangleAlertIcon aria-hidden="true" />
+        icon = <TriangleAlertIcon className="text-amber-600 dark:text-amber-400" aria-hidden="true" />
     }
 
     if (type === 'error') {
@@ -174,6 +178,47 @@ function ToastIcon({ type }: { type: string | undefined }) {
     )
 }
 
+const PROGRESS_BAR_COLORS: Record<string, string> = {
+    success: 'bg-green-500',
+    info: 'bg-blue-500',
+    warning: 'bg-amber-500',
+    error: 'bg-destructive',
+}
+
+function ToastProgress({ type, timeout }: { type: string | undefined; timeout: number | undefined }) {
+    // The toast object only reflects an explicitly-passed `timeout`; base-ui applies its own
+    // default (5000ms) internally without writing it back, so mirror that default here.
+    const duration = timeout ?? 5000
+    const [shrunk, setShrunk] = React.useState(false)
+
+    React.useEffect(() => {
+        setShrunk(false)
+        const raf = requestAnimationFrame(() => setShrunk(true))
+        return () => cancelAnimationFrame(raf)
+    }, [duration])
+
+    if (timeout === 0) {
+        return null
+    }
+
+    return (
+        <div
+            data-slot="toast-progress"
+            className="absolute inset-x-0 bottom-0 h-1 bg-black/10 dark:bg-white/10"
+        >
+            <div
+                className={cn('h-full origin-left', PROGRESS_BAR_COLORS[type ?? ''] ?? 'bg-foreground/40')}
+                style={{
+                    transform: shrunk ? 'scaleX(0)' : 'scaleX(1)',
+                    transitionProperty: 'transform',
+                    transitionTimingFunction: 'linear',
+                    transitionDuration: `${duration}ms`,
+                }}
+            />
+        </div>
+    )
+}
+
 function ToastList() {
     const { toasts } = ToastPrimitive.useToastManager()
 
@@ -188,6 +233,7 @@ function ToastList() {
                 <ToastAction />
                 <ToastClose />
             </ToastContent>
+            <ToastProgress type={toastItem.type} timeout={toastItem.timeout} />
         </Toast>
     ))
 }
