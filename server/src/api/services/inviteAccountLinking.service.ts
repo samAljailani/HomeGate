@@ -6,13 +6,16 @@ import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegis
 import { ApplicationClientNames, AppEvent, UserAccountStatus } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { BaseService } from './base.service'
+import { ConfigService } from './config.service'
+import { SystemConfigKey } from '@/types/models/SystemConfig'
 
 @Injectable()
 export class InviteAccountLinkingService extends BaseService {
     constructor(
         @Inject(LoggingProvider) logger: LoggingProvider,
         @Inject(IUserAccountRepository) private userAccountRepository: IUserAccountRepository,
-        @Inject(ApplicationClientRegistry) private clientRegistry: ApplicationClientRegistry
+        @Inject(ApplicationClientRegistry) private clientRegistry: ApplicationClientRegistry,
+        @Inject(ConfigService) private configService: ConfigService
     ) {
         super(logger)
     }
@@ -70,6 +73,10 @@ export class InviteAccountLinkingService extends BaseService {
             return
         }
 
+        const { defaultExpiryDays } = this.configService.get(SystemConfigKey.SUBSCRIPTIONS)
+        const expiresAt = new Date()
+        expiresAt.setDate(expiresAt.getDate() + defaultExpiryDays)
+
         await this.userAccountRepository.create({
             userId,
             serviceId: inviteAccount.serviceId,
@@ -77,6 +84,7 @@ export class InviteAccountLinkingService extends BaseService {
             userServiceAccountId: result.user.id,
             status: UserAccountStatus.active,
             autoRenew: true,
+            expiresAt,
         })
 
         this.logger.log(

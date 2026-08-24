@@ -8,6 +8,9 @@ import { InviteAccountModel } from '@/types/models/invite'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserAccountRepositoryMock } from '../../mocks/userAccount.repository.mock'
 import { createApplicationClientRegistryMock } from '../../mocks/applicationClientRegistry.mock'
+import { ConfigService } from '@/api/services/config.service'
+import { SystemConfigKey } from '@/types/models/SystemConfig'
+import { systemDefaults } from '@/data/config.defaults'
 
 describe('InviteAccountLinkingService', () => {
     let service: InviteAccountLinkingService
@@ -19,6 +22,9 @@ describe('InviteAccountLinkingService', () => {
         loggerMock = createLoggerMock()
         userAccountRepoMock = createUserAccountRepositoryMock()
         registryMock = createApplicationClientRegistryMock()
+        const configServiceMock = {
+            get: jest.fn((key: SystemConfigKey) => systemDefaults[key]),
+        }
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -26,6 +32,7 @@ describe('InviteAccountLinkingService', () => {
                 { provide: LoggingProvider, useValue: loggerMock },
                 { provide: IUserAccountRepository, useValue: userAccountRepoMock },
                 { provide: ApplicationClientRegistry, useValue: registryMock },
+                { provide: ConfigService, useValue: configServiceMock },
             ],
         }).compile()
 
