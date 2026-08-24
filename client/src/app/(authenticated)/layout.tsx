@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import NavBar from '@/components/layouts/NavBar'
+import { AuthProvider } from '@/context/auth-context'
 import '@/styles/index.css'
 
 export const metadata = {
@@ -8,12 +9,14 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <div>
-      <NavBar />
-      <div className="mx-auto max-w-screen px-2 sm:px-4">
-        {children}
+    <AuthProvider>
+      <div>
+        <NavBar />
+        <div className="mx-auto max-w-screen px-2 sm:px-4">
+          {children}
+        </div>
       </div>
-    </div>
+    </AuthProvider>
   )
 }
 

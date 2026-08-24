@@ -9,6 +9,7 @@ services:
     restart: unless-stopped
     environment:
       APP_ENV: production
+      TZ: America/New_York
       PORT: ${PORT:-3003}
       HOST: https://${APP_SUBDOMAIN}.${DOMAIN}
       CLIENT_RELATIVE_STATIC_PATH: ./dist/client/
