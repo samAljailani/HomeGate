@@ -76,7 +76,8 @@ describe('InviteAccountLinkingService', () => {
             username: 'juser',
             userServiceAccountId: 'ext-1',
             status: UserAccountStatus.active,
-            autoRenew: true
+            autoRenew: true,
+            expiresAt: expect.any(Date),
         })
     })
 
