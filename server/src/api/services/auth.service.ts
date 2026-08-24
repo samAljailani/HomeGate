@@ -150,7 +150,7 @@ export class AuthService extends BaseService {
 
         const inviteOverrides = this.inviteService.getInviteUserOverrides(invite)
 
-        const account = await this.userService.createUser({ email: profile.email, firstName: '', lastName: '', ...inviteOverrides })
+        const account = await this.userService.createUser({ email: profile.email, firstName: profile?.firstName ?? '', lastName: profile?.lastName ?? '', ...inviteOverrides })
 
         if (account == null || !account.id) {
             throw new InternalServerErrorException('Failed to create user account.')
