@@ -39,7 +39,7 @@ export function OAuthSignInPage() {
                 setOpen={setOpen}
                 showCloseButton={false}
                 title="Sign In"
-                description="Sign in to a world of mistery"
+                description="The front door to your digital home"
                 className="data-[state=open]:slide-in-from-bottom-1/4 data-[state=open]:duration-500"
             >
                 {enabledProviders?.includes('google') && (
