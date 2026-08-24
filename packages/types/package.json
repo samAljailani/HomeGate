@@ -1,6 +1,6 @@
 {
     "name": "@samaljailani/homegate-types",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Shared TypeScript types and typed API client for HomeGate, generated from the server's OpenAPI schema.",
     "repository": {
         "type": "git",
