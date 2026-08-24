@@ -76,6 +76,7 @@ export class InviteAccountLinkingService extends BaseService {
             username: result.user.username,
             userServiceAccountId: result.user.id,
             status: UserAccountStatus.active,
+            autoRenew: true,
         })
 
         this.logger.log(
