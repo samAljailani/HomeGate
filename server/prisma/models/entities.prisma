@@ -18,6 +18,8 @@ model User {
   createdInvites  Invite[]            @relation("CreatedInvites")
   usedInvite      Invite?             @relation("UsedInvites")
   revokedInvites  Invite[]            @relation("RevokedInvites")
+  servicePolicies UserServicePolicy[] @relation("UserServicePolicies")
+  createdPolicies UserServicePolicy[] @relation("CreatedPolicies")
 
   @@map("users")
 }
@@ -72,6 +74,7 @@ model Service {
   subscriptions          Subscription[]        @relation("ServiceSubscriptions")
   externalAccounts       ExternalUserAccount[] @relation("ServiceExternalAccounts")
   inviteSubscriptions    InviteSubscription[]  @relation("InviteServiceSubscriptions")
+  policies               UserServicePolicy[]   @relation("ServicePolicies")
 
   // One service instance per vendor; see docs/plan.md accepted limitation.
   @@unique([integrationProvider])
@@ -274,6 +277,27 @@ enum FailedOperation {
   cancellation
   expiration
   sync
+}
+
+enum PolicyEffect {
+  ALLOW
+  DENY
+}
+
+model UserServicePolicy {
+  id              String       @id @default(uuid()) @db.Uuid
+  userId          String       @map("user_id") @db.Uuid
+  serviceId       Int          @map("service_id")
+  effect          PolicyEffect
+  createdByUserId String?      @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user      User    @relation("UserServicePolicies", fields: [userId], references: [id], onDelete: Cascade)
+  service   Service @relation("ServicePolicies", fields: [serviceId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("CreatedPolicies", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, serviceId])
+  @@map("user_service_policies")
 }
 
 model SystemMetadata {

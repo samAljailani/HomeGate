@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import {
     BadRequestException,
     ConflictException,
+    ForbiddenException,
     InternalServerErrorException,
     NotFoundException,
     ServiceUnavailableException,
@@ -17,6 +18,7 @@ import {
     SubscriptionProvisionerResolver,
 } from '@/core/subscriptions/provisioners'
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
+import { ServiceAccessService } from '@/api/services/serviceAccess.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { FailedOperation, SubscriptionStatus } from '@/types/enums'
 import { createUserServiceMock } from '../../mocks/user.service.mock'
@@ -44,6 +46,7 @@ describe('SubscriptionService', () => {
     let externalAccountRepoMock: ReturnType<typeof createExternalUserAccountRepositoryMock>
     let serviceRepoMock: ReturnType<typeof createServiceRepositoryMock>
     let clientRegistryMock: ReturnType<typeof createAccountIntegrationRegistryMock>
+    let accessServiceMock: jest.Mocked<Pick<ServiceAccessService, 'assertCanSubscribe' | 'resolveAccess'>>
     let loggerMock: ReturnType<typeof createLoggerMock>
 
     beforeEach(async () => {
@@ -52,6 +55,7 @@ describe('SubscriptionService', () => {
         externalAccountRepoMock = createExternalUserAccountRepositoryMock()
         serviceRepoMock = createServiceRepositoryMock()
         clientRegistryMock = createAccountIntegrationRegistryMock()
+        accessServiceMock = { assertCanSubscribe: jest.fn(), resolveAccess: jest.fn() }
         loggerMock = createLoggerMock()
 
         // Real provisioners and cascade so orchestration and integration behaviour are tested together.
@@ -68,6 +72,7 @@ describe('SubscriptionService', () => {
                 { provide: IExternalUserAccountRepository, useValue: externalAccountRepoMock },
                 { provide: IServiceRepository, useValue: serviceRepoMock },
                 { provide: AccountIntegrationRegistry, useValue: clientRegistryMock },
+                { provide: ServiceAccessService, useValue: accessServiceMock },
                 { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
@@ -142,6 +147,17 @@ describe('SubscriptionService', () => {
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture({ enabled: false }))
 
             await expect(service.subscribe(request, userId)).rejects.toThrow(BadRequestException)
+        })
+
+        it('should throw ForbiddenException when service access is denied by policy', async () => {
+            userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId }))
+            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            accessServiceMock.assertCanSubscribe.mockRejectedValue(
+                new ForbiddenException('You do not have access to this service')
+            )
+
+            await expect(service.subscribe(request, userId)).rejects.toThrow(ForbiddenException)
+            expect(userAccountRepoMock.find).not.toHaveBeenCalled()
         })
 
         it('should throw ConflictException when user already has an active subscription', async () => {

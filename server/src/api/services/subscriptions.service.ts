@@ -22,6 +22,7 @@ import { ExternalUserAccountModel } from '@/types/models/externalUserAccount'
 import { ServiceModel } from '@/types/models/service'
 import { SubscriptionProvisionerResolver, LifecycleContext } from '@/core/subscriptions/provisioners'
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
+import { ServiceAccessService } from './serviceAccess.service'
 
 /**
  * Account-type agnostic orchestrator. It deliberately does not depend on AccountIntegrationRegistry:
@@ -49,6 +50,9 @@ export class SubscriptionService {
         @Inject(SubscriptionCascadeService)
         private readonly cascade: SubscriptionCascadeService,
 
+        @Inject(ServiceAccessService)
+        private readonly accessService: ServiceAccessService,
+
         @Inject(LoggingProvider)
         private readonly logger: LoggingProvider
     ) {
@@ -67,6 +71,8 @@ export class SubscriptionService {
         if (!service?.enabled) {
             throw new BadRequestException('Service not available')
         }
+
+        await this.accessService.assertCanSubscribe(userId, service)
 
         const existing = await this.subscriptionRepository.find(userId, request.serviceId)
 

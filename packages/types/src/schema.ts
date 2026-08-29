@@ -355,7 +355,8 @@ export interface paths {
         };
         /** List all services (admin only) */
         get: operations["ServiceController_list"];
-        put?: never;
+        /** Create a service (admin only). Only REFERENCED and NONE account types are accepted. */
+        put: operations["ServiceController_create"];
         post?: never;
         delete?: never;
         options?: never;
@@ -991,6 +992,24 @@ export interface components {
             imageUrl?: string | null;
             /** @description Credentials the signup form must collect; absent when nothing is provisioned */
             requiredInputs?: components["schemas"]["ServiceRequiredInputsDto"];
+        };
+        /**
+         * @description MANAGED is rejected: it requires a built-in integration provider
+         * @enum {string}
+         */
+        CreatableAccountType: "REFERENCED" | "NONE";
+        ServicePutRequestDto: {
+            /** @description URL-safe identifier, e.g. "jellyseerr" */
+            slug: string;
+            name: string;
+            /** @description MANAGED is rejected: it requires a built-in integration provider */
+            accountType: components["schemas"]["CreatableAccountType"];
+            /** @description Required for REFERENCED; must name a MANAGED service */
+            accountSourceServiceId?: number | null;
+            enabled?: boolean;
+            defaultAllowed?: boolean;
+            url?: string | null;
+            imageUrl?: string | null;
         };
         ServicePatchRequestDto: {
             enabled?: boolean;
@@ -1856,6 +1875,29 @@ export interface operations {
                         total: number;
                         hasMore: boolean;
                     };
+                };
+            };
+        };
+    };
+    ServiceController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServicePutRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceResponseDto"];
                 };
             };
         };

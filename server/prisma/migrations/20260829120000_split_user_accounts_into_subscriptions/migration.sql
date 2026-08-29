@@ -51,6 +51,13 @@ ALTER TABLE "services" ALTER COLUMN "account_type" DROP DEFAULT;
 
 ALTER TABLE "services" ALTER COLUMN "slug" SET NOT NULL;
 
+-- Sync the sequence after the backfill inserted rows with explicit IDs.
+SELECT pg_catalog.setval(
+    pg_get_serial_sequence('services', 'id'),
+    COALESCE((SELECT max(id) FROM "services"), 1),
+    (SELECT count(*) > 0 FROM "services")
+);
+
 CREATE UNIQUE INDEX "services_slug_key" ON "services"("slug");
 CREATE UNIQUE INDEX "services_integration_provider_key" ON "services"("integration_provider");
 ALTER TABLE "services" ADD CONSTRAINT "services_account_source_service_id_fkey"

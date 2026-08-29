@@ -62,9 +62,13 @@ export const routes = {
         delete: ':id',
         stats: 'stats',
         avatar: 'me/avatar',
+        listPolicies: ':id/service-policies',
+        setPolicy: ':id/service-policies',
+        deletePolicy: ':id/service-policies/:serviceId',
     }),
     services: defineRoutes('/api/services', {
         list: '',
+        create: '',
         update: ':slug',
         accounts: ':slug/accounts',
     }),

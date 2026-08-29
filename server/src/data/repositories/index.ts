@@ -24,6 +24,8 @@ import { ISystemMetadataRepository } from './ISystemMetadataRepository'
 import { SystemMetadataRepository } from './systemMetadata.repository'
 import { ITaskRunRepository } from './ITaskRunRepository'
 import { TaskRunRepository } from './taskRun.repository'
+import { IUserServicePolicyRepository } from './IUserServicePolicyRepository'
+import { UserServicePolicyRepository } from './userServicePolicy.repository'
 
 export { IUserRepository } from './IUserRepository'
 export { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository'
@@ -36,6 +38,7 @@ export { IExternalUserAccountRepository } from './IExternalUserAccountRepository
 export { ISessionRepository } from './ISessionRepository'
 export { ISystemMetadataRepository } from './ISystemMetadataRepository'
 export { ITaskRunRepository } from './ITaskRunRepository'
+export { IUserServicePolicyRepository } from './IUserServicePolicyRepository'
 
 export const repositories = [
     EnvRepository,
@@ -54,4 +57,5 @@ export const repositories = [
     { provide: IInviteRepository, useClass: InviteRepository },
     { provide: ISystemMetadataRepository, useClass: SystemMetadataRepository },
     { provide: ITaskRunRepository, useClass: TaskRunRepository },
+    { provide: IUserServicePolicyRepository, useClass: UserServicePolicyRepository },
 ]

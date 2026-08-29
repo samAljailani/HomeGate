@@ -5,6 +5,7 @@ import { UserService } from '@/api/services/user.service'
 import { createRequestMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
+import { IServiceRepository, IUserServicePolicyRepository } from '@/data/repositories'
 
 function createUserServiceMock(): jest.Mocked<
     Pick<
@@ -38,7 +39,11 @@ describe('UserController', () => {
 
         const module: TestingModule = await Test.createTestingModule({
             controllers: [UserController],
-            providers: [{ provide: UserService, useValue: userServiceMock }],
+            providers: [
+                { provide: UserService, useValue: userServiceMock },
+                { provide: IUserServicePolicyRepository, useValue: { find: jest.fn(), findByUserId: jest.fn(), upsert: jest.fn(), delete: jest.fn() } },
+                { provide: IServiceRepository, useValue: { findById: jest.fn() } },
+            ],
         }).compile()
 
         controller = module.get<UserController>(UserController)

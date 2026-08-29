@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator'
 import { AccountType, IntegrationProvider } from '@/types/enums'
+
+export const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
+
+/** Account types an admin may create; MANAGED needs a built-in integration and is excluded. */
+export const CREATABLE_ACCOUNT_TYPES = [AccountType.REFERENCED, AccountType.NONE] as const
+export type CreatableAccountType = (typeof CREATABLE_ACCOUNT_TYPES)[number]
 
 export class ServiceRequiredInputsDto {
     @ApiProperty({ type: Boolean })
@@ -56,6 +62,60 @@ export class ServiceUpdateRequestDto {
     authSchemeId?: number
 }
 
+export class ServicePutRequestDto {
+    @ApiProperty({ type: String, maxLength: 64, description: 'URL-safe identifier, e.g. "jellyseerr"' })
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(64)
+    @Matches(SLUG_PATTERN, {
+        message: 'slug must be lowercase alphanumeric words separated by single hyphens',
+    })
+    slug: string
+
+    @ApiProperty({ type: String, maxLength: 64 })
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(64)
+    name: string
+
+    @ApiProperty({
+        enum: CREATABLE_ACCOUNT_TYPES,
+        enumName: 'CreatableAccountType',
+        description: 'MANAGED is rejected: it requires a built-in integration provider',
+    })
+    @IsIn(CREATABLE_ACCOUNT_TYPES as readonly string[])
+    accountType: CreatableAccountType
+
+    @ApiPropertyOptional({
+        type: Number,
+        nullable: true,
+        description: 'Required for REFERENCED; must name a MANAGED service',
+    })
+    @IsOptional()
+    @IsInt()
+    accountSourceServiceId?: number | null
+
+    @ApiPropertyOptional({ type: Boolean })
+    @IsOptional()
+    @IsBoolean()
+    enabled?: boolean
+
+    @ApiPropertyOptional({ type: Boolean })
+    @IsOptional()
+    @IsBoolean()
+    defaultAllowed?: boolean
+
+    @ApiPropertyOptional({ type: String, nullable: true })
+    @IsOptional()
+    @IsString()
+    url?: string | null
+
+    @ApiPropertyOptional({ type: String, nullable: true })
+    @IsOptional()
+    @IsString()
+    imageUrl?: string | null
+}
+
 export class ServiceDeleteRequestDto {
     @ApiProperty({ type: Number })
     @IsInt()
@@ -105,6 +165,12 @@ export class ServiceResponseDto {
         description: 'Credentials the signup form must collect; absent when nothing is provisioned',
     })
     requiredInputs?: ServiceRequiredInputsDto
+
+    @ApiPropertyOptional({
+        type: Boolean,
+        description: 'Whether the requesting user is allowed to subscribe; present on list responses',
+    })
+    allowed?: boolean
 }
 
 export class ServicePatchRequestDto {

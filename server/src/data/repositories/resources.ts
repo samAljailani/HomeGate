@@ -18,6 +18,7 @@ export type RepositoryResourceKey =
     | 'subscription'
     | 'externalUserAccount'
     | 'userOAuthIdentity'
+    | 'userServicePolicy'
 
 export const repositoryErrorMessages: Record<RepositoryResourceKey, RepositoryErrorMessages> = {
     user: {
@@ -91,6 +92,13 @@ export const repositoryErrorMessages: Record<RepositoryResourceKey, RepositoryEr
         fallback: 'Unable to process the request at this time.',
     },
     invite: {
+        conflict: 'Request conflicts with existing data.',
+        notFound: 'Requested resource was not found.',
+        badRequest: 'Request data is invalid.',
+        unavailable: 'Service is temporarily unavailable. Please try again.',
+        fallback: 'Unable to process the request at this time.',
+    },
+    userServicePolicy: {
         conflict: 'Request conflicts with existing data.',
         notFound: 'Requested resource was not found.',
         badRequest: 'Request data is invalid.',

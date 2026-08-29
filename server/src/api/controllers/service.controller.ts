@@ -1,8 +1,15 @@
-import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Query } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Put, Query, Request } from '@nestjs/common'
 import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
+import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
-import { ExternalAccountResponseDto, ServiceParamsDto, ServicePatchRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
+import {
+    ExternalAccountResponseDto,
+    ServiceParamsDto,
+    ServicePatchRequestDto,
+    ServicePutRequestDto,
+    ServiceResponseDto,
+} from '@/types/dtos/serviceDto'
 import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
@@ -19,8 +26,19 @@ export class ServiceController {
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
     @ApiPaginatedResponse(ServiceResponseDto)
-    async list(@Query() pagination: PaginationRequestDto): Promise<PaginatedResponseDto<ServiceResponseDto>> {
-        return this.serviceManagementService.list(pagination.take, pagination.skip)
+    async list(@Query() pagination: PaginationRequestDto, @Request() req: ExpressRequest): Promise<PaginatedResponseDto<ServiceResponseDto>> {
+        return this.serviceManagementService.list(req.session.userId!, pagination.take, pagination.skip)
+    }
+
+    @Put(routes.services.subPath.create)
+    @AdminRoute()
+    @ApiOperation({
+        summary: 'Create a service (admin only). Only REFERENCED and NONE account types are accepted.',
+    })
+    @ApiBody({ type: ServicePutRequestDto })
+    @ApiOkResponse({ type: ServiceResponseDto })
+    async create(@Body() request: ServicePutRequestDto): Promise<ServiceResponseDto> {
+        return this.serviceManagementService.create(request)
     }
 
     @Patch(routes.services.subPath.update)

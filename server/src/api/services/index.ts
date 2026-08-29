@@ -7,6 +7,7 @@ import { LogService } from './log.service'
 import { OAuthProviderManagementService } from './oauthProviderManagement.service'
 import { SchedulerService } from './scheduler.service'
 import { ServiceManagementService } from './serviceManagement.service'
+import { ServiceAccessService } from './serviceAccess.service'
 import { SessionService } from './session.service'
 import { SubscriptionService } from './subscriptions.service'
 import { SubscriptionLifecycleService } from './subscriptionLifecycle.service'
@@ -26,6 +27,7 @@ export const services = [
     InviteService,
     InviteAccountLinkingService,
     ServiceManagementService,
+    ServiceAccessService,
     OAuthProviderManagementService,
     LogService,
     TaskService,

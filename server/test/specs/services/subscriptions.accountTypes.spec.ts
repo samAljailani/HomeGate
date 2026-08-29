@@ -6,6 +6,7 @@ import { IServiceRepository, ISubscriptionRepository, IExternalUserAccountReposi
 import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { subscriptionProvisioners } from '@/core/subscriptions/provisioners'
+import { ServiceAccessService } from '@/api/services/serviceAccess.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { SubscriptionStatus } from '@/types/enums'
 import { createUserServiceMock } from '../../mocks/user.service.mock'
@@ -68,6 +69,7 @@ describe('SubscriptionService — account types', () => {
                 { provide: IExternalUserAccountRepository, useValue: externalAccountRepoMock },
                 { provide: IServiceRepository, useValue: serviceRepoMock },
                 { provide: AccountIntegrationRegistry, useValue: registry },
+                { provide: ServiceAccessService, useValue: { assertCanSubscribe: jest.fn(), resolveAccess: jest.fn() } },
                 { provide: LoggingProvider, useValue: createLoggerMock() },
             ],
         }).compile()

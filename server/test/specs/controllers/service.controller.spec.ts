@@ -47,7 +47,7 @@ describe('ServiceController', () => {
             ]
             serviceManagementMock.list.mockResolvedValue(new PaginatedResponseDto(services, 2, 0))
 
-            const result = await controller.list({})
+            const result = await controller.list({}, { session: { userId: 'user-1' } } as any)
 
             expect(serviceManagementMock.list).toHaveBeenCalled()
             expect(result.data).toHaveLength(2)

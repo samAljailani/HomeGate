@@ -68,6 +68,11 @@ export enum FailedOperation {
     sync = 'sync',
 }
 
+export enum PolicyEffect {
+    ALLOW = 'ALLOW',
+    DENY = 'DENY',
+}
+
 export enum ScheduledTasks {
     PROCESS_SUBSCRIPTIONS = 'process_subscriptions',
     CLEANUP_STALE_LOCAL_ACCOUNTS = 'cleanup_stale_local_accounts',

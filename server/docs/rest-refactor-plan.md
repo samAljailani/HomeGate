@@ -151,6 +151,24 @@ All fields optional — only provided fields are updated.
 
 ---
 
+## Phase 7: Client — Service Create UI
+
+**Goal:** Allow admins to create `REFERENCED` and `NONE` services from the Services admin page.
+
+**Changes:**
+- Add a "New Service" button to the Services admin view
+- Form fields: `slug` (validated against `^[a-z0-9]+(-[a-z0-9]+)*$`), `name`, `accountType` (dropdown: `REFERENCED` / `NONE`), optional `accountSourceServiceId` (shown only when `accountType = REFERENCED`), `url`, `imageUrl`, `enabled`, `defaultAllowed`
+- Wire to `PUT /api/services` via `service.service.ts`
+- On success, refresh the service list and close the modal
+- Regenerate `packages/types` from `openapi.json` so the client has the typed `ServicePutRequestDto`
+
+**Files:**
+- `client/src/views/Admin/Services/` (new form component + hook)
+- `client/src/services/service.service.ts`
+- `packages/types/src/` (regenerated)
+
+---
+
 ## ~~Phase 6: Client Updates~~
 
 Not needed — client is currently unconfigured.
@@ -186,8 +204,9 @@ Not needed — client is currently unconfigured.
 | 1 | `feat: add UUID primary key to UserAccount` | Migration only — schema + generated client |
 | 2 | `refactor: RESTful subscriptions controller` | Controller, DTOs, routes, service signatures, tests |
 | 3 | `refactor: RESTful users controller` | Controller, DTOs, routes, tests |
-| 4 | `refactor: RESTful services controller` | Controller, DTOs, routes, tests |
+| 4 ✅ | `refactor: RESTful services controller + provisioner strategy` | Controller, DTOs, routes, tests, slug-based addressing, create endpoint |
 | 5 | `refactor: RESTful oauth-providers controller` | Controller, DTOs, routes, tests |
 | 6 | `refactor: RESTful invites and tasks controllers, remove dead code` | PUT→PATCH, route cleanup, dead DTO removal |
+| 7 | `feat(client): service create form` | New Service form wired to `PUT /api/services` |
 
 Phase 1 must come first. Phases 2–5 are independent and committed per-controller. Phase 6 is the final cleanup commit. Each commit should leave tests passing.

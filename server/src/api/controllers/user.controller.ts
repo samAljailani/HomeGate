@@ -17,6 +17,7 @@ import { Throttle } from '@nestjs/throttler'
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
 import { AdminRoute } from '@/decorators'
 import { UserService } from '@/api/services/user.service'
+import { IServiceRepository, IUserServicePolicyRepository } from '@/data/repositories'
 import {
     UserDeleteRequestDto,
     UserParamsDto,
@@ -24,13 +25,21 @@ import {
     UserResponseForAdminDto,
     UserStatsResponseDto,
 } from '@/types/dtos/userDto'
+import {
+    UserServicePolicySetRequestDto,
+    UserServicePolicyResponseDto,
+} from '@/types/dtos/userServicePolicyDto'
 import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
 
 @ApiTags('Users')
 @Controller(routes.users.basePath)
 export class UserController {
-    constructor(@Inject(UserService) private readonly userService: UserService) {}
+    constructor(
+        @Inject(UserService) private readonly userService: UserService,
+        @Inject(IUserServicePolicyRepository) private readonly policyRepository: IUserServicePolicyRepository,
+        @Inject(IServiceRepository) private readonly serviceRepository: IServiceRepository
+    ) {}
 
     @Get(routes.users.subPath.stats)
     @AdminRoute()
@@ -152,4 +161,77 @@ export class UserController {
             throw new ForbiddenException('You do not have permission to delete this account.')
         }
     }
+
+    // #region service policies
+
+    @Get(routes.users.subPath.listPolicies)
+    @AdminRoute()
+    @ApiOperation({ summary: "List a user's service access policies" })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
+    @ApiOkResponse({ type: [UserServicePolicyResponseDto] })
+    async listPolicies(@Param() params: UserParamsDto): Promise<UserServicePolicyResponseDto[]> {
+        const policies = await this.policyRepository.findByUserId(params.id)
+        const serviceIds = [...new Set(policies.map((p) => p.serviceId))]
+        const services = await Promise.all(serviceIds.map((id) => this.serviceRepository.findById(id)))
+        const serviceMap = new Map(services.filter(Boolean).map((s) => [s!.id, s!]))
+
+        return policies.map((p) => {
+            const service = serviceMap.get(p.serviceId)
+            return {
+                id: p.id,
+                userId: p.userId,
+                serviceId: p.serviceId,
+                serviceName: service?.name ?? '',
+                serviceSlug: service?.slug ?? '',
+                effect: p.effect,
+                createdByUserId: p.createdByUserId,
+                createdAt: p.createdAt.toISOString(),
+            }
+        })
+    }
+
+    @Patch(routes.users.subPath.setPolicy)
+    @AdminRoute()
+    @ApiOperation({ summary: 'Set a service access policy for a user (upsert)' })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
+    @ApiBody({ type: UserServicePolicySetRequestDto })
+    @ApiOkResponse({ type: UserServicePolicyResponseDto })
+    async setPolicy(
+        @Param() params: UserParamsDto,
+        @Body() body: UserServicePolicySetRequestDto,
+        @Request() req: ExpressRequest
+    ): Promise<UserServicePolicyResponseDto> {
+        const service = await this.serviceRepository.findById(body.serviceId)
+        if (!service) throw new NotFoundException(`Service '${body.serviceId}' not found`)
+
+        const policy = await this.policyRepository.upsert({
+            userId: params.id,
+            serviceId: body.serviceId,
+            effect: body.effect,
+            createdByUserId: req.session.userId!,
+        })
+
+        return {
+            id: policy.id,
+            userId: policy.userId,
+            serviceId: policy.serviceId,
+            serviceName: service.name,
+            serviceSlug: service.slug,
+            effect: policy.effect,
+            createdByUserId: policy.createdByUserId,
+            createdAt: policy.createdAt.toISOString(),
+        }
+    }
+
+    @Delete(routes.users.subPath.deletePolicy)
+    @AdminRoute()
+    @ApiOperation({ summary: 'Remove a service access policy, reverting to the service default' })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
+    @ApiParam({ name: 'serviceId', type: Number })
+    @ApiOkResponse({ description: 'Policy removed' })
+    async deletePolicy(@Param('id') userId: string, @Param('serviceId') serviceId: string): Promise<void> {
+        await this.policyRepository.delete(userId, Number(serviceId))
+    }
+
+    // #endregion service policies
 }

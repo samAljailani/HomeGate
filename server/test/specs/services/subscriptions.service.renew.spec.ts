@@ -6,6 +6,7 @@ import { IServiceRepository } from '@/data/repositories'
 import { UserService } from '@/api/services/user.service'
 import { SubscriptionProvisionerResolver } from '@/core/subscriptions/provisioners'
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
+import { ServiceAccessService } from '@/api/services/serviceAccess.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createExternalUserAccountRepositoryMock } from '../../mocks/subscription.repository.mock'
@@ -52,6 +53,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
                     provide: SubscriptionCascadeService,
                     useValue: { onActivated: jest.fn(), onDeactivated: jest.fn(), onReactivated: jest.fn(), onExpiryChanged: jest.fn() },
                 },
+                { provide: ServiceAccessService, useValue: { assertCanSubscribe: jest.fn(), resolveAccess: jest.fn() } },
                 { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
