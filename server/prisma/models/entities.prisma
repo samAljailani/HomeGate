@@ -11,7 +11,8 @@ model User {
   username        String              @unique @db.VarChar(64)
   avatarUrl       String?             @map("avatar_url") @db.VarChar(512)
   userSessions    Session[]           @relation("UserSessions")
-  userAccounts    UserAccount[]       @relation("UserAccounts")
+  subscriptions   Subscription[]      @relation("UserSubscriptions")
+  externalAccounts ExternalUserAccount[] @relation("UserExternalAccounts")
   oauthIdentities UserOAuthIdentity[] @relation("UserOAuthIdentities")
   logs            Log[]               @relation("UserLogs")
   createdInvites  Invite[]            @relation("CreatedInvites")
@@ -53,46 +54,82 @@ model AuthScheme {
 }
 
 model Service {
-  id             Int             @id @default(autoincrement())
-  name           String          @unique @db.VarChar(64)
-  enabled        Boolean
-  url            String?         @db.VarChar(512)
-  imageUrl       String?         @map("image_url") @db.VarChar(512)
-  userAccounts   UserAccount[]   @relation("ServiceAccounts")
-  inviteAccounts InviteAccount[] @relation("InviteServiceAccounts")
+  id                     Int                  @id @default(autoincrement())
+  name                   String               @unique @db.VarChar(64)
+  slug                   String               @unique @db.VarChar(64)
+  enabled                Boolean
+  url                    String?              @db.VarChar(512)
+  imageUrl               String?              @map("image_url") @db.VarChar(512)
 
+  accountType            AccountType          @default(MANAGED) @map("account_type")
+  integrationProvider    IntegrationProvider? @map("integration_provider")
+  accountSourceServiceId Int?                 @map("account_source_service_id")
+  defaultAllowed         Boolean              @default(true) @map("default_allowed")
+
+  accountSource          Service?             @relation("ServiceAccountSource", fields: [accountSourceServiceId], references: [id], onDelete: NoAction)
+  referencingServices    Service[]            @relation("ServiceAccountSource")
+
+  subscriptions          Subscription[]        @relation("ServiceSubscriptions")
+  externalAccounts       ExternalUserAccount[] @relation("ServiceExternalAccounts")
+  inviteSubscriptions    InviteSubscription[]  @relation("InviteServiceSubscriptions")
+
+  // One service instance per vendor; see docs/plan.md accepted limitation.
+  @@unique([integrationProvider])
   @@map("services")
 }
 
-model UserAccount {
-  id                   String            @id @default(uuid()) @db.Uuid
-  userId               String            @map("user_id") @db.Uuid
-  serviceId            Int               @map("service_id")
-  userServiceAccountId String?           @map("user_service_account_id")
-  username             String            @db.VarChar(64)
+model Subscription {
+  id                        String             @id @default(uuid()) @db.Uuid
+  userId                    String             @map("user_id") @db.Uuid
+  serviceId                 Int                @map("service_id")
 
-  status               UserAccountStatus @default(provisioning)
+  status                    SubscriptionStatus @default(provisioning)
 
-  expiresAt            DateTime?         @map("expires_at") @db.Timestamptz(6)
-  autoRenew            Boolean           @map("auto_renew") @default(false)
+  expiresAt                 DateTime?          @map("expires_at") @db.Timestamptz(6)
+  autoRenew                 Boolean            @default(false) @map("auto_renew")
 
-  provisionedAt        DateTime?         @map("provisioned_at") @db.Timestamptz(6)
-  failedAt             DateTime?         @map("failed_at") @db.Timestamptz(6)
-  cancelledAt          DateTime?         @map("cancelled_at") @db.Timestamptz(6)
-  failedOperation      FailedOperation?  @map("failed_operation")
-  lastError            String?           @map("last_error") @db.Text
-  retryCount           Int               @default(0) @map("retry_count")
+  derivedFromSubscriptionId String?            @map("derived_from_subscription_id") @db.Uuid
 
-  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  provisionedAt             DateTime?          @map("provisioned_at") @db.Timestamptz(6)
+  failedAt                  DateTime?          @map("failed_at") @db.Timestamptz(6)
+  cancelledAt               DateTime?          @map("cancelled_at") @db.Timestamptz(6)
+  failedOperation           FailedOperation?   @map("failed_operation")
+  lastError                 String?            @map("last_error") @db.Text
+  retryCount                Int                @default(0) @map("retry_count")
 
-  service              Service           @relation("ServiceAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
-  user                 User              @relation("UserAccounts", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt                 DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user                 User                 @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+  service              Service              @relation("ServiceSubscriptions", fields: [serviceId], references: [id], onDelete: NoAction)
+  derivedFrom          Subscription?        @relation("DerivedSubscriptions", fields: [derivedFromSubscriptionId], references: [id], onDelete: Cascade)
+  derivedSubscriptions Subscription[]       @relation("DerivedSubscriptions")
+  externalAccount      ExternalUserAccount? @relation("SubscriptionExternalAccount")
 
   @@unique([userId, serviceId])
+  @@index([derivedFromSubscriptionId])
+  @@map("subscriptions")
+}
+
+model ExternalUserAccount {
+  id                String   @id @default(uuid()) @db.Uuid
+  subscriptionId    String   @unique @map("subscription_id") @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  serviceId         Int      @map("service_id")
+  externalAccountId String?  @map("external_account_id")
+  username          String?  @db.VarChar(64)
+  email             String?  @db.VarChar(254)
+
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  subscription Subscription @relation("SubscriptionExternalAccount", fields: [subscriptionId], references: [id], onDelete: Cascade)
+  user         User         @relation("UserExternalAccounts", fields: [userId], references: [id], onDelete: Cascade)
+  service      Service      @relation("ServiceExternalAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
+
   @@unique([serviceId, username])
-  @@unique([serviceId, userServiceAccountId])
-  @@map("user_accounts")
+  @@unique([serviceId, externalAccountId])
+  @@map("external_user_accounts")
 }
 
 model Session {
@@ -156,13 +193,13 @@ model Invite {
   createdBy       User?     @relation("CreatedInvites", fields: [createdByUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   usedBy          User?     @relation("UsedInvites", fields: [usedByUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   revokedBy       User?     @relation("RevokedInvites", fields: [revokedByUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  accounts        InviteAccount[] @relation("InviteAccounts")
+  accounts        InviteSubscription[] @relation("InviteSubscriptions")
 
   @@unique([usedByUserId])
   @@map("invites")
 }
 
-model InviteAccount {
+model InviteSubscription {
   id        String  @id @default(uuid()) @db.Uuid
   inviteId  String  @map("invite_id") @db.Uuid
   serviceId Int     @map("service_id")
@@ -170,11 +207,11 @@ model InviteAccount {
   email     String? @db.VarChar(254)
   accountId String? @map("account_id") @db.VarChar(255)
 
-  invite  Invite  @relation("InviteAccounts", fields: [inviteId], references: [id], onDelete: Cascade)
-  service Service @relation("InviteServiceAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
+  invite  Invite  @relation("InviteSubscriptions", fields: [inviteId], references: [id], onDelete: Cascade)
+  service Service @relation("InviteServiceSubscriptions", fields: [serviceId], references: [id], onDelete: NoAction)
 
   @@unique([inviteId, serviceId])
-  @@map("invite_accounts")
+  @@map("invite_subscriptions")
 }
 
 enum InviteRevokedReason {
@@ -209,7 +246,7 @@ enum LogLevel {
   fatal
 }
 
-enum UserAccountStatus {
+enum SubscriptionStatus {
   provisioning
   active
   failed
@@ -219,6 +256,17 @@ enum UserAccountStatus {
   disabling
   disabled
   enabling
+}
+
+enum AccountType {
+  MANAGED
+  REFERENCED
+  NONE
+}
+
+enum IntegrationProvider {
+  jellyfin
+  immich
 }
 
 enum FailedOperation {
