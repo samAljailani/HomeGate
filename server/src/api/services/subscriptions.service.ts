@@ -15,7 +15,7 @@ import {
     SubscriptionPatchRequestDto,
     SubscriptionResponseDto,
 } from '@/types/dtos/subscriptionsDto'
-import { AccountType, FailedOperation, SubscriptionStatus } from '@/types/enums'
+import { AccountType, AppEvent, FailedOperation, SubscriptionStatus } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { SubscriptionModel } from '@/types/models/subscription'
 import { ExternalUserAccountModel } from '@/types/models/externalUserAccount'
@@ -23,6 +23,7 @@ import { ServiceModel } from '@/types/models/service'
 import { SubscriptionProvisionerResolver, LifecycleContext } from '@/core/subscriptions/provisioners'
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { ServiceAccessService } from './serviceAccess.service'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 
 /**
  * Account-type agnostic orchestrator. It deliberately does not depend on AccountIntegrationRegistry:
@@ -52,6 +53,9 @@ export class SubscriptionService {
 
         @Inject(ServiceAccessService)
         private readonly accessService: ServiceAccessService,
+
+        @Inject(EventEmitter2)
+        private readonly events: EventEmitter2,
 
         @Inject(LoggingProvider)
         private readonly logger: LoggingProvider
@@ -128,6 +132,7 @@ export class SubscriptionService {
             }
 
             this.logger.log(`User '${userId}' subscribed to service '${service.id}' (${service.accountType})`)
+            this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId })
 
             if (service.accountType === AccountType.MANAGED) {
                 await this.cascade.onActivated(activated)
@@ -287,6 +292,7 @@ export class SubscriptionService {
             }
 
             this.logger.log(`User '${user.id}' immediately cancelled subscription for service '${service.id}'`)
+            this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId: user.id })
 
             return true
         } catch (error) {
@@ -538,6 +544,7 @@ export class SubscriptionService {
             }
 
             this.logger.log(`User '${user.id}' subscription for service '${service.id}' was ${operationLabel}d`)
+            this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId })
 
             return true
         } catch (error) {

@@ -47,6 +47,7 @@ async function bootstrap() {
             httpOnly: true,
             sameSite: 'lax',
             maxAge: 1000 * 60 * 60 * 24 * 30,
+            ...(env.session.cookieDomain && { domain: env.session.cookieDomain }),
         },
     }
 

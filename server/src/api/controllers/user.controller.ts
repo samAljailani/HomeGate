@@ -31,6 +31,8 @@ import {
 } from '@/types/dtos/userServicePolicyDto'
 import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
+import { AppEvent } from '@/types/enums'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 
 @ApiTags('Users')
 @Controller(routes.users.basePath)
@@ -38,7 +40,8 @@ export class UserController {
     constructor(
         @Inject(UserService) private readonly userService: UserService,
         @Inject(IUserServicePolicyRepository) private readonly policyRepository: IUserServicePolicyRepository,
-        @Inject(IServiceRepository) private readonly serviceRepository: IServiceRepository
+        @Inject(IServiceRepository) private readonly serviceRepository: IServiceRepository,
+        @Inject(EventEmitter2) private readonly events: EventEmitter2
     ) {}
 
     @Get(routes.users.subPath.stats)
@@ -211,7 +214,7 @@ export class UserController {
             createdByUserId: req.session.userId!,
         })
 
-        return {
+        const result: UserServicePolicyResponseDto = {
             id: policy.id,
             userId: policy.userId,
             serviceId: policy.serviceId,
@@ -221,6 +224,10 @@ export class UserController {
             createdByUserId: policy.createdByUserId,
             createdAt: policy.createdAt.toISOString(),
         }
+
+        this.events.emit(AppEvent.SERVICE_POLICY_CHANGED, { userId: params.id })
+
+        return result
     }
 
     @Delete(routes.users.subPath.deletePolicy)
@@ -231,6 +238,7 @@ export class UserController {
     @ApiOkResponse({ description: 'Policy removed' })
     async deletePolicy(@Param('id') userId: string, @Param('serviceId') serviceId: string): Promise<void> {
         await this.policyRepository.delete(userId, Number(serviceId))
+        this.events.emit(AppEvent.SERVICE_POLICY_CHANGED, { userId })
     }
 
     // #endregion service policies

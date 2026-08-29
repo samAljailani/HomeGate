@@ -85,4 +85,6 @@ export enum ScheduledTasks {
 
 export enum AppEvent {
     INVITE_CLAIMED = 'invite.claimed',
+    SUBSCRIPTION_CHANGED = 'subscription.changed',
+    SERVICE_POLICY_CHANGED = 'servicePolicy.changed',
 }

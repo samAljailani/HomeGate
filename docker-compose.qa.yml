@@ -14,6 +14,7 @@ services:
       CLIENT_RELATIVE_STATIC_PATH: ./dist/client/
       SESSION_SECRET: ${SESSION_SECRET}
       SESSION_COOKIE_NAME: HOMEGATE_QA_SID
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-.${DOMAIN}}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       DATABASE_URL: ${DATABASE_URL}
@@ -32,6 +33,8 @@ services:
       - "traefik.http.routers.homegate-qa.rule=Host(`${APP_SUBDOMAIN}.${DOMAIN}`)"
       - "traefik.http.routers.homegate-qa.tls.certresolver=sslresolver"
       - "traefik.http.services.homegate-qa.loadbalancer.server.port=${PORT:-3004}"
+      - "traefik.http.middlewares.homegate-qa-forward-auth.forwardauth.address=http://homegate-qa-server:${PORT:-3004}/api/auth/forward"
+      - "traefik.http.middlewares.homegate-qa-forward-auth.forwardauth.trustForwardHeader=true"
     networks:
       - traefik
 

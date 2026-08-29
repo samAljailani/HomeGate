@@ -1,4 +1,5 @@
 import { AuthController } from './auth.controller'
+import { ForwardAuthController } from './forwardAuth.controller'
 import { ClientRouteController } from './client-routes'
 import { CsrfController } from './csrf.controller'
 import { DashboardController } from './dashboard.controller'
@@ -15,6 +16,7 @@ import { UserController } from './user.controller'
 export const controllers = [
     HealthController,
     AuthController,
+    ForwardAuthController,
     CsrfController,
     SubscriptionController,
     InviteController,

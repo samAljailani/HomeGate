@@ -8,6 +8,7 @@ import { OAuthProviderManagementService } from './oauthProviderManagement.servic
 import { SchedulerService } from './scheduler.service'
 import { ServiceManagementService } from './serviceManagement.service'
 import { ServiceAccessService } from './serviceAccess.service'
+import { ForwardAuthService } from './forwardAuth.service'
 import { SessionService } from './session.service'
 import { SubscriptionService } from './subscriptions.service'
 import { SubscriptionLifecycleService } from './subscriptionLifecycle.service'
@@ -28,6 +29,7 @@ export const services = [
     InviteAccountLinkingService,
     ServiceManagementService,
     ServiceAccessService,
+    ForwardAuthService,
     OAuthProviderManagementService,
     LogService,
     TaskService,

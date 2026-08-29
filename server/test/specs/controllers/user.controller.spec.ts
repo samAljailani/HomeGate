@@ -6,6 +6,7 @@ import { createRequestMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 import { IServiceRepository, IUserServicePolicyRepository } from '@/data/repositories'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 
 function createUserServiceMock(): jest.Mocked<
     Pick<
@@ -43,6 +44,7 @@ describe('UserController', () => {
                 { provide: UserService, useValue: userServiceMock },
                 { provide: IUserServicePolicyRepository, useValue: { find: jest.fn(), findByUserId: jest.fn(), upsert: jest.fn(), delete: jest.fn() } },
                 { provide: IServiceRepository, useValue: { findById: jest.fn() } },
+                { provide: EventEmitter2, useValue: { emit: jest.fn() } },
             ],
         }).compile()
 

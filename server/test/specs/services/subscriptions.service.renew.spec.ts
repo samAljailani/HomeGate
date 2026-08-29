@@ -7,6 +7,7 @@ import { UserService } from '@/api/services/user.service'
 import { SubscriptionProvisionerResolver } from '@/core/subscriptions/provisioners'
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { ServiceAccessService } from '@/api/services/serviceAccess.service'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createExternalUserAccountRepositoryMock } from '../../mocks/subscription.repository.mock'
@@ -54,6 +55,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
                     useValue: { onActivated: jest.fn(), onDeactivated: jest.fn(), onReactivated: jest.fn(), onExpiryChanged: jest.fn() },
                 },
                 { provide: ServiceAccessService, useValue: { assertCanSubscribe: jest.fn(), resolveAccess: jest.fn() } },
+                { provide: EventEmitter2, useValue: { emit: jest.fn() } },
                 { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()

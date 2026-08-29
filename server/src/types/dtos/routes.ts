@@ -36,6 +36,7 @@ export const routes = {
         signOut: 'signOut',
         session: 'session',
         providers: 'providers',
+        forward: 'forward',
     }),
     csrf: defineRoutes('/api/csrf', {}),
     subscriptions: defineRoutes('/api/subscriptions', {

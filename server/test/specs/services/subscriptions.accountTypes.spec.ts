@@ -7,6 +7,7 @@ import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrati
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { subscriptionProvisioners } from '@/core/subscriptions/provisioners'
 import { ServiceAccessService } from '@/api/services/serviceAccess.service'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { SubscriptionStatus } from '@/types/enums'
 import { createUserServiceMock } from '../../mocks/user.service.mock'
@@ -70,6 +71,7 @@ describe('SubscriptionService — account types', () => {
                 { provide: IServiceRepository, useValue: serviceRepoMock },
                 { provide: AccountIntegrationRegistry, useValue: registry },
                 { provide: ServiceAccessService, useValue: { assertCanSubscribe: jest.fn(), resolveAccess: jest.fn() } },
+                { provide: EventEmitter2, useValue: { emit: jest.fn() } },
                 { provide: LoggingProvider, useValue: createLoggerMock() },
             ],
         }).compile()

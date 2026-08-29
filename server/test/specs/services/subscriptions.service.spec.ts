@@ -19,6 +19,7 @@ import {
 } from '@/core/subscriptions/provisioners'
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { ServiceAccessService } from '@/api/services/serviceAccess.service'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { FailedOperation, SubscriptionStatus } from '@/types/enums'
 import { createUserServiceMock } from '../../mocks/user.service.mock'
@@ -73,6 +74,7 @@ describe('SubscriptionService', () => {
                 { provide: IServiceRepository, useValue: serviceRepoMock },
                 { provide: AccountIntegrationRegistry, useValue: clientRegistryMock },
                 { provide: ServiceAccessService, useValue: accessServiceMock },
+                { provide: EventEmitter2, useValue: { emit: jest.fn() } },
                 { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
