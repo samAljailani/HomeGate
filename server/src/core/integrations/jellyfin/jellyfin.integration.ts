@@ -8,19 +8,19 @@ import {
     CreateApplicationUserParam,
     GetApplicationUserResult,
     CreateApplicationUserResult,
-} from '@/types/params/application.client'
-import { IApplicationManager } from '../IApplicationManager'
+} from '@/types/params/accountIntegration'
+import { IAccountIntegrationProvider } from '../IAccountIntegrationProvider'
 import {
     jellyfinEndpoints,
     JellyfinUserResponse,
     CreateJellyfinUserRequestDto,
-} from '@/core/clients/jellyfin/jellyfin.types'
-import { ApplicationClientNames } from '@/types/enums'
+} from '@/core/integrations/jellyfin/jellyfin.types'
+import { IntegrationProvider } from '@/types/enums'
 import { SystemConfigKey } from '@/types/models/SystemConfig'
 
 @Injectable()
-export class JellyfinClient implements IApplicationManager {
-    public readonly name = ApplicationClientNames.Jellyfin
+export class JellyfinIntegration implements IAccountIntegrationProvider {
+    public readonly name = IntegrationProvider.Jellyfin
 
     public readonly requiredInputs: ApplicationUserRequirements = {
         username: true,

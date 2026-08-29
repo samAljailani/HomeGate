@@ -5,7 +5,7 @@ import { ServiceManagementService } from '@/api/services/serviceManagement.servi
 import { ExternalAccountResponseDto, ServiceParamsDto, ServicePatchRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
 import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
-import { ApplicationClientNames } from '@/types/enums'
+import { IntegrationProvider } from '@/types/enums'
 
 @ApiTags('Services')
 @Controller(routes.services.basePath)
@@ -35,7 +35,7 @@ export class ServiceController {
             throw new BadRequestException('No fields provided to update')
         }
 
-        const name = params.name as ApplicationClientNames
+        const name = params.name as IntegrationProvider
         let service: ServiceResponseDto | undefined
 
         if (request.enabled !== undefined) {
@@ -61,7 +61,7 @@ export class ServiceController {
     @ApiParam({ name: 'name', type: String })
     @ApiOkResponse({ type: [ExternalAccountResponseDto] })
     async listAccounts(@Param() params: ServiceParamsDto): Promise<ExternalAccountResponseDto[]> {
-        const name = params.name as ApplicationClientNames
+        const name = params.name as IntegrationProvider
         return this.serviceManagementService.listExternalAccounts(name)
     }
 }

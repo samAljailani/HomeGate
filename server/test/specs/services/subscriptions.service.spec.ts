@@ -8,14 +8,14 @@ import {
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import { UserService } from '@/api/services/user.service'
 import { IServiceRepository, IUserAccountRepository } from '@/data/repositories'
-import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
+import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { FailedOperation, UserAccountStatus } from '@/types/enums'
 import { createUserServiceMock } from '../../mocks/user.service.mock'
 import { createUserAccountRepositoryMock } from '../../mocks/userAccount.repository.mock'
 import { createServiceRepositoryMock } from '../../mocks/service.repository.mock'
-import { createApplicationClientRegistryMock } from '../../mocks/applicationClientRegistry.mock'
-import { createApplicationClientMock } from '../../mocks/applicationClient.mock'
+import { createAccountIntegrationRegistryMock } from '../../mocks/accountIntegrationRegistry.mock'
+import { createAccountIntegrationProviderMock } from '../../mocks/accountIntegrationProvider.mock'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 import { createUserAccountFixture, toSubscriptionResponseDto } from '../../fixtures/userAccount.stub'
@@ -27,14 +27,14 @@ describe('SubscriptionService', () => {
     let userServiceMock: ReturnType<typeof createUserServiceMock>
     let userAccountRepoMock: ReturnType<typeof createUserAccountRepositoryMock>
     let serviceRepoMock: ReturnType<typeof createServiceRepositoryMock>
-    let clientRegistryMock: ReturnType<typeof createApplicationClientRegistryMock>
+    let clientRegistryMock: ReturnType<typeof createAccountIntegrationRegistryMock>
     let loggerMock: ReturnType<typeof createLoggerMock>
 
     beforeEach(async () => {
         userServiceMock = createUserServiceMock()
         userAccountRepoMock = createUserAccountRepositoryMock()
         serviceRepoMock = createServiceRepositoryMock()
-        clientRegistryMock = createApplicationClientRegistryMock()
+        clientRegistryMock = createAccountIntegrationRegistryMock()
         loggerMock = createLoggerMock()
 
         const module: TestingModule = await Test.createTestingModule({
@@ -43,7 +43,7 @@ describe('SubscriptionService', () => {
                 { provide: UserService, useValue: userServiceMock },
                 { provide: IUserAccountRepository, useValue: userAccountRepoMock },
                 { provide: IServiceRepository, useValue: serviceRepoMock },
-                { provide: ApplicationClientRegistry, useValue: clientRegistryMock },
+                { provide: AccountIntegrationRegistry, useValue: clientRegistryMock },
                 { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
@@ -67,7 +67,7 @@ describe('SubscriptionService', () => {
         function setupSuccessfulSubscribe() {
             const user = createUserFixture({ id: userId, email: 'test@example.com' })
             const serviceModel = createServiceFixture()
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
             const createdAccount = createUserAccountFixture({ userId, status: UserAccountStatus.active })
 
             userServiceMock.getUserById.mockResolvedValue(user)
@@ -142,7 +142,7 @@ describe('SubscriptionService', () => {
         it('should allow resubscribe when account is cancelled', async () => {
             const cancelledAccount = createUserAccountFixture({ userId, status: UserAccountStatus.cancelled })
             const activeAccount = createUserAccountFixture({ userId, status: UserAccountStatus.active })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
@@ -170,7 +170,7 @@ describe('SubscriptionService', () => {
                 userServiceAccountId: 'old-ext-id',
             })
             const reactivatedAccount = createUserAccountFixture({ userId, status: UserAccountStatus.active })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
@@ -199,7 +199,7 @@ describe('SubscriptionService', () => {
                 userServiceAccountId: 'old-ext-id',
             })
             const reactivatedAccount = createUserAccountFixture({ userId, status: UserAccountStatus.active })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
@@ -227,7 +227,7 @@ describe('SubscriptionService', () => {
                 userServiceAccountId: 'old-ext-id',
             })
             const activeAccount = createUserAccountFixture({ userId, status: UserAccountStatus.active })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
@@ -257,7 +257,7 @@ describe('SubscriptionService', () => {
                 failedOperation: FailedOperation.provisioning,
             })
             const activeAccount = createUserAccountFixture({ userId, status: UserAccountStatus.active })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
@@ -289,7 +289,7 @@ describe('SubscriptionService', () => {
         )
 
         it('should throw ConflictException when external account already exists', async () => {
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
             userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             userAccountRepoMock.find.mockResolvedValue(null)
@@ -303,7 +303,7 @@ describe('SubscriptionService', () => {
         })
 
         it('should mark subscription as failed when createUser returns invalid response', async () => {
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
             const provisioningAccount = createUserAccountFixture({ userId, status: UserAccountStatus.provisioning })
 
             userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: userId, email: 'test@example.com' }))
@@ -380,7 +380,7 @@ describe('SubscriptionService', () => {
         it('should cancel subscription immediately when immediate delete is requested', async () => {
             const user = createUserFixture({ id: currentUserId })
             const activeAccount = createActiveAccount()
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userAccountRepoMock.findById.mockResolvedValue(activeAccount)
             userServiceMock.getUserById.mockResolvedValue(user)
@@ -401,7 +401,7 @@ describe('SubscriptionService', () => {
         it('should mark as failed when immediate delete fails externally', async () => {
             const user = createUserFixture({ id: currentUserId })
             const activeAccount = createActiveAccount()
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userAccountRepoMock.findById.mockResolvedValue(activeAccount)
             userServiceMock.getUserById.mockResolvedValue(user)
@@ -466,7 +466,7 @@ describe('SubscriptionService', () => {
                 status: UserAccountStatus.active,
                 expiresAt: new Date(Date.now() + 86400000),
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userAccountRepoMock.findById.mockResolvedValue(activeAccount)
             userServiceMock.getUserById.mockResolvedValue(targetUser)
@@ -523,7 +523,7 @@ describe('SubscriptionService', () => {
                 status: UserAccountStatus.disabled,
                 expiresAt: new Date(Date.now() + 86400000),
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userAccountRepoMock.findById.mockResolvedValue(disabledAccount)
             userServiceMock.getUserById.mockResolvedValue(targetUser)
@@ -570,7 +570,7 @@ describe('SubscriptionService', () => {
                 status: UserAccountStatus.disabled,
                 expiresAt: new Date(Date.now() + 86400000),
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userAccountRepoMock.findById.mockResolvedValue(disabledAccount)
             userServiceMock.getUserById.mockResolvedValue(targetUser)
@@ -599,7 +599,7 @@ describe('SubscriptionService', () => {
                 userServiceAccountId: 'ext-1',
                 expiresAt: new Date(Date.now() + 86400000),
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userAccountRepoMock.findById.mockResolvedValue(disabledAccount)
             userServiceMock.getUserById.mockResolvedValue(targetUser)
@@ -660,7 +660,7 @@ describe('SubscriptionService', () => {
                 status: UserAccountStatus.failed,
                 failedOperation: FailedOperation.cancellation,
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userServiceMock.getUserById
                 .mockResolvedValueOnce(createUserFixture({ id: currentUserId, isAdmin: true }))
@@ -686,7 +686,7 @@ describe('SubscriptionService', () => {
                 status: UserAccountStatus.failed,
                 failedOperation: FailedOperation.cancellation,
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userServiceMock.getUserById
                 .mockResolvedValueOnce(createUserFixture({ id: currentUserId, isAdmin: true }))
@@ -716,7 +716,7 @@ describe('SubscriptionService', () => {
                 status: UserAccountStatus.failed,
                 failedOperation: FailedOperation.expiration,
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userServiceMock.getUserById
                 .mockResolvedValueOnce(createUserFixture({ id: currentUserId, isAdmin: true }))
@@ -745,7 +745,7 @@ describe('SubscriptionService', () => {
                 status: UserAccountStatus.failed,
                 failedOperation: FailedOperation.expiration,
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userServiceMock.getUserById
                 .mockResolvedValueOnce(createUserFixture({ id: currentUserId, isAdmin: true }))
@@ -775,7 +775,7 @@ describe('SubscriptionService', () => {
                 status: UserAccountStatus.failed,
                 failedOperation: FailedOperation.sync,
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userServiceMock.getUserById
                 .mockResolvedValueOnce(createUserFixture({ id: currentUserId, isAdmin: true }))
@@ -800,7 +800,7 @@ describe('SubscriptionService', () => {
                 status: UserAccountStatus.failed,
                 failedOperation: FailedOperation.sync,
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userServiceMock.getUserById
                 .mockResolvedValueOnce(createUserFixture({ id: currentUserId, isAdmin: true }))
@@ -854,7 +854,7 @@ describe('SubscriptionService', () => {
                 autoRenew: false,
                 expiresAt: new Date(Date.now() - 86400000),
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userAccountRepoMock.findMany.mockResolvedValue([expired])
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
@@ -875,7 +875,7 @@ describe('SubscriptionService', () => {
                 status: UserAccountStatus.active,
                 expiresAt: null,
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userAccountRepoMock.findMany.mockResolvedValue([noExpiry])
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
@@ -911,7 +911,7 @@ describe('SubscriptionService', () => {
                 autoRenew: false,
                 expiresAt: new Date(Date.now() - 86400000),
             })
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             userAccountRepoMock.findMany.mockResolvedValue([expired])
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
@@ -937,7 +937,7 @@ describe('SubscriptionService', () => {
 
     describe('syncClientAccounts', () => {
         it('should disable orphaned external accounts with no local record', async () => {
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
             const svc = createServiceFixture()
 
             clientRegistryMock.getEnabled.mockResolvedValue([client])
@@ -947,7 +947,7 @@ describe('SubscriptionService', () => {
                 { id: 'orphan-1', username: 'orphan', isActive: true, isAdmin: false },
             ])
 
-            await service.syncClientAccounts()
+            await service.syncIntegrationAccounts()
 
             expect(client.disableUser).toHaveBeenCalledWith(
                 expect.objectContaining({ userServiceAccountId: 'orphan-1' })
@@ -956,7 +956,7 @@ describe('SubscriptionService', () => {
         })
 
         it('should skip disabling orphaned admin accounts', async () => {
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
             const svc = createServiceFixture()
 
             clientRegistryMock.getEnabled.mockResolvedValue([client])
@@ -964,13 +964,13 @@ describe('SubscriptionService', () => {
             userAccountRepoMock.findMany.mockResolvedValue([])
             client.getAllUsers.mockResolvedValue([{ id: 'admin-1', username: 'admin', isActive: true, isAdmin: true }])
 
-            await service.syncClientAccounts()
+            await service.syncIntegrationAccounts()
 
             expect(client.disableUser).not.toHaveBeenCalled()
         })
 
         it('should disable external account when local record is not active', async () => {
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
             const svc = createServiceFixture()
             const cancelledAccount = createUserAccountFixture({
                 status: UserAccountStatus.cancelled,
@@ -984,13 +984,13 @@ describe('SubscriptionService', () => {
                 { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
             ])
 
-            await service.syncClientAccounts()
+            await service.syncIntegrationAccounts()
 
             expect(client.disableUser).toHaveBeenCalledWith(expect.objectContaining({ userServiceAccountId: 'ext-1' }))
         })
 
         it('should enable external account when local is active but external is disabled', async () => {
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
             const svc = createServiceFixture()
             const activeAccount = createUserAccountFixture({
                 status: UserAccountStatus.active,
@@ -1004,13 +1004,13 @@ describe('SubscriptionService', () => {
                 { id: 'ext-1', username: 'testuser', isActive: false, isAdmin: false },
             ])
 
-            await service.syncClientAccounts()
+            await service.syncIntegrationAccounts()
 
             expect(client.enableUser).toHaveBeenCalledWith(expect.objectContaining({ userServiceAccountId: 'ext-1' }))
         })
 
         it('should mark local record as failed when active but external account is missing', async () => {
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
             const svc = createServiceFixture()
             const activeAccount = createUserAccountFixture({
                 status: UserAccountStatus.active,
@@ -1023,7 +1023,7 @@ describe('SubscriptionService', () => {
             client.getAllUsers.mockResolvedValue([])
             userAccountRepoMock.update.mockResolvedValue(activeAccount)
 
-            await service.syncClientAccounts()
+            await service.syncIntegrationAccounts()
 
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ status: UserAccountStatus.failed })
@@ -1031,14 +1031,14 @@ describe('SubscriptionService', () => {
         })
 
         it('should skip clients when getAllUsers returns null', async () => {
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
 
             clientRegistryMock.getEnabled.mockResolvedValue([client])
             serviceRepoMock.findMany.mockResolvedValue([createServiceFixture()])
             userAccountRepoMock.findMany.mockResolvedValue([])
             client.getAllUsers.mockResolvedValue(null)
 
-            await service.syncClientAccounts()
+            await service.syncIntegrationAccounts()
 
             expect(client.disableUser).not.toHaveBeenCalled()
             expect(client.enableUser).not.toHaveBeenCalled()
@@ -1046,7 +1046,7 @@ describe('SubscriptionService', () => {
         })
 
         it('should not take action when external and local states match', async () => {
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
             const svc = createServiceFixture()
             const activeAccount = createUserAccountFixture({
                 status: UserAccountStatus.active,
@@ -1060,7 +1060,7 @@ describe('SubscriptionService', () => {
                 { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
             ])
 
-            await service.syncClientAccounts()
+            await service.syncIntegrationAccounts()
 
             expect(client.disableUser).not.toHaveBeenCalled()
             expect(client.enableUser).not.toHaveBeenCalled()
@@ -1074,7 +1074,7 @@ describe('SubscriptionService', () => {
 
     describe('cleanupStaleLocalAccounts', () => {
         it('should delete stale local records for non-active accounts whose external account no longer exists', async () => {
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
             const svc = createServiceFixture()
             const expiredAccount = createUserAccountFixture({
                 status: UserAccountStatus.expired,
@@ -1092,7 +1092,7 @@ describe('SubscriptionService', () => {
         })
 
         it('should not delete non-active local records when external account still exists', async () => {
-            const client = createApplicationClientMock()
+            const client = createAccountIntegrationProviderMock()
             const svc = createServiceFixture()
             const cancelledAccount = createUserAccountFixture({
                 status: UserAccountStatus.cancelled,
@@ -1133,7 +1133,7 @@ describe('SubscriptionService', () => {
         describe('when user has active subscriptions', () => {
             it('disables each external account', async () => {
                 const account = createUserAccountFixture({ userId, status: UserAccountStatus.active })
-                const client = createApplicationClientMock({ disableUser: jest.fn().mockResolvedValue(true) })
+                const client = createAccountIntegrationProviderMock({ disableUser: jest.fn().mockResolvedValue(true) })
                 userAccountRepoMock.findMany.mockResolvedValue([account])
                 userServiceMock.getUserById.mockResolvedValue(user)
                 clientRegistryMock.getEnabled.mockResolvedValue([client])
@@ -1146,7 +1146,7 @@ describe('SubscriptionService', () => {
 
             it('sets status to disabled and autoRenew to false', async () => {
                 const account = createUserAccountFixture({ userId, status: UserAccountStatus.active })
-                const client = createApplicationClientMock({ disableUser: jest.fn().mockResolvedValue(true) })
+                const client = createAccountIntegrationProviderMock({ disableUser: jest.fn().mockResolvedValue(true) })
                 userAccountRepoMock.findMany.mockResolvedValue([account])
                 userServiceMock.getUserById.mockResolvedValue(user)
                 clientRegistryMock.getEnabled.mockResolvedValue([client])
@@ -1166,7 +1166,7 @@ describe('SubscriptionService', () => {
 
             it('continues and still updates the DB record when the external call fails', async () => {
                 const account = createUserAccountFixture({ userId, status: UserAccountStatus.active })
-                const client = createApplicationClientMock({
+                const client = createAccountIntegrationProviderMock({
                     disableUser: jest.fn().mockRejectedValue(new Error('timeout')),
                 })
                 userAccountRepoMock.findMany.mockResolvedValue([account])

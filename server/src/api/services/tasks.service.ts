@@ -28,9 +28,9 @@ export class TaskService extends BaseService {
         return this.runTask(ScheduledTasks.PROCESS_SUBSCRIPTIONS, () => this.subscriptionService.processSubscriptions())
     }
 
-    @Task(ScheduledTasks.SYNC_CLIENT_ACCOUNTS)
-    async syncClientAccountsHandler(): Promise<boolean> {
-        return this.runTask(ScheduledTasks.SYNC_CLIENT_ACCOUNTS, () => this.subscriptionService.syncClientAccounts())
+    @Task(ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS)
+    async syncIntegrationAccountsHandler(): Promise<boolean> {
+        return this.runTask(ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS, () => this.subscriptionService.syncIntegrationAccounts())
     }
 
     @Task(ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS)

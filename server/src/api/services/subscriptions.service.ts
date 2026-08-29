@@ -12,11 +12,11 @@ import {
 import { UserService } from './user.service'
 import { IServiceRepository, IUserAccountRepository } from '@/data/repositories'
 import { SubscriptionCreateRequestDto, SubscriptionPatchRequestDto, SubscriptionResponseDto } from '@/types/dtos/subscriptionsDto'
-import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
-import { ApplicationClientNames, FailedOperation, UserAccountStatus } from '@/types/enums'
+import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
+import { IntegrationProvider, FailedOperation, UserAccountStatus } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { UserAccountModel } from '@/types/models/userAccount'
-import { IApplicationManager } from '@/core/clients/IApplicationManager'
+import { IAccountIntegrationProvider } from '@/core/integrations/IAccountIntegrationProvider'
 import { UserResponseDto } from '@/types/dtos/userDto'
 
 @Injectable()
@@ -31,8 +31,8 @@ export class SubscriptionService {
         @Inject(IUserAccountRepository)
         private readonly userAccountRepository: IUserAccountRepository,
 
-        @Inject(ApplicationClientRegistry)
-        private readonly applicationClientRegistry: ApplicationClientRegistry,
+        @Inject(AccountIntegrationRegistry)
+        private readonly accountIntegrationRegistry: AccountIntegrationRegistry,
 
         @Inject(LoggingProvider)
         private readonly logger: LoggingProvider
@@ -63,7 +63,7 @@ export class SubscriptionService {
             throw new ConflictException('User already subscribed to the service')
         }
 
-        const client = await this.getServiceClient(service.name)
+        const client = await this.getIntegrationProvider(service.name)
 
         if (client.requiredInputs.email && request.email?.toLowerCase() !== user.email.toLowerCase()) {
             throw new BadRequestException("Email address must match the user's HomeGate account email address")
@@ -248,7 +248,7 @@ export class SubscriptionService {
 
         try {
             if (deleteImmediately === true) {
-                const client = await this.getServiceClient(service.name)
+                const client = await this.getIntegrationProvider(service.name)
 
                 await this.userAccountRepository.update({
                     userId: existingUserServiceAccount.userId,
@@ -334,7 +334,7 @@ export class SubscriptionService {
         const user = await this.userService.getUserById({ userId })
         if (!user) return
 
-        const cachedClients = new Map<number, IApplicationManager>()
+        const cachedClients = new Map<number, IAccountIntegrationProvider>()
         const cachedUsers = new Map([[userId, user]])
 
         for (const account of accountsToDisable) {
@@ -455,7 +455,7 @@ export class SubscriptionService {
             throw new BadRequestException('Service does not exist')
         }
 
-        const client = await this.getServiceClient(service.name)
+        const client = await this.getIntegrationProvider(service.name)
         const ok = await client.resetPassword(
             {
                 userServiceAccountId: account.userServiceAccountId,
@@ -507,10 +507,10 @@ export class SubscriptionService {
         return this.hydrateSubscriptionDetails(accounts)
     }
 
-    private async getServiceClient(serviceName: string) {
-        const enabledServices = await this.applicationClientRegistry.getEnabled()
+    private async getIntegrationProvider(serviceName: string) {
+        const enabledServices = await this.accountIntegrationRegistry.getEnabled()
 
-        const client = enabledServices.find((x) => x.name === (serviceName as ApplicationClientNames))
+        const client = enabledServices.find((x) => x.name === (serviceName as IntegrationProvider))
 
         if (!client) {
             throw new BadRequestException('Service client not available')
@@ -612,7 +612,7 @@ export class SubscriptionService {
 
     private async disableUserAccount(
         userAccount: UserAccountModel,
-        cachedClients: Map<number, IApplicationManager>,
+        cachedClients: Map<number, IAccountIntegrationProvider>,
         cachedUsers: Map<string, UserResponseDto>
     ): Promise<void> {
         let client = cachedClients.get(userAccount.serviceId)
@@ -624,7 +624,7 @@ export class SubscriptionService {
                 throw new BadRequestException('Service does not exist')
             }
 
-            client = await this.getServiceClient(service.name)
+            client = await this.getIntegrationProvider(service.name)
             cachedClients.set(service.id, client)
         }
 
@@ -688,7 +688,7 @@ export class SubscriptionService {
         const operationLabel = isDisableOperation ? 'disable' : 'enable'
 
         try {
-            const client = await this.getServiceClient(service.name)
+            const client = await this.getIntegrationProvider(service.name)
 
             await this.userAccountRepository.update({
                 userId,
@@ -698,7 +698,7 @@ export class SubscriptionService {
 
             if (isDisableOperation) {
                 // Reuse disableUserAccount with pre-populated caches to avoid redundant fetches.
-                const cachedClients: Map<number, IApplicationManager> = new Map([[service.id, client]])
+                const cachedClients: Map<number, IAccountIntegrationProvider> = new Map([[service.id, client]])
                 const cachedUsers: Map<string, UserResponseDto> = new Map([[user.id, user]])
                 await this.disableUserAccount(existingUserServiceAccount, cachedClients, cachedUsers)
             } else {
@@ -769,8 +769,8 @@ export class SubscriptionService {
      * - Local not active, external active → disable external (drift)
      */
     private async syncExternalToLocal(
-        client: IApplicationManager,
-        clientUsers: Awaited<ReturnType<IApplicationManager['getAllUsers']>> & {},
+        client: IAccountIntegrationProvider,
+        clientUsers: Awaited<ReturnType<IAccountIntegrationProvider['getAllUsers']>> & {},
         localAccounts: UserAccountModel[]
     ): Promise<void> {
         const localByExternalId = new Map(
@@ -834,8 +834,8 @@ export class SubscriptionService {
      * - Active local record with no matching external account → mark local as failed.
      */
     private async syncLocalToExternal(
-        client: IApplicationManager,
-        clientUsers: Awaited<ReturnType<IApplicationManager['getAllUsers']>> & {},
+        client: IAccountIntegrationProvider,
+        clientUsers: Awaited<ReturnType<IAccountIntegrationProvider['getAllUsers']>> & {},
         localAccounts: UserAccountModel[]
     ): Promise<void> {
         const clientUserById = new Map(clientUsers.map((u) => [u.id, u]))
@@ -909,7 +909,7 @@ export class SubscriptionService {
             throw new BadRequestException('Service does not exist')
         }
 
-        const client = await this.getServiceClient(service.name)
+        const client = await this.getIntegrationProvider(service.name)
         const { failedOperation } = existingAccount
 
         try {
@@ -1044,9 +1044,9 @@ export class SubscriptionService {
      *   If it has been deleted externally (bypassing this application), the local record is
      *   marked as failed so it surfaces for investigation and retry.
      */
-    public async syncClientAccounts(): Promise<boolean> {
+    public async syncIntegrationAccounts(): Promise<boolean> {
         let success = true
-        const clients = await this.applicationClientRegistry.getEnabled()
+        const clients = await this.accountIntegrationRegistry.getEnabled()
 
         // Fetch all services and all local accounts once before the loop.
         const allServices = await this.serviceRepository.findMany({})
@@ -1104,7 +1104,7 @@ export class SubscriptionService {
             statuses: [UserAccountStatus.active],
         })
 
-        const cachedClients: Map<number, IApplicationManager> = new Map()
+        const cachedClients: Map<number, IAccountIntegrationProvider> = new Map()
         const cachedUsers: Map<string, UserResponseDto> = new Map()
         const now = Date.now()
         let success = true
@@ -1192,7 +1192,7 @@ export class SubscriptionService {
      */
     public async cleanupStaleLocalAccounts(): Promise<boolean> {
         let success = true
-        const clients = await this.applicationClientRegistry.getEnabled()
+        const clients = await this.accountIntegrationRegistry.getEnabled()
         const allServices = await this.serviceRepository.findMany({})
         const allLocalAccounts = await this.userAccountRepository.findMany({})
         const serviceByName = new Map(allServices.map((s) => [s.name, s]))

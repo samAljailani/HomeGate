@@ -21,7 +21,7 @@ import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { UserService } from './user.service'
 import { UserModel, UserStatus } from '@/types/models/user'
-import { ApplicationClientNames } from '@/types/enums'
+import { IntegrationProvider } from '@/types/enums'
 import { MAX_INVITE_FAILED_ATTEMPTS } from '@/types/invite.constants'
 
 @Injectable()
@@ -277,9 +277,9 @@ export class InviteService extends BaseService {
     private async resolveAccounts(accounts: CreateInviteRequestDto['accounts'] & object): Promise<CreateInviteAccountModel[]> {
         const resolved: CreateInviteAccountModel[] = []
         for (const account of accounts) {
-            const serviceName = Object.values(ApplicationClientNames).find(
+            const serviceName = Object.values(IntegrationProvider).find(
                 (v) => v === account.serviceName.toLowerCase()
-            ) as ApplicationClientNames | undefined
+            ) as IntegrationProvider | undefined
             if (serviceName == null) {
                 throw new BadRequestException(`Service '${account.serviceName}' is not a valid service name.`)
             }

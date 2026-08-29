@@ -2,16 +2,16 @@ import { Injectable, Inject, NotFoundException, BadRequestException } from '@nes
 import { IServiceRepository } from '@/data/repositories'
 import { ServiceModel } from '@/types/models/service'
 import { ExternalAccountResponseDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
-import { ApplicationClientNames } from '@/types/enums'
-import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
-import { ApplicationUserModel } from '@/types/params/application.client'
+import { IntegrationProvider } from '@/types/enums'
+import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
+import { ApplicationUserModel } from '@/types/params/accountIntegration'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 
 @Injectable()
 export class ServiceManagementService {
     constructor(
         @Inject(IServiceRepository) private readonly serviceRepository: IServiceRepository,
-        @Inject(ApplicationClientRegistry) private readonly clientRegistry: ApplicationClientRegistry
+        @Inject(AccountIntegrationRegistry) private readonly integrationRegistry: AccountIntegrationRegistry
     ) {}
 
     serviceModelToResponseDto(service: ServiceModel): ServiceResponseDto {
@@ -35,12 +35,12 @@ export class ServiceManagementService {
         }
     }
 
-    async listExternalAccounts(name: ApplicationClientNames): Promise<ExternalAccountResponseDto[]> {
-        if (!this.clientRegistry.has(name)) {
+    async listExternalAccounts(name: IntegrationProvider): Promise<ExternalAccountResponseDto[]> {
+        if (!this.integrationRegistry.has(name)) {
             throw new BadRequestException(`Service '${name}' is not an integrated external client`)
         }
 
-        const users = await this.clientRegistry.get(name).getAllUsers()
+        const users = await this.integrationRegistry.get(name).getAllUsers()
         return (users ?? []).map((u) => this.applicationUserModelToResponseDto(u))
     }
 
@@ -52,9 +52,9 @@ export class ServiceManagementService {
         return new PaginatedResponseDto(services.map((s) => this.serviceModelToResponseDto(s)), total, skip)
     }
 
-    async enable(name: ApplicationClientNames): Promise<ServiceResponseDto> {
-        if (this.clientRegistry.has(name)) {
-            await this.clientRegistry.enable(name)
+    async enable(name: IntegrationProvider): Promise<ServiceResponseDto> {
+        if (this.integrationRegistry.has(name)) {
+            await this.integrationRegistry.enable(name)
         } else {
             await this.serviceRepository.setEnabled(name, true)
         }
@@ -63,9 +63,9 @@ export class ServiceManagementService {
         return this.serviceModelToResponseDto(service)
     }
 
-    async disable(name: ApplicationClientNames): Promise<ServiceResponseDto> {
-        if (this.clientRegistry.has(name)) {
-            await this.clientRegistry.disable(name)
+    async disable(name: IntegrationProvider): Promise<ServiceResponseDto> {
+        if (this.integrationRegistry.has(name)) {
+            await this.integrationRegistry.disable(name)
         } else {
             await this.serviceRepository.setEnabled(name, false)
         }
@@ -74,13 +74,13 @@ export class ServiceManagementService {
         return this.serviceModelToResponseDto(service)
     }
 
-    async updateImageUrl(name: ApplicationClientNames, imageUrl: string | null): Promise<ServiceResponseDto> {
+    async updateImageUrl(name: IntegrationProvider, imageUrl: string | null): Promise<ServiceResponseDto> {
         const service = await this.serviceRepository.setImageUrl(name, imageUrl)
         if (!service) throw new NotFoundException(`Service '${name}' not found`)
         return this.serviceModelToResponseDto(service)
     }
 
-    async updateUrl(name: ApplicationClientNames, url: string | null): Promise<ServiceResponseDto> {
+    async updateUrl(name: IntegrationProvider, url: string | null): Promise<ServiceResponseDto> {
         const service = await this.serviceRepository.setUrl(name, url)
         if (!service) throw new NotFoundException(`Service '${name}' not found`)
         return this.serviceModelToResponseDto(service)

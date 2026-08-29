@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { IApplicationManager } from '../IApplicationManager'
+import { IAccountIntegrationProvider } from '../IAccountIntegrationProvider'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { ConfigService } from '@/api/services/config.service'
 import {
@@ -9,14 +9,14 @@ import {
     CreateApplicationUserResult,
     FilterApplicationUserParam,
     GetApplicationUserResult,
-} from '@/types/params/application.client'
-import { ApplicationClientNames } from '@/types/enums'
+} from '@/types/params/accountIntegration'
+import { IntegrationProvider } from '@/types/enums'
 import { ImmichUserResponse, CreateImmichUserRequestDto, immichEndpoints } from './immich.types'
 import { SystemConfigKey } from '@/types/models/SystemConfig'
 
 @Injectable()
-export class ImmichClient implements IApplicationManager {
-    public readonly name = ApplicationClientNames.Immich
+export class ImmichIntegration implements IAccountIntegrationProvider {
+    public readonly name = IntegrationProvider.Immich
 
     public readonly requiredInputs: ApplicationUserRequirements = {
         username: true,
@@ -44,7 +44,7 @@ export class ImmichClient implements IApplicationManager {
         }
     }
 
-    // #region IApplicationClient
+    // #region IAccountIntegrationProvider
 
     async getUser(filters: FilterApplicationUserParam): Promise<GetApplicationUserResult> {
         if (!filters.userServiceAccountId && !filters.email) {

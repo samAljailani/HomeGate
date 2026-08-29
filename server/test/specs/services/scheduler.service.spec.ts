@@ -21,7 +21,7 @@ jest.mock('@/api/services/tasks.service', () => ({
 
 const defaultTaskConfig: TasksSystemConfig = {
     [ScheduledTasks.PROCESS_SUBSCRIPTIONS]: { enabled: true, runOnStartup: false, cronExpression: '0 0 * * * *' },
-    [ScheduledTasks.SYNC_CLIENT_ACCOUNTS]: { enabled: true, runOnStartup: false, cronExpression: '0 0 */12 * * *' },
+    [ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS]: { enabled: true, runOnStartup: false, cronExpression: '0 0 */12 * * *' },
     [ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS]: {
         enabled: true,
         runOnStartup: false,
@@ -331,7 +331,7 @@ describe('SchedulerService', () => {
 
         it('logs and continues when a startup execution fails', async () => {
             const failingHandler = jest.fn().mockRejectedValue(new Error('startup boom'))
-            Reflect.defineMetadata(TASK, ScheduledTasks.SYNC_CLIENT_ACCOUNTS, failingHandler)
+            Reflect.defineMetadata(TASK, ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS, failingHandler)
 
             const succeedingHandler = jest.fn().mockResolvedValue(true)
             Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, succeedingHandler)
@@ -348,7 +348,7 @@ describe('SchedulerService', () => {
                     runOnStartup: true,
                     cronExpression: '0 0 * * * *',
                 },
-                [ScheduledTasks.SYNC_CLIENT_ACCOUNTS]: {
+                [ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS]: {
                     enabled: true,
                     runOnStartup: true,
                     cronExpression: '0 0 */12 * * *',
@@ -365,7 +365,7 @@ describe('SchedulerService', () => {
             Reflect.defineMetadata(TASK, ScheduledTasks.PROCESS_SUBSCRIPTIONS, handlerA)
 
             const handlerB = jest.fn()
-            Reflect.defineMetadata(TASK, ScheduledTasks.SYNC_CLIENT_ACCOUNTS, handlerB)
+            Reflect.defineMetadata(TASK, ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS, handlerB)
 
             discoveryServiceMock.getProviders.mockReturnValue([
                 createProviderWrapper({ handlerA }),

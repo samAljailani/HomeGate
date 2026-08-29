@@ -1,8 +1,8 @@
-import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
+import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 
-export function createApplicationClientRegistryMock(): jest.Mocked<
+export function createAccountIntegrationRegistryMock(): jest.Mocked<
     Pick<
-        ApplicationClientRegistry,
+        AccountIntegrationRegistry,
         'getEnabled' | 'get' | 'has' | 'getAll' | 'register' | 'isEnabled' | 'enable' | 'disable'
     >
 > {

@@ -8,7 +8,7 @@ const taskDefaults: TasksSystemConfig = Object.freeze({
         runOnStartup: true,
         cronExpression: CronExpression.EVERY_HOUR,
     },
-    [ScheduledTasks.SYNC_CLIENT_ACCOUNTS]: {
+    [ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS]: {
         enabled: true,
         runOnStartup: true,
         cronExpression: CronExpression.EVERY_12_HOURS,

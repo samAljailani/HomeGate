@@ -2,9 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { NotFoundException, BadRequestException } from '@nestjs/common'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
 import { IServiceRepository } from '@/data/repositories'
-import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
+import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { createServiceFixture } from '../../fixtures/service.stub'
-import { ApplicationClientNames } from '@/types/enums'
+import { IntegrationProvider } from '@/types/enums'
 
 function createServiceRepositoryMock(): jest.Mocked<
     Pick<IServiceRepository, 'findMany' | 'count' | 'setEnabled' | 'findByName' | 'setImageUrl' | 'setUrl'>
@@ -19,7 +19,7 @@ function createServiceRepositoryMock(): jest.Mocked<
     }
 }
 
-function createClientRegistryMock(): jest.Mocked<Pick<ApplicationClientRegistry, 'has' | 'enable' | 'disable' | 'get'>> {
+function createClientRegistryMock(): jest.Mocked<Pick<AccountIntegrationRegistry, 'has' | 'enable' | 'disable' | 'get'>> {
     return {
         has: jest.fn(),
         enable: jest.fn(),
@@ -41,7 +41,7 @@ describe('ServiceManagementService', () => {
             providers: [
                 ServiceManagementService,
                 { provide: IServiceRepository, useValue: serviceRepositoryMock },
-                { provide: ApplicationClientRegistry, useValue: clientRegistryMock },
+                { provide: AccountIntegrationRegistry, useValue: clientRegistryMock },
             ],
         }).compile()
 
@@ -70,7 +70,7 @@ describe('ServiceManagementService', () => {
     // #region enable
 
     describe('enable', () => {
-        const name = ApplicationClientNames.Jellyfin
+        const name = IntegrationProvider.Jellyfin
 
         it('uses registry.enable when client is registered', async () => {
             const svc = createServiceFixture({ name, enabled: true })
@@ -121,7 +121,7 @@ describe('ServiceManagementService', () => {
     // #region disable
 
     describe('disable', () => {
-        const name = ApplicationClientNames.Jellyfin
+        const name = IntegrationProvider.Jellyfin
 
         it('uses registry.disable when client is registered', async () => {
             const svc = createServiceFixture({ name, enabled: false })
@@ -163,7 +163,7 @@ describe('ServiceManagementService', () => {
     // #region updateImageUrl
 
     describe('updateImageUrl', () => {
-        const name = ApplicationClientNames.Jellyfin
+        const name = IntegrationProvider.Jellyfin
 
         it('sets the image URL via the repository', async () => {
             const svc = createServiceFixture({ name, imageUrl: 'https://example.com/logo.png' })
@@ -189,7 +189,7 @@ describe('ServiceManagementService', () => {
     // #region updateUrl
 
     describe('updateUrl', () => {
-        const name = ApplicationClientNames.Jellyfin
+        const name = IntegrationProvider.Jellyfin
 
         it('sets the url via the repository', async () => {
             const svc = createServiceFixture({ name, url: 'https://jellyfin.example.com' })
@@ -213,7 +213,7 @@ describe('ServiceManagementService', () => {
     // #region listExternalAccounts
 
     describe('listExternalAccounts', () => {
-        const name = ApplicationClientNames.Jellyfin
+        const name = IntegrationProvider.Jellyfin
 
         it('throws BadRequestException when the service is not a registered client', async () => {
             clientRegistryMock.has.mockReturnValue(false)

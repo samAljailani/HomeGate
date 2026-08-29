@@ -12,7 +12,7 @@ flowchart LR
         SCHED["Scheduler Core<br/>(cron engine, lifecycle)"]
         REG["Task Registry<br/>(name → job handle)"]
         H1["Task Handler:<br/>processSubscriptions"]
-        H2["Task Handler:<br/>syncClientAccounts"]
+        H2["Task Handler:<br/>syncIntegrationAccounts"]
         H3["Task Handler:<br/>cleanupStaleLocalAccounts"]
     end
 
@@ -180,7 +180,7 @@ Accepts a partial update body. Validates the cron expression and applies changes
 | Task | Default Schedule | Default Startup | Description |
 |------|-----------------|-----------------|-------------|
 | `process_subscriptions` | Every hour | Yes | Processes expired/active subscriptions and updates user access |
-| `sync_client_accounts` | Every 12 hours | **No** | Syncs external service accounts (Jellyfin/Immich) with local records |
+| `sync_integration_accounts` | Every 12 hours | **No** | Syncs external service accounts (Jellyfin/Immich) with local records |
 | `cleanup_stale_local_accounts` | Every 12 hours | Yes | Removes local account records that no longer have an external counterpart |
 
 ## Operational Notes
@@ -189,7 +189,7 @@ Accepts a partial update body. Validates the cron expression and applies changes
   - `debug`: `Task '<name>' started`
   - `debug`: `Task '<name>' finished in <ms>ms with success=<true|false>`
   - `error` (on throw): `Task '<name>' failed after <ms>ms` with the stack trace attached
-- **Dangerous tasks**: `sync_client_accounts` defaults to `runOnStartup: false` because it disables external users flagged as orphans (no local record). If the local DB is empty or incomplete, this will mass-disable legitimate users.
+- **Dangerous tasks**: `sync_integration_accounts` defaults to `runOnStartup: false` because it disables external users flagged as orphans (no local record). If the local DB is empty or incomplete, this will mass-disable legitimate users.
 - **Recovery script**: `scripts/enable-jellyfin-users.ts` re-enables disabled Jellyfin users. Run with `--apply` to execute (dry-run by default).
 
 ## Failure Modes
@@ -227,6 +227,6 @@ Option 2 (Postgres advisory locks keyed on task name) is the recommended first s
 | Zero-arg handlers | Keeps reflection-based discovery safe; dependencies come from the injected service |
 | `waitForCompletion` | Prevents overlapping runs on a single node without distributed locking |
 | Decorator carries only the task name | All config lives in one place (DB + code defaults); no stale compile-time values |
-| `sync_client_accounts` defaults to `runOnStartup: false` | Prevents the orphan-disable incident on fresh/incomplete environments |
+| `sync_integration_accounts` defaults to `runOnStartup: false` | Prevents the orphan-disable incident on fresh/incomplete environments |
 | Auto-seed on discovery | Admin UI always shows all tasks without manual DB inserts |
 | Hot-reload via direct method call | Simple; add event bus later when multiple services need to react |

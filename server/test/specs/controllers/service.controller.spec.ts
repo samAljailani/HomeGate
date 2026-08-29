@@ -3,7 +3,7 @@ import { BadRequestException } from '@nestjs/common'
 import { ServiceController } from '@/api/controllers/service.controller'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
 import { createServiceFixture } from '../../fixtures/service.stub'
-import { ApplicationClientNames } from '@/types/enums'
+import { IntegrationProvider } from '@/types/enums'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 
 function createServiceManagementServiceMock(): jest.Mocked<
@@ -62,7 +62,7 @@ describe('ServiceController', () => {
     // #region update
 
     describe('update', () => {
-        const name = ApplicationClientNames.Jellyfin
+        const name = IntegrationProvider.Jellyfin
 
         it('enables the service when enabled is true', async () => {
             const svc = createServiceFixture({ enabled: true })
@@ -70,7 +70,7 @@ describe('ServiceController', () => {
 
             await controller.update({ name }, { enabled: true })
 
-            expect(serviceManagementMock.enable).toHaveBeenCalledWith(ApplicationClientNames.Jellyfin)
+            expect(serviceManagementMock.enable).toHaveBeenCalledWith(IntegrationProvider.Jellyfin)
             expect(serviceManagementMock.disable).not.toHaveBeenCalled()
         })
 
@@ -80,7 +80,7 @@ describe('ServiceController', () => {
 
             await controller.update({ name }, { enabled: false })
 
-            expect(serviceManagementMock.disable).toHaveBeenCalledWith(ApplicationClientNames.Jellyfin)
+            expect(serviceManagementMock.disable).toHaveBeenCalledWith(IntegrationProvider.Jellyfin)
             expect(serviceManagementMock.enable).not.toHaveBeenCalled()
         })
 
@@ -127,7 +127,7 @@ describe('ServiceController', () => {
     // #region listAccounts
 
     describe('listAccounts', () => {
-        const name = ApplicationClientNames.Jellyfin
+        const name = IntegrationProvider.Jellyfin
 
         it('returns the accounts from the service', async () => {
             const accounts = [{ id: 'ext-1', username: 'alice', isActive: true, isAdmin: false }]

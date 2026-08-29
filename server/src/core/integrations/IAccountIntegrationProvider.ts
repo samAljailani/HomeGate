@@ -1,4 +1,4 @@
-import { ApplicationClientNames } from '@/types/enums'
+import { IntegrationProvider } from '@/types/enums'
 import {
     ApplicationUserModel,
     FilterApplicationUserParam,
@@ -6,10 +6,10 @@ import {
     CreateApplicationUserParam,
     GetApplicationUserResult,
     CreateApplicationUserResult,
-} from '@/types/params/application.client'
+} from '@/types/params/accountIntegration'
 
-export interface IApplicationManager {
-    name: ApplicationClientNames
+export interface IAccountIntegrationProvider {
+    name: IntegrationProvider
     requiredInputs: ApplicationUserRequirements
 
     onDisable?(): Promise<void>

@@ -63,20 +63,20 @@ describe('SystemMetadataRepository', () => {
             prismaMock.systemMetadata.findUnique.mockResolvedValue({
                 key: SystemConfigKey.TASKS,
                 value: {
-                    [ScheduledTasks.SYNC_CLIENT_ACCOUNTS]: { cronExpression: '0 0 */6 * * *' },
+                    [ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS]: { cronExpression: '0 0 */6 * * *' },
                 },
             })
 
             const result = await repository.get(SystemConfigKey.TASKS)
 
             // Overridden field
-            expect(result[ScheduledTasks.SYNC_CLIENT_ACCOUNTS].cronExpression).toBe('0 0 */6 * * *')
+            expect(result[ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS].cronExpression).toBe('0 0 */6 * * *')
             // Sibling fields preserved from defaults
-            expect(result[ScheduledTasks.SYNC_CLIENT_ACCOUNTS].enabled).toBe(
-                systemDefaults[SystemConfigKey.TASKS][ScheduledTasks.SYNC_CLIENT_ACCOUNTS].enabled
+            expect(result[ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS].enabled).toBe(
+                systemDefaults[SystemConfigKey.TASKS][ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS].enabled
             )
-            expect(result[ScheduledTasks.SYNC_CLIENT_ACCOUNTS].runOnStartup).toBe(
-                systemDefaults[SystemConfigKey.TASKS][ScheduledTasks.SYNC_CLIENT_ACCOUNTS].runOnStartup
+            expect(result[ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS].runOnStartup).toBe(
+                systemDefaults[SystemConfigKey.TASKS][ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS].runOnStartup
             )
         })
 
@@ -102,17 +102,17 @@ describe('SystemMetadataRepository', () => {
             prismaMock.systemMetadata.findUnique.mockResolvedValue({
                 key: SystemConfigKey.TASKS,
                 value: {
-                    [ScheduledTasks.SYNC_CLIENT_ACCOUNTS]: { cronExpression: null, enabled: null },
+                    [ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS]: { cronExpression: null, enabled: null },
                 },
             })
 
             const result = await repository.get(SystemConfigKey.TASKS)
 
-            expect(result[ScheduledTasks.SYNC_CLIENT_ACCOUNTS].cronExpression).toBe(
-                systemDefaults[SystemConfigKey.TASKS][ScheduledTasks.SYNC_CLIENT_ACCOUNTS].cronExpression
+            expect(result[ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS].cronExpression).toBe(
+                systemDefaults[SystemConfigKey.TASKS][ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS].cronExpression
             )
-            expect(result[ScheduledTasks.SYNC_CLIENT_ACCOUNTS].enabled).toBe(
-                systemDefaults[SystemConfigKey.TASKS][ScheduledTasks.SYNC_CLIENT_ACCOUNTS].enabled
+            expect(result[ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS].enabled).toBe(
+                systemDefaults[SystemConfigKey.TASKS][ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS].enabled
             )
         })
 
@@ -123,7 +123,7 @@ describe('SystemMetadataRepository', () => {
                     runOnStartup: false,
                     cronExpression: '0 30 * * * *',
                 },
-                [ScheduledTasks.SYNC_CLIENT_ACCOUNTS]: {
+                [ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS]: {
                     enabled: true,
                     runOnStartup: true,
                     cronExpression: '0 0 */3 * * *',

@@ -35,7 +35,7 @@ export enum ImmichProvisioningMode {
     OAuth = 'oauth',
 }
 
-export enum ApplicationClientNames {
+export enum IntegrationProvider {
     Jellyfin = 'jellyfin',
     Immich = 'immich',
 }
@@ -62,7 +62,7 @@ export enum FailedOperation {
 export enum ScheduledTasks {
     PROCESS_SUBSCRIPTIONS = 'process_subscriptions',
     CLEANUP_STALE_LOCAL_ACCOUNTS = 'cleanup_stale_local_accounts',
-    SYNC_CLIENT_ACCOUNTS = 'sync_client_accounts',
+    SYNC_INTEGRATION_ACCOUNTS = 'sync_integration_accounts',
     CLEANUP_DELETED_USERS = 'cleanup_deleted_users',
     PURGE_OLD_LOGS = 'purge_old_logs',
     PURGE_OLD_TASK_RUNS = 'purge_old_task_runs',

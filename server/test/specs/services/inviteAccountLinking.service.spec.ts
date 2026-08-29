@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { InviteAccountLinkingService } from '@/api/services/inviteAccountLinking.service'
 import { IUserAccountRepository } from '@/data/repositories/IUserAccountRepository'
-import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
+import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
-import { ApplicationClientNames, UserAccountStatus } from '@/types/enums'
+import { IntegrationProvider, UserAccountStatus } from '@/types/enums'
 import { InviteAccountModel } from '@/types/models/invite'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserAccountRepositoryMock } from '../../mocks/userAccount.repository.mock'
-import { createApplicationClientRegistryMock } from '../../mocks/applicationClientRegistry.mock'
+import { createAccountIntegrationRegistryMock } from '../../mocks/accountIntegrationRegistry.mock'
 import { ConfigService } from '@/api/services/config.service'
 import { SystemConfigKey } from '@/types/models/SystemConfig'
 import { systemDefaults } from '@/data/config.defaults'
@@ -16,12 +16,12 @@ describe('InviteAccountLinkingService', () => {
     let service: InviteAccountLinkingService
     let loggerMock: ReturnType<typeof createLoggerMock>
     let userAccountRepoMock: ReturnType<typeof createUserAccountRepositoryMock>
-    let registryMock: ReturnType<typeof createApplicationClientRegistryMock>
+    let registryMock: ReturnType<typeof createAccountIntegrationRegistryMock>
 
     beforeEach(async () => {
         loggerMock = createLoggerMock()
         userAccountRepoMock = createUserAccountRepositoryMock()
-        registryMock = createApplicationClientRegistryMock()
+        registryMock = createAccountIntegrationRegistryMock()
         const configServiceMock = {
             get: jest.fn((key: SystemConfigKey) => systemDefaults[key]),
         }
@@ -31,7 +31,7 @@ describe('InviteAccountLinkingService', () => {
                 InviteAccountLinkingService,
                 { provide: LoggingProvider, useValue: loggerMock },
                 { provide: IUserAccountRepository, useValue: userAccountRepoMock },
-                { provide: ApplicationClientRegistry, useValue: registryMock },
+                { provide: AccountIntegrationRegistry, useValue: registryMock },
                 { provide: ConfigService, useValue: configServiceMock },
             ],
         }).compile()
@@ -43,7 +43,7 @@ describe('InviteAccountLinkingService', () => {
         id: 'ia-1',
         inviteId: 'inv-1',
         serviceId: 5,
-        serviceName: ApplicationClientNames.Jellyfin,
+        serviceName: IntegrationProvider.Jellyfin,
         username: 'juser',
         email: null,
         accountId: null,
@@ -108,7 +108,7 @@ describe('InviteAccountLinkingService', () => {
 
     it('catches errors per account without stopping other accounts', async () => {
         const account1 = makeAccount({ id: 'ia-1', serviceId: 5 })
-        const account2 = makeAccount({ id: 'ia-2', serviceId: 6, serviceName: ApplicationClientNames.Immich })
+        const account2 = makeAccount({ id: 'ia-2', serviceId: 6, serviceName: IntegrationProvider.Immich })
         const clientMock = {
             getUser: jest.fn()
                 .mockRejectedValueOnce(new Error('network error'))

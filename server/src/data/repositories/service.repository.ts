@@ -5,7 +5,7 @@ import { BaseRepository } from './base.repository'
 import { IServiceRepository } from './IServiceRepository'
 import type { ServiceModel as PrismaService } from '@prisma/generated/models'
 import { CreateServiceModel, ServiceModel, UpdateServiceModel, ServiceFilterOptions } from '@/types/models/service'
-import { ApplicationClientNames } from '@/types/enums'
+import { IntegrationProvider } from '@/types/enums'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
 
@@ -16,13 +16,13 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
     }
 
     private mapService(service: PrismaService): ServiceModel {
-        if (!Object.values(ApplicationClientNames).includes(service.name as ApplicationClientNames)) {
+        if (!Object.values(IntegrationProvider).includes(service.name as IntegrationProvider)) {
             throw new Error('Service name is not a recognized application client name. Cannot map to model.')
         }
 
         return {
             id: service.id,
-            name: service.name as ApplicationClientNames,
+            name: service.name as IntegrationProvider,
             enabled: service.enabled,
             url: service.url ?? null,
             imageUrl: service.imageUrl ?? null,
@@ -45,7 +45,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async findByName(name: ApplicationClientNames): Promise<ServiceModel | null> {
+    async findByName(name: IntegrationProvider): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.findUnique({
                 where: { name },
@@ -101,7 +101,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async isEnabled(name: ApplicationClientNames): Promise<boolean> {
+    async isEnabled(name: IntegrationProvider): Promise<boolean> {
         try {
             const service = await this.db.service.findUnique({
                 where: { name },
@@ -118,7 +118,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async setEnabled(name: ApplicationClientNames, enabled: boolean): Promise<ServiceModel | null> {
+    async setEnabled(name: IntegrationProvider, enabled: boolean): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.update({
                 where: { name },
@@ -135,7 +135,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async setImageUrl(name: ApplicationClientNames, imageUrl: string | null): Promise<ServiceModel | null> {
+    async setImageUrl(name: IntegrationProvider, imageUrl: string | null): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.update({
                 where: { name },
@@ -152,7 +152,7 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async setUrl(name: ApplicationClientNames, url: string | null): Promise<ServiceModel | null> {
+    async setUrl(name: IntegrationProvider, url: string | null): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.update({
                 where: { name },

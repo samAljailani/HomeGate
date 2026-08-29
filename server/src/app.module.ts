@@ -8,9 +8,9 @@ import { services } from '@/api/services'
 import { middleware } from '@/api/middleware'
 import { repositories } from '@/data/repositories'
 import { providers } from '@/infrastructure'
-import { clients } from './core/clients'
+import { accountIntegrationProviders } from './core/integrations'
 import { ClsModule } from 'nestjs-cls'
-import { ApplicationClientRegistry } from './core/clients/applicationClientRegistry'
+import { AccountIntegrationRegistry } from './core/integrations/accountIntegrationRegistry'
 import { ScheduleModule } from '@nestjs/schedule'
 import { DiscoveryModule } from '@nestjs/core'
 import { SessionClientInfoMiddleware } from '@/api/middleware/sessionClientInfo.middleware'
@@ -39,8 +39,8 @@ const env = configRepository.getEnv()
         ...services,
         ...strategies,
         ...middleware,
-        ...clients,
-        ApplicationClientRegistry,
+        ...accountIntegrationProviders,
+        AccountIntegrationRegistry,
     ],
 })
 export class AppModule implements NestModule {

@@ -2,8 +2,8 @@ import { Injectable, Inject } from '@nestjs/common'
 import { OnEvent } from '@nestjs/event-emitter'
 import type { InviteClaimedEvent } from '@/types/events/invite-claimed.event'
 import { IUserAccountRepository } from '@/data/repositories'
-import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
-import { ApplicationClientNames, AppEvent, UserAccountStatus } from '@/types/enums'
+import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
+import { IntegrationProvider, AppEvent, UserAccountStatus } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { BaseService } from './base.service'
 import { ConfigService } from './config.service'
@@ -14,7 +14,7 @@ export class InviteAccountLinkingService extends BaseService {
     constructor(
         @Inject(LoggingProvider) logger: LoggingProvider,
         @Inject(IUserAccountRepository) private userAccountRepository: IUserAccountRepository,
-        @Inject(ApplicationClientRegistry) private clientRegistry: ApplicationClientRegistry,
+        @Inject(AccountIntegrationRegistry) private integrationRegistry: AccountIntegrationRegistry,
         @Inject(ConfigService) private configService: ConfigService
     ) {
         super(logger)
@@ -39,14 +39,14 @@ export class InviteAccountLinkingService extends BaseService {
         userId: string,
         inviteAccount: InviteClaimedEvent['accounts'][number]
     ): Promise<void> {
-        const serviceName = inviteAccount.serviceName as ApplicationClientNames
+        const serviceName = inviteAccount.serviceName as IntegrationProvider
 
-        if (!this.clientRegistry.has(serviceName)) {
+        if (!this.integrationRegistry.has(serviceName)) {
             this.logger.warn(`Service client '${serviceName}' not registered, skipping account link`)
             return
         }
 
-        const client = this.clientRegistry.get(serviceName)
+        const client = this.integrationRegistry.get(serviceName)
 
         const result = await client.getUser({
             username: inviteAccount.username ?? undefined,

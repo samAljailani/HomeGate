@@ -4,7 +4,7 @@ import { SubscriptionService } from '@/api/services/subscriptions.service'
 import { IUserAccountRepository } from '@/data/repositories'
 import { IServiceRepository } from '@/data/repositories'
 import { UserService } from '@/api/services/user.service'
-import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
+import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserAccountFixture, toSubscriptionResponseDto } from '../../fixtures/userAccount.stub'
@@ -42,7 +42,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
                 { provide: UserService, useValue: { getUserById: jest.fn() } },
                 { provide: IServiceRepository, useValue: createServiceRepositoryMock() },
                 { provide: IUserAccountRepository, useValue: userAccountRepositoryMock },
-                { provide: ApplicationClientRegistry, useValue: { getEnabled: jest.fn().mockResolvedValue([]) } },
+                { provide: AccountIntegrationRegistry, useValue: { getEnabled: jest.fn().mockResolvedValue([]) } },
                 { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
