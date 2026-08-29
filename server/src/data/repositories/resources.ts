@@ -15,7 +15,8 @@ export type RepositoryResourceKey =
     | 'service'
     | 'session'
     | 'user'
-    | 'userAccount'
+    | 'subscription'
+    | 'externalUserAccount'
     | 'userOAuthIdentity'
 
 export const repositoryErrorMessages: Record<RepositoryResourceKey, RepositoryErrorMessages> = {
@@ -33,7 +34,14 @@ export const repositoryErrorMessages: Record<RepositoryResourceKey, RepositoryEr
         unavailable: 'Service is temporarily unavailable. Please try again.',
         fallback: 'Unable to process the request at this time.',
     },
-    userAccount: {
+    subscription: {
+        conflict: 'Request conflicts with existing data.',
+        notFound: 'Requested resource was not found.',
+        badRequest: 'Request data is invalid.',
+        unavailable: 'Service is temporarily unavailable. Please try again.',
+        fallback: 'Unable to process the request at this time.',
+    },
+    externalUserAccount: {
         conflict: 'Request conflicts with existing data.',
         notFound: 'Requested resource was not found.',
         badRequest: 'Request data is invalid.',

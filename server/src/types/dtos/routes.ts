@@ -65,8 +65,8 @@ export const routes = {
     }),
     services: defineRoutes('/api/services', {
         list: '',
-        update: ':name',
-        accounts: ':name/accounts',
+        update: ':slug',
+        accounts: ':slug/accounts',
     }),
     oauthProviders: defineRoutes('/api/oauth-providers', {
         list: '',

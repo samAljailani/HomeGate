@@ -46,6 +46,9 @@ UPDATE "services" SET "integration_provider" = lower("name")::"IntegrationProvid
 -- A service HomeGate has no integration for cannot be provisioning accounts; an admin can reclassify it.
 UPDATE "services" SET "account_type" = 'NONE' WHERE "integration_provider" IS NULL;
 
+-- The default existed only to backfill existing rows; new services must state their account type.
+ALTER TABLE "services" ALTER COLUMN "account_type" DROP DEFAULT;
+
 ALTER TABLE "services" ALTER COLUMN "slug" SET NOT NULL;
 
 CREATE UNIQUE INDEX "services_slug_key" ON "services"("slug");

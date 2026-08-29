@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { SubscriptionController } from '@/api/controllers/subscriptions.controller'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import { createRequestMock } from '../../mocks/httpContext.mock'
-import { createUserAccountFixture } from '../../fixtures/userAccount.stub'
+import { createSubscriptionDtoFixture } from '../../fixtures/subscription.stub'
 
 function createSubscriptionServiceMock(): jest.Mocked<
     Pick<SubscriptionService, 'subscribe' | 'delete' | 'update' | 'renew' | 'getById' | 'listAll' | 'listByUser'>
@@ -43,7 +43,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
 
     describe('renew', () => {
         it('calls subscriptionService.renew with the subscription id', async () => {
-            const account = createUserAccountFixture()
+            const account = createSubscriptionDtoFixture()
             subscriptionServiceMock.renew.mockResolvedValue(account)
 
             await controller.renew({ id: subscriptionId })
@@ -52,7 +52,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
         })
 
         it('returns the updated account', async () => {
-            const account = createUserAccountFixture()
+            const account = createSubscriptionDtoFixture()
             subscriptionServiceMock.renew.mockResolvedValue(account)
 
             const result = await controller.renew({ id: subscriptionId })
@@ -67,7 +67,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
 
     describe('update', () => {
         it('forwards the policy object to the service', async () => {
-            const account = createUserAccountFixture({ autoRenew: true })
+            const account = createSubscriptionDtoFixture({ autoRenew: true })
             subscriptionServiceMock.update.mockResolvedValue(account)
 
             await controller.update({ id: subscriptionId }, { enabled: true, autoRenew: true })
@@ -79,7 +79,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
         })
 
         it('returns the updated account', async () => {
-            const account = createUserAccountFixture({ autoRenew: false })
+            const account = createSubscriptionDtoFixture({ autoRenew: false })
             subscriptionServiceMock.update.mockResolvedValue(account)
 
             const result = await controller.update({ id: subscriptionId }, { autoRenew: false })
@@ -94,7 +94,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
 
     describe('getById', () => {
         it('returns the subscription from the service', async () => {
-            const account = createUserAccountFixture()
+            const account = createSubscriptionDtoFixture()
             subscriptionServiceMock.getById.mockResolvedValue(account)
 
             const result = await controller.getById({ id: subscriptionId })
@@ -136,7 +136,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
 
     describe('listAll', () => {
         it('returns all subscriptions', async () => {
-            const accounts = [createUserAccountFixture(), createUserAccountFixture({ userId: 'b' })]
+            const accounts = [createSubscriptionDtoFixture(), createSubscriptionDtoFixture({ userId: 'b' })]
             subscriptionServiceMock.listAll.mockResolvedValue(accounts)
 
             const result = await controller.listAll({})
@@ -147,7 +147,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
 
         it('filters by userId when the query param is provided', async () => {
             const userId = 'user-uuid-1'
-            const accounts = [createUserAccountFixture({ userId })]
+            const accounts = [createSubscriptionDtoFixture({ userId })]
             subscriptionServiceMock.listByUser.mockResolvedValue(accounts)
 
             const result = await controller.listAll({ userId })
@@ -178,7 +178,7 @@ describe('SubscriptionController — update / renew / getById / delete / listAll
         it('returns the accounts for the session user', async () => {
             const req = createRequestMock()
             req.session.userId = userId
-            const accounts = [createUserAccountFixture({ userId }), createUserAccountFixture({ userId, serviceId: 2 })]
+            const accounts = [createSubscriptionDtoFixture({ userId }), createSubscriptionDtoFixture({ userId, serviceId: 2 })]
             subscriptionServiceMock.listByUser.mockResolvedValue(accounts)
 
             const result = await controller.listMine(req, {})

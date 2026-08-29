@@ -3,11 +3,11 @@ import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { IUserRepository } from '@/data/repositories/IUserRepository'
 import { ISessionRepository } from '@/data/repositories/ISessionRepository'
-import { IUserAccountRepository } from '@/data/repositories/IUserAccountRepository'
+import { ISubscriptionRepository } from '@/data/repositories/ISubscriptionRepository'
 import { ILoggingRepository } from '@/data/repositories/ILoggingRepository'
 import { ITaskRunRepository } from '@/data/repositories/ITaskRunRepository'
 import { DashboardStatsResponseDto } from '@/types/dtos/dashboardDto'
-import { LogLevel, ScheduledTasks, UserAccountStatus } from '@/types/enums'
+import { LogLevel, ScheduledTasks, SubscriptionStatus } from '@/types/enums'
 import { UserStatus } from '@/types/models/user'
 
 @Injectable()
@@ -15,7 +15,7 @@ export class DashboardService extends BaseService {
     constructor(
         @Inject(IUserRepository) private readonly userRepository: IUserRepository,
         @Inject(ISessionRepository) private readonly sessionRepository: ISessionRepository,
-        @Inject(IUserAccountRepository) private readonly userAccountRepository: IUserAccountRepository,
+        @Inject(ISubscriptionRepository) private readonly subscriptionRepository: ISubscriptionRepository,
         @Inject(ILoggingRepository) private readonly loggingRepository: ILoggingRepository,
         @Inject(ITaskRunRepository) private readonly taskRunRepository: ITaskRunRepository,
         @Inject(LoggingProvider) logger: LoggingProvider
@@ -29,8 +29,8 @@ export class DashboardService extends BaseService {
         const [userStats, sessions, totalSubs, activeSubs, recentErrors, lastRuns] = await Promise.all([
             this.userRepository.getUserCounts(),
             this.sessionRepository.findMany({}),
-            this.userAccountRepository.count(),
-            this.userAccountRepository.count({ statuses: [UserAccountStatus.active] }),
+            this.subscriptionRepository.count(),
+            this.subscriptionRepository.count({ statuses: [SubscriptionStatus.active] }),
             this.loggingRepository.findMany({ logLevel: LogLevel.Error }, 5, 0),
             Promise.all(Object.values(ScheduledTasks).map((name) => this.taskRunRepository.findLatest(name))),
         ])

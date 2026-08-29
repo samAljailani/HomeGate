@@ -7,13 +7,13 @@ import { createServiceFixture } from '../../fixtures/service.stub'
 import { IntegrationProvider } from '@/types/enums'
 
 function createServiceRepositoryMock(): jest.Mocked<
-    Pick<IServiceRepository, 'findMany' | 'count' | 'setEnabled' | 'findByName' | 'setImageUrl' | 'setUrl'>
+    Pick<IServiceRepository, 'findMany' | 'count' | 'setEnabled' | 'findBySlug' | 'setImageUrl' | 'setUrl'>
 > {
     return {
         findMany: jest.fn(),
         count: jest.fn(),
         setEnabled: jest.fn(),
-        findByName: jest.fn(),
+        findBySlug: jest.fn(),
         setImageUrl: jest.fn(),
         setUrl: jest.fn(),
     }
@@ -76,7 +76,7 @@ describe('ServiceManagementService', () => {
             const svc = createServiceFixture({ name, enabled: true })
             clientRegistryMock.has.mockReturnValue(true)
             clientRegistryMock.enable.mockResolvedValue(undefined)
-            serviceRepositoryMock.findByName.mockResolvedValue(svc)
+            serviceRepositoryMock.findBySlug.mockResolvedValue(svc)
 
             await service.enable(name)
 
@@ -88,7 +88,7 @@ describe('ServiceManagementService', () => {
             const svc = createServiceFixture({ name, enabled: true })
             clientRegistryMock.has.mockReturnValue(false)
             serviceRepositoryMock.setEnabled.mockResolvedValue(svc)
-            serviceRepositoryMock.findByName.mockResolvedValue(svc)
+            serviceRepositoryMock.findBySlug.mockResolvedValue(svc)
 
             await service.enable(name)
 
@@ -100,17 +100,17 @@ describe('ServiceManagementService', () => {
             const svc = createServiceFixture({ name, enabled: true })
             clientRegistryMock.has.mockReturnValue(false)
             serviceRepositoryMock.setEnabled.mockResolvedValue(svc)
-            serviceRepositoryMock.findByName.mockResolvedValue(svc)
+            serviceRepositoryMock.findBySlug.mockResolvedValue(svc)
 
             const result = await service.enable(name)
 
-            expect(result).toEqual({ id: svc.id, name: svc.name, enabled: svc.enabled, url: svc.url, imageUrl: svc.imageUrl })
+            expect(result).toEqual(expect.objectContaining({ id: svc.id, name: svc.name, slug: svc.slug, enabled: svc.enabled, accountType: svc.accountType }))
         })
 
         it('throws NotFoundException when service record is not found after update', async () => {
             clientRegistryMock.has.mockReturnValue(false)
             serviceRepositoryMock.setEnabled.mockResolvedValue(null)
-            serviceRepositoryMock.findByName.mockResolvedValue(null)
+            serviceRepositoryMock.findBySlug.mockResolvedValue(null)
 
             await expect(service.enable(name)).rejects.toThrow(NotFoundException)
         })
@@ -127,7 +127,7 @@ describe('ServiceManagementService', () => {
             const svc = createServiceFixture({ name, enabled: false })
             clientRegistryMock.has.mockReturnValue(true)
             clientRegistryMock.disable.mockResolvedValue(undefined)
-            serviceRepositoryMock.findByName.mockResolvedValue(svc)
+            serviceRepositoryMock.findBySlug.mockResolvedValue(svc)
 
             await service.disable(name)
 
@@ -139,7 +139,7 @@ describe('ServiceManagementService', () => {
             const svc = createServiceFixture({ name, enabled: false })
             clientRegistryMock.has.mockReturnValue(false)
             serviceRepositoryMock.setEnabled.mockResolvedValue(svc)
-            serviceRepositoryMock.findByName.mockResolvedValue(svc)
+            serviceRepositoryMock.findBySlug.mockResolvedValue(svc)
 
             await service.disable(name)
 
@@ -150,11 +150,11 @@ describe('ServiceManagementService', () => {
             const svc = createServiceFixture({ name, enabled: false })
             clientRegistryMock.has.mockReturnValue(false)
             serviceRepositoryMock.setEnabled.mockResolvedValue(svc)
-            serviceRepositoryMock.findByName.mockResolvedValue(svc)
+            serviceRepositoryMock.findBySlug.mockResolvedValue(svc)
 
             const result = await service.disable(name)
 
-            expect(result).toEqual({ id: svc.id, name: svc.name, enabled: svc.enabled, url: svc.url, imageUrl: svc.imageUrl })
+            expect(result).toEqual(expect.objectContaining({ id: svc.id, name: svc.name, slug: svc.slug, enabled: svc.enabled, accountType: svc.accountType }))
         })
     })
 
@@ -172,7 +172,7 @@ describe('ServiceManagementService', () => {
             const result = await service.updateImageUrl(name, 'https://example.com/logo.png')
 
             expect(serviceRepositoryMock.setImageUrl).toHaveBeenCalledWith(name, 'https://example.com/logo.png')
-            expect(result).toEqual({ id: svc.id, name: svc.name, enabled: svc.enabled, url: svc.url, imageUrl: svc.imageUrl })
+            expect(result).toEqual(expect.objectContaining({ id: svc.id, name: svc.name, slug: svc.slug, enabled: svc.enabled, accountType: svc.accountType }))
         })
 
         it('throws NotFoundException when service record is not found', async () => {
@@ -198,7 +198,7 @@ describe('ServiceManagementService', () => {
             const result = await service.updateUrl(name, 'https://jellyfin.example.com')
 
             expect(serviceRepositoryMock.setUrl).toHaveBeenCalledWith(name, 'https://jellyfin.example.com')
-            expect(result).toEqual({ id: svc.id, name: svc.name, enabled: svc.enabled, url: svc.url, imageUrl: svc.imageUrl })
+            expect(result).toEqual(expect.objectContaining({ id: svc.id, name: svc.name, slug: svc.slug, enabled: svc.enabled, accountType: svc.accountType }))
         })
 
         it('throws NotFoundException when service record is not found', async () => {
@@ -215,10 +215,17 @@ describe('ServiceManagementService', () => {
     describe('listExternalAccounts', () => {
         const name = IntegrationProvider.Jellyfin
 
-        it('throws BadRequestException when the service is not a registered client', async () => {
-            clientRegistryMock.has.mockReturnValue(false)
+        it('throws BadRequestException when the service has no account integration', async () => {
+            serviceRepositoryMock.findBySlug.mockResolvedValue(createServiceFixture({ integrationProvider: null }))
+            clientRegistryMock.get.mockReturnValue(null)
 
             await expect(service.listExternalAccounts(name)).rejects.toThrow(BadRequestException)
+        })
+
+        it('throws NotFoundException when the service does not exist', async () => {
+            serviceRepositoryMock.findBySlug.mockResolvedValue(null)
+
+            await expect(service.listExternalAccounts(name)).rejects.toThrow(NotFoundException)
         })
 
         it('returns mapped external accounts from the client', async () => {
@@ -226,6 +233,7 @@ describe('ServiceManagementService', () => {
                 { id: 'ext-1', username: 'alice', isActive: true, isAdmin: false },
                 { id: 'ext-2', username: 'bob', isActive: false, isAdmin: true },
             ]
+            serviceRepositoryMock.findBySlug.mockResolvedValue(createServiceFixture())
             clientRegistryMock.has.mockReturnValue(true)
             clientRegistryMock.get.mockReturnValue({ getAllUsers: jest.fn().mockResolvedValue(users) } as any)
 
@@ -235,6 +243,7 @@ describe('ServiceManagementService', () => {
         })
 
         it('returns an empty array when the client returns null', async () => {
+            serviceRepositoryMock.findBySlug.mockResolvedValue(createServiceFixture())
             clientRegistryMock.has.mockReturnValue(true)
             clientRegistryMock.get.mockReturnValue({ getAllUsers: jest.fn().mockResolvedValue(null) } as any)
 

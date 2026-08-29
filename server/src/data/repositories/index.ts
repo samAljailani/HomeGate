@@ -5,7 +5,8 @@ import { IInviteRepository } from './IInviteRepository'
 import { IOAuthProviderRepository } from './IOAuthProviderRepository'
 import { IServiceRepository } from './IServiceRepository'
 import { ISessionRepository } from './ISessionRepository'
-import { IUserAccountRepository } from './IUserAccountRepository'
+import { ISubscriptionRepository } from './ISubscriptionRepository'
+import { IExternalUserAccountRepository } from './IExternalUserAccountRepository'
 import { IUserOAuthIdentityRepository } from './IUserOAuthIdentityRepository'
 import { IUserRepository } from './IUserRepository'
 import { AuthSchemeRepository } from './authScheme.repository'
@@ -14,7 +15,8 @@ import { OAuthProviderRepository } from './oauthProvider.repository'
 import { ServiceRepository } from './service.repository'
 import { SessionRepository } from './session.repository'
 import { UserRepository } from './user.repository'
-import { UserAccountRepository } from './userAccount.repository'
+import { SubscriptionRepository } from './subscription.repository'
+import { ExternalUserAccountRepository } from './externalUserAccount.repository'
 import { UserOAuthIdentityRepository } from './userOAuthIdentity.repository'
 import { ILoggingRepository } from './ILoggingRepository'
 import { LoggingRepository } from './logging.repository'
@@ -29,7 +31,8 @@ export { IOAuthProviderRepository } from './IOAuthProviderRepository'
 export { IAuthSchemeRepository } from './IAuthSchemeRepository'
 export { IInviteRepository } from './IInviteRepository'
 export { IServiceRepository } from './IServiceRepository'
-export { IUserAccountRepository } from './IUserAccountRepository'
+export { ISubscriptionRepository } from './ISubscriptionRepository'
+export { IExternalUserAccountRepository } from './IExternalUserAccountRepository'
 export { ISessionRepository } from './ISessionRepository'
 export { ISystemMetadataRepository } from './ISystemMetadataRepository'
 export { ITaskRunRepository } from './ITaskRunRepository'
@@ -45,7 +48,8 @@ export const repositories = [
     { provide: IOAuthProviderRepository, useClass: OAuthProviderRepository },
     { provide: IAuthSchemeRepository, useClass: AuthSchemeRepository },
     { provide: IServiceRepository, useClass: ServiceRepository },
-    { provide: IUserAccountRepository, useClass: UserAccountRepository },
+    { provide: ISubscriptionRepository, useClass: SubscriptionRepository },
+    { provide: IExternalUserAccountRepository, useClass: ExternalUserAccountRepository },
     { provide: ISessionRepository, useClass: SessionRepository },
     { provide: IInviteRepository, useClass: InviteRepository },
     { provide: ISystemMetadataRepository, useClass: SystemMetadataRepository },

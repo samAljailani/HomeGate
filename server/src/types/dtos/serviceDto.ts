@@ -1,11 +1,26 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { AccountType, IntegrationProvider } from '@/types/enums'
+
+export class ServiceRequiredInputsDto {
+    @ApiProperty({ type: Boolean })
+    username: boolean
+
+    @ApiProperty({ type: Boolean })
+    password: boolean
+
+    @ApiProperty({ type: Boolean })
+    email: boolean
+
+    @ApiProperty({ type: Boolean })
+    displayName: boolean
+}
 
 export class ServiceParamsDto {
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
-    name: string
+    slug: string
 }
 export class ServiceLoadRequestDto {
     @ApiProperty({ type: Number })
@@ -59,14 +74,37 @@ export class ServiceResponseDto {
     @IsNotEmpty()
     name: string
 
+    @ApiProperty({ type: String })
+    @IsString()
+    @IsNotEmpty()
+    slug: string
+
     @ApiProperty({ type: Boolean })
     enabled: boolean
+
+    @ApiProperty({ enum: AccountType, enumName: 'AccountType' })
+    accountType: AccountType
+
+    @ApiProperty({ enum: IntegrationProvider, enumName: 'IntegrationProvider', nullable: true })
+    integrationProvider: IntegrationProvider | null
+
+    @ApiProperty({ type: Number, nullable: true, description: 'Service supplying the account for a REFERENCED service' })
+    accountSourceServiceId: number | null
+
+    @ApiProperty({ type: Boolean, description: 'Whether all users may subscribe unless overridden' })
+    defaultAllowed: boolean
 
     @ApiPropertyOptional({ type: String, nullable: true })
     url: string | null
 
     @ApiPropertyOptional({ type: String, nullable: true })
     imageUrl: string | null
+
+    @ApiPropertyOptional({
+        type: ServiceRequiredInputsDto,
+        description: 'Credentials the signup form must collect; absent when nothing is provisioned',
+    })
+    requiredInputs?: ServiceRequiredInputsDto
 }
 
 export class ServicePatchRequestDto {

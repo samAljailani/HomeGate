@@ -3,10 +3,10 @@ import { Transform, Type } from 'class-transformer'
 import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator'
 import { Match } from '@/types/validators/match.validator'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
-import { UserAccountStatus } from '@/types/enums'
+import { SubscriptionStatus } from '@/types/enums'
 import { EmptyStringToUndefined } from '../../../lib/utils'
 
-export { UserAccountStatus }
+export { SubscriptionStatus as UserAccountStatus }
 
 export class SubscriptionResponseDto {
     @ApiProperty({ type: String, format: 'uuid' })
@@ -18,11 +18,11 @@ export class SubscriptionResponseDto {
     @ApiProperty({ type: Number })
     serviceId: number
 
-    @ApiProperty({ type: String })
-    username: string
+    @ApiProperty({ type: String, nullable: true, description: 'External account username; null when the service has no account' })
+    username: string | null
 
-    @ApiProperty({ enum: UserAccountStatus })
-    status: UserAccountStatus
+    @ApiProperty({ enum: SubscriptionStatus })
+    status: SubscriptionStatus
 
     @ApiProperty({ type: Boolean })
     autoRenew: boolean

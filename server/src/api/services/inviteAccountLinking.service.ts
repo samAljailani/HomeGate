@@ -1,9 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { OnEvent } from '@nestjs/event-emitter'
 import type { InviteClaimedEvent } from '@/types/events/invite-claimed.event'
-import { IUserAccountRepository } from '@/data/repositories'
+import { IExternalUserAccountRepository, ISubscriptionRepository } from '@/data/repositories'
 import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
-import { IntegrationProvider, AppEvent, UserAccountStatus } from '@/types/enums'
+import { IntegrationProvider, AppEvent, SubscriptionStatus } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { BaseService } from './base.service'
 import { ConfigService } from './config.service'
@@ -13,7 +13,9 @@ import { SystemConfigKey } from '@/types/models/SystemConfig'
 export class InviteAccountLinkingService extends BaseService {
     constructor(
         @Inject(LoggingProvider) logger: LoggingProvider,
-        @Inject(IUserAccountRepository) private userAccountRepository: IUserAccountRepository,
+        @Inject(ISubscriptionRepository) private subscriptionRepository: ISubscriptionRepository,
+        @Inject(IExternalUserAccountRepository)
+        private externalAccountRepository: IExternalUserAccountRepository,
         @Inject(AccountIntegrationRegistry) private integrationRegistry: AccountIntegrationRegistry,
         @Inject(ConfigService) private configService: ConfigService
     ) {
@@ -48,6 +50,11 @@ export class InviteAccountLinkingService extends BaseService {
 
         const client = this.integrationRegistry.get(serviceName)
 
+        if (!client) {
+            this.logger.warn(`No account integration for '${serviceName}', skipping account link`)
+            return
+        }
+
         const result = await client.getUser({
             username: inviteAccount.username ?? undefined,
             email: inviteAccount.email ?? undefined,
@@ -61,9 +68,9 @@ export class InviteAccountLinkingService extends BaseService {
             return
         }
 
-        const existing = await this.userAccountRepository.findMany({
+        const existing = await this.externalAccountRepository.findMany({
             serviceId: inviteAccount.serviceId,
-            userServiceAccountId: result.user.id,
+            externalAccountId: result.user.id,
         })
 
         if (existing.length > 0) {
@@ -77,14 +84,26 @@ export class InviteAccountLinkingService extends BaseService {
         const expiresAt = new Date()
         expiresAt.setDate(expiresAt.getDate() + defaultExpiryDays)
 
-        await this.userAccountRepository.create({
+        const subscription = await this.subscriptionRepository.create({
+            userId,
+            serviceId: inviteAccount.serviceId,
+            status: SubscriptionStatus.active,
+            autoRenew: true,
+            expiresAt,
+            provisionedAt: new Date(),
+        })
+
+        if (!subscription) {
+            this.logger.warn(`Failed to create subscription while linking '${serviceName}' for user ${userId}`)
+            return
+        }
+
+        await this.externalAccountRepository.create({
+            subscriptionId: subscription.id,
             userId,
             serviceId: inviteAccount.serviceId,
             username: result.user.username,
-            userServiceAccountId: result.user.id,
-            status: UserAccountStatus.active,
-            autoRenew: true,
-            expiresAt,
+            externalAccountId: result.user.id,
         })
 
         this.logger.log(

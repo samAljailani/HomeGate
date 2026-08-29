@@ -5,7 +5,6 @@ import { ServiceManagementService } from '@/api/services/serviceManagement.servi
 import { ExternalAccountResponseDto, ServiceParamsDto, ServicePatchRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
 import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
-import { IntegrationProvider } from '@/types/enums'
 
 @ApiTags('Services')
 @Controller(routes.services.basePath)
@@ -27,7 +26,7 @@ export class ServiceController {
     @Patch(routes.services.subPath.update)
     @AdminRoute()
     @ApiOperation({ summary: 'Update service state — enabled, imageUrl (admin only)' })
-    @ApiParam({ name: 'name', type: String })
+    @ApiParam({ name: 'slug', type: String })
     @ApiBody({ type: ServicePatchRequestDto })
     @ApiOkResponse({ type: ServiceResponseDto })
     async update(@Param() params: ServiceParamsDto, @Body() request: ServicePatchRequestDto): Promise<ServiceResponseDto> {
@@ -35,21 +34,21 @@ export class ServiceController {
             throw new BadRequestException('No fields provided to update')
         }
 
-        const name = params.name as IntegrationProvider
+        const { slug } = params
         let service: ServiceResponseDto | undefined
 
         if (request.enabled !== undefined) {
             service = request.enabled
-                ? await this.serviceManagementService.enable(name)
-                : await this.serviceManagementService.disable(name)
+                ? await this.serviceManagementService.enable(slug)
+                : await this.serviceManagementService.disable(slug)
         }
 
         if (request.url !== undefined) {
-            service = await this.serviceManagementService.updateUrl(name, request.url)
+            service = await this.serviceManagementService.updateUrl(slug, request.url)
         }
 
         if (request.imageUrl !== undefined) {
-            service = await this.serviceManagementService.updateImageUrl(name, request.imageUrl)
+            service = await this.serviceManagementService.updateImageUrl(slug, request.imageUrl)
         }
 
         return service!
@@ -58,10 +57,9 @@ export class ServiceController {
     @Get(routes.services.subPath.accounts)
     @AdminRoute()
     @ApiOperation({ summary: 'List external accounts for an integrated service (admin only)' })
-    @ApiParam({ name: 'name', type: String })
+    @ApiParam({ name: 'slug', type: String })
     @ApiOkResponse({ type: [ExternalAccountResponseDto] })
     async listAccounts(@Param() params: ServiceParamsDto): Promise<ExternalAccountResponseDto[]> {
-        const name = params.name as IntegrationProvider
-        return this.serviceManagementService.listExternalAccounts(name)
+        return this.serviceManagementService.listExternalAccounts(params.slug)
     }
 }

@@ -3,7 +3,6 @@ import { BadRequestException } from '@nestjs/common'
 import { ServiceController } from '@/api/controllers/service.controller'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
 import { createServiceFixture } from '../../fixtures/service.stub'
-import { IntegrationProvider } from '@/types/enums'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 
 function createServiceManagementServiceMock(): jest.Mocked<
@@ -52,8 +51,8 @@ describe('ServiceController', () => {
 
             expect(serviceManagementMock.list).toHaveBeenCalled()
             expect(result.data).toHaveLength(2)
-            expect(result.data[0]).toEqual({ id: 1, name: services[0]!.name, enabled: true, url: null, imageUrl: null })
-            expect(result.data[1]).toEqual({ id: 2, name: services[1]!.name, enabled: false, url: null, imageUrl: null })
+            expect(result.data[0]).toEqual(services[0])
+            expect(result.data[1]).toEqual(services[1])
         })
     })
 
@@ -62,15 +61,15 @@ describe('ServiceController', () => {
     // #region update
 
     describe('update', () => {
-        const name = IntegrationProvider.Jellyfin
+        const slug = 'jellyfin'
 
         it('enables the service when enabled is true', async () => {
             const svc = createServiceFixture({ enabled: true })
             serviceManagementMock.enable.mockResolvedValue(svc)
 
-            await controller.update({ name }, { enabled: true })
+            await controller.update({ slug }, { enabled: true })
 
-            expect(serviceManagementMock.enable).toHaveBeenCalledWith(IntegrationProvider.Jellyfin)
+            expect(serviceManagementMock.enable).toHaveBeenCalledWith(slug)
             expect(serviceManagementMock.disable).not.toHaveBeenCalled()
         })
 
@@ -78,9 +77,9 @@ describe('ServiceController', () => {
             const svc = createServiceFixture({ enabled: false })
             serviceManagementMock.disable.mockResolvedValue(svc)
 
-            await controller.update({ name }, { enabled: false })
+            await controller.update({ slug }, { enabled: false })
 
-            expect(serviceManagementMock.disable).toHaveBeenCalledWith(IntegrationProvider.Jellyfin)
+            expect(serviceManagementMock.disable).toHaveBeenCalledWith(slug)
             expect(serviceManagementMock.enable).not.toHaveBeenCalled()
         })
 
@@ -88,37 +87,37 @@ describe('ServiceController', () => {
             const svc = createServiceFixture({ id: 1, enabled: true })
             serviceManagementMock.enable.mockResolvedValue(svc)
 
-            const result = await controller.update({ name }, { enabled: true })
+            const result = await controller.update({ slug }, { enabled: true })
 
-            expect(result).toEqual({ id: 1, name: svc.name, enabled: true, url: null, imageUrl: null })
+            expect(result).toEqual(svc)
         })
 
         it('updates the imageUrl when provided', async () => {
             const svc = createServiceFixture({ id: 1, imageUrl: 'https://example.com/logo.png' })
             serviceManagementMock.updateImageUrl.mockResolvedValue(svc)
 
-            const result = await controller.update({ name }, { imageUrl: 'https://example.com/logo.png' })
+            const result = await controller.update({ slug }, { imageUrl: 'https://example.com/logo.png' })
 
-            expect(serviceManagementMock.updateImageUrl).toHaveBeenCalledWith(name, 'https://example.com/logo.png')
+            expect(serviceManagementMock.updateImageUrl).toHaveBeenCalledWith(slug, 'https://example.com/logo.png')
             expect(serviceManagementMock.enable).not.toHaveBeenCalled()
             expect(serviceManagementMock.disable).not.toHaveBeenCalled()
-            expect(result).toEqual({ id: 1, name: svc.name, enabled: true, url: null, imageUrl: 'https://example.com/logo.png' })
+            expect(result).toEqual(svc)
         })
 
         it('updates the url when provided', async () => {
             const svc = createServiceFixture({ id: 1, url: 'https://jellyfin.example.com' })
             serviceManagementMock.updateUrl.mockResolvedValue(svc)
 
-            const result = await controller.update({ name }, { url: 'https://jellyfin.example.com' })
+            const result = await controller.update({ slug }, { url: 'https://jellyfin.example.com' })
 
-            expect(serviceManagementMock.updateUrl).toHaveBeenCalledWith(name, 'https://jellyfin.example.com')
+            expect(serviceManagementMock.updateUrl).toHaveBeenCalledWith(slug, 'https://jellyfin.example.com')
             expect(serviceManagementMock.enable).not.toHaveBeenCalled()
             expect(serviceManagementMock.disable).not.toHaveBeenCalled()
-            expect(result).toEqual({ id: 1, name: svc.name, enabled: true, url: 'https://jellyfin.example.com', imageUrl: null })
+            expect(result).toEqual(svc)
         })
 
         it('throws BadRequestException when no fields provided', async () => {
-            await expect(controller.update({ name }, {})).rejects.toThrow(BadRequestException)
+            await expect(controller.update({ slug }, {})).rejects.toThrow(BadRequestException)
         })
     })
 
@@ -127,15 +126,15 @@ describe('ServiceController', () => {
     // #region listAccounts
 
     describe('listAccounts', () => {
-        const name = IntegrationProvider.Jellyfin
+        const slug = 'jellyfin'
 
         it('returns the accounts from the service', async () => {
             const accounts = [{ id: 'ext-1', username: 'alice', isActive: true, isAdmin: false }]
             serviceManagementMock.listExternalAccounts.mockResolvedValue(accounts)
 
-            const result = await controller.listAccounts({ name })
+            const result = await controller.listAccounts({ slug })
 
-            expect(serviceManagementMock.listExternalAccounts).toHaveBeenCalledWith(name)
+            expect(serviceManagementMock.listExternalAccounts).toHaveBeenCalledWith(slug)
             expect(result).toEqual(accounts)
         })
     })

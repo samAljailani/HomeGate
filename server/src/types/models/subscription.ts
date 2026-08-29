@@ -1,15 +1,15 @@
-import { FailedOperation, UserAccountStatus } from '@/types/enums'
+import { FailedOperation, SubscriptionStatus } from '@/types/enums'
 
-export type UserAccountModel = {
+export type SubscriptionModel = {
     id: string
     userId: string
     serviceId: number
 
-    userServiceAccountId: string | null
-    username: string
-
-    status: UserAccountStatus
+    status: SubscriptionStatus
     autoRenew: boolean
+
+    /** Set when this subscription was created automatically from a REFERENCED service's account source. */
+    derivedFromSubscriptionId: string | null
 
     createdAt: Date
     updatedAt: Date
@@ -24,26 +24,26 @@ export type UserAccountModel = {
     retryCount: number
 }
 
-export type CreateUserAccountModel = {
+export type CreateSubscriptionModel = {
     userId: string
     serviceId: number
-    userServiceAccountId: string | null
-    username: string
 
-    expiresAt?: Date | null
+    status: SubscriptionStatus
     autoRenew?: boolean
+    expiresAt?: Date | null
 
-    status: UserAccountStatus
+    derivedFromSubscriptionId?: string | null
+    provisionedAt?: Date | null
 }
 
-export type UpdateUserAccountModel = {
+export type UpdateSubscriptionModel = {
     userId: string
     serviceId: number
 
-    userServiceAccountId?: string | null
-    username?: string
-    status?: UserAccountStatus
+    status?: SubscriptionStatus
     autoRenew?: boolean
+
+    derivedFromSubscriptionId?: string | null
 
     expiresAt?: Date | null
     provisionedAt?: Date | null
@@ -55,13 +55,13 @@ export type UpdateUserAccountModel = {
     retryCount?: number
 }
 
-export type UserAccountFilterOptions = {
+export type SubscriptionFilterOptions = {
     userId?: string
     serviceId?: number
-    username?: string
-    userServiceAccountId?: string
-    status?: UserAccountStatus
-    statuses?: UserAccountStatus[]
+    serviceIds?: number[]
+    status?: SubscriptionStatus
+    statuses?: SubscriptionStatus[]
+    derivedFromSubscriptionId?: string
     expiresBefore?: Date
     expiresAfter?: Date
 }

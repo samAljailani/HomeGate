@@ -1,12 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { InviteAccountLinkingService } from '@/api/services/inviteAccountLinking.service'
-import { IUserAccountRepository } from '@/data/repositories/IUserAccountRepository'
+import { ISubscriptionRepository } from '@/data/repositories/ISubscriptionRepository'
+import { IExternalUserAccountRepository } from '@/data/repositories/IExternalUserAccountRepository'
 import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
-import { IntegrationProvider, UserAccountStatus } from '@/types/enums'
+import { IntegrationProvider, SubscriptionStatus } from '@/types/enums'
 import { InviteAccountModel } from '@/types/models/invite'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
-import { createUserAccountRepositoryMock } from '../../mocks/userAccount.repository.mock'
+import { createSubscriptionFixture } from '../../fixtures/subscription.stub'
+import { createSubscriptionRepositoryMock, createExternalUserAccountRepositoryMock } from '../../mocks/subscription.repository.mock'
 import { createAccountIntegrationRegistryMock } from '../../mocks/accountIntegrationRegistry.mock'
 import { ConfigService } from '@/api/services/config.service'
 import { SystemConfigKey } from '@/types/models/SystemConfig'
@@ -15,12 +17,14 @@ import { systemDefaults } from '@/data/config.defaults'
 describe('InviteAccountLinkingService', () => {
     let service: InviteAccountLinkingService
     let loggerMock: ReturnType<typeof createLoggerMock>
-    let userAccountRepoMock: ReturnType<typeof createUserAccountRepositoryMock>
+    let subscriptionRepoMock: ReturnType<typeof createSubscriptionRepositoryMock>
+    let externalAccountRepoMock: ReturnType<typeof createExternalUserAccountRepositoryMock>
     let registryMock: ReturnType<typeof createAccountIntegrationRegistryMock>
 
     beforeEach(async () => {
         loggerMock = createLoggerMock()
-        userAccountRepoMock = createUserAccountRepositoryMock()
+        subscriptionRepoMock = createSubscriptionRepositoryMock()
+        externalAccountRepoMock = createExternalUserAccountRepositoryMock()
         registryMock = createAccountIntegrationRegistryMock()
         const configServiceMock = {
             get: jest.fn((key: SystemConfigKey) => systemDefaults[key]),
@@ -30,7 +34,8 @@ describe('InviteAccountLinkingService', () => {
             providers: [
                 InviteAccountLinkingService,
                 { provide: LoggingProvider, useValue: loggerMock },
-                { provide: IUserAccountRepository, useValue: userAccountRepoMock },
+                { provide: ISubscriptionRepository, useValue: subscriptionRepoMock },
+                { provide: IExternalUserAccountRepository, useValue: externalAccountRepoMock },
                 { provide: AccountIntegrationRegistry, useValue: registryMock },
                 { provide: ConfigService, useValue: configServiceMock },
             ],
@@ -55,8 +60,8 @@ describe('InviteAccountLinkingService', () => {
         const clientMock = { getUser: jest.fn().mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'juser' } }) }
         registryMock.has.mockReturnValue(true)
         registryMock.get.mockReturnValue(clientMock as never)
-        userAccountRepoMock.findMany.mockResolvedValue([])
-        userAccountRepoMock.create.mockResolvedValue(null)
+        externalAccountRepoMock.findMany.mockResolvedValue([])
+        subscriptionRepoMock.create.mockResolvedValue(createSubscriptionFixture({ id: 'sub-1', serviceId: 5 }))
 
         const event = { userId: 'user-1', accounts: [account] }
         await service.handleInviteClaimed(event)
@@ -66,18 +71,24 @@ describe('InviteAccountLinkingService', () => {
             email: undefined,
             userServiceAccountId: undefined,
         })
-        expect(userAccountRepoMock.findMany).toHaveBeenCalledWith({
+        expect(externalAccountRepoMock.findMany).toHaveBeenCalledWith({
             serviceId: 5,
-            userServiceAccountId: 'ext-1',
+            externalAccountId: 'ext-1',
         })
-        expect(userAccountRepoMock.create).toHaveBeenCalledWith({
+        expect(subscriptionRepoMock.create).toHaveBeenCalledWith({
+            userId: 'user-1',
+            serviceId: 5,
+            status: SubscriptionStatus.active,
+            autoRenew: true,
+            expiresAt: expect.any(Date),
+            provisionedAt: expect.any(Date),
+        })
+        expect(externalAccountRepoMock.create).toHaveBeenCalledWith({
+            subscriptionId: 'sub-1',
             userId: 'user-1',
             serviceId: 5,
             username: 'juser',
-            userServiceAccountId: 'ext-1',
-            status: UserAccountStatus.active,
-            autoRenew: true,
-            expiresAt: expect.any(Date),
+            externalAccountId: 'ext-1',
         })
     })
 
@@ -90,7 +101,7 @@ describe('InviteAccountLinkingService', () => {
         const event = { userId: 'user-1', username: 'homeuser', accounts: [account] }
         await service.handleInviteClaimed(event)
 
-        expect(userAccountRepoMock.create).not.toHaveBeenCalled()
+        expect(subscriptionRepoMock.create).not.toHaveBeenCalled()
         expect(loggerMock.log).toHaveBeenCalledWith(expect.stringContaining('No existing account found'))
     })
 
@@ -102,7 +113,7 @@ describe('InviteAccountLinkingService', () => {
         await service.handleInviteClaimed(event)
 
         expect(registryMock.get).not.toHaveBeenCalled()
-        expect(userAccountRepoMock.create).not.toHaveBeenCalled()
+        expect(subscriptionRepoMock.create).not.toHaveBeenCalled()
         expect(loggerMock.warn).toHaveBeenCalled()
     })
 
@@ -116,8 +127,8 @@ describe('InviteAccountLinkingService', () => {
         }
         registryMock.has.mockReturnValue(true)
         registryMock.get.mockReturnValue(clientMock as never)
-        userAccountRepoMock.findMany.mockResolvedValue([])
-        userAccountRepoMock.create.mockResolvedValue(null)
+        externalAccountRepoMock.findMany.mockResolvedValue([])
+        subscriptionRepoMock.create.mockResolvedValue(null)
 
         const event = { userId: 'user-1', username: 'homeuser', accounts: [account1, account2] }
         await service.handleInviteClaimed(event)
@@ -126,7 +137,7 @@ describe('InviteAccountLinkingService', () => {
             expect.stringContaining('Failed to link invite account'),
             expect.anything()
         )
-        expect(userAccountRepoMock.create).toHaveBeenCalledTimes(1)
+        expect(subscriptionRepoMock.create).toHaveBeenCalledTimes(1)
     })
 
     it('skips linking when the external account is already linked to another user', async () => {
@@ -134,12 +145,12 @@ describe('InviteAccountLinkingService', () => {
         const clientMock = { getUser: jest.fn().mockResolvedValue({ ok: true, user: { id: 'ext-1', username: 'juser' } }) }
         registryMock.has.mockReturnValue(true)
         registryMock.get.mockReturnValue(clientMock as never)
-        userAccountRepoMock.findMany.mockResolvedValue([{ userId: 'other-user', serviceId: 5 } as never])
+        externalAccountRepoMock.findMany.mockResolvedValue([{ userId: 'other-user', serviceId: 5 } as never])
 
         const event = { userId: 'user-1', accounts: [account] }
         await service.handleInviteClaimed(event)
 
-        expect(userAccountRepoMock.create).not.toHaveBeenCalled()
+        expect(subscriptionRepoMock.create).not.toHaveBeenCalled()
         expect(loggerMock.log).toHaveBeenCalledWith(expect.stringContaining('already linked'))
     })
 })

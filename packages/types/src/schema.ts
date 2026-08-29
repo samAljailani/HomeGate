@@ -310,6 +310,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Proxy the current user's avatar image */
+        get: operations["UserController_getAvatar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{id}": {
         parameters: {
             query?: never;
@@ -346,7 +363,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/services/{name}": {
+    "/api/services/{slug}": {
         parameters: {
             query?: never;
             header?: never;
@@ -363,7 +380,7 @@ export interface paths {
         patch: operations["ServiceController_update"];
         trace?: never;
     };
-    "/api/services/{name}/accounts": {
+    "/api/services/{slug}/accounts": {
         parameters: {
             query?: never;
             header?: never;
@@ -834,7 +851,8 @@ export interface components {
             /** Format: uuid */
             userId: string;
             serviceId: number;
-            username: string;
+            /** @description External account username; null when the service has no account */
+            username: string | null;
             /** @enum {string} */
             status: "provisioning" | "active" | "failed" | "cancelling" | "cancelled" | "expired" | "disabling" | "disabled" | "enabling";
             autoRenew: boolean;
@@ -948,12 +966,31 @@ export interface components {
             /** @description Permanently delete the account. Ignored for non-admin callers. */
             hard?: boolean;
         };
+        /** @enum {string} */
+        AccountType: "MANAGED" | "REFERENCED" | "NONE";
+        /** @enum {string} */
+        IntegrationProvider: "jellyfin" | "immich";
+        ServiceRequiredInputsDto: {
+            username: boolean;
+            password: boolean;
+            email: boolean;
+            displayName: boolean;
+        };
         ServiceResponseDto: {
             id: number;
             name: string;
+            slug: string;
             enabled: boolean;
+            accountType: components["schemas"]["AccountType"];
+            integrationProvider: components["schemas"]["IntegrationProvider"] | null;
+            /** @description Service supplying the account for a REFERENCED service */
+            accountSourceServiceId: number | null;
+            /** @description Whether all users may subscribe unless overridden */
+            defaultAllowed: boolean;
             url?: string | null;
             imageUrl?: string | null;
+            /** @description Credentials the signup form must collect; absent when nothing is provisioned */
+            requiredInputs?: components["schemas"]["ServiceRequiredInputsDto"];
         };
         ServicePatchRequestDto: {
             enabled?: boolean;
@@ -1700,6 +1737,23 @@ export interface operations {
             };
         };
     };
+    UserController_getAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     UserController_getUser: {
         parameters: {
             query?: never;
@@ -1811,7 +1865,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                name: string;
+                slug: string;
             };
             cookie?: never;
         };
@@ -1836,7 +1890,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                name: string;
+                slug: string;
             };
             cookie?: never;
         };

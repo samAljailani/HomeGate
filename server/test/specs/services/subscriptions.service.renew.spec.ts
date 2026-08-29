@@ -1,21 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
-import { IUserAccountRepository } from '@/data/repositories'
+import { ISubscriptionRepository, IExternalUserAccountRepository } from '@/data/repositories'
 import { IServiceRepository } from '@/data/repositories'
 import { UserService } from '@/api/services/user.service'
-import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
+import { SubscriptionProvisionerResolver } from '@/core/subscriptions/provisioners'
+import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
-import { createUserAccountFixture, toSubscriptionResponseDto } from '../../fixtures/userAccount.stub'
+import { createExternalUserAccountRepositoryMock } from '../../mocks/subscription.repository.mock'
+import { createSubscriptionFixture, createExternalUserAccountFixture, toSubscriptionResponseDto } from '../../fixtures/subscription.stub'
 
-function createUserAccountRepositoryMock(): jest.Mocked<
-    Pick<IUserAccountRepository, 'find' | 'findById' | 'findMany' | 'update'>
+function createSubscriptionRepositoryMock(): jest.Mocked<
+    Pick<ISubscriptionRepository, 'find' | 'findById' | 'findMany' | 'update'>
 > {
     return {
         find: jest.fn(),
         findById: jest.fn(),
-        findMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
         update: jest.fn(),
     }
 }
@@ -23,31 +25,40 @@ function createUserAccountRepositoryMock(): jest.Mocked<
 function createServiceRepositoryMock(): jest.Mocked<Pick<IServiceRepository, 'findById' | 'findMany'>> {
     return {
         findById: jest.fn(),
-        findMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
     }
 }
 
 describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', () => {
     let service: SubscriptionService
-    let userAccountRepositoryMock: ReturnType<typeof createUserAccountRepositoryMock>
+    let userAccountRepositoryMock: ReturnType<typeof createSubscriptionRepositoryMock>
     let loggerMock: ReturnType<typeof createLoggerMock>
+    let externalAccountRepoMock: ReturnType<typeof createExternalUserAccountRepositoryMock>
 
     beforeEach(async () => {
-        userAccountRepositoryMock = createUserAccountRepositoryMock()
+        userAccountRepositoryMock = createSubscriptionRepositoryMock()
         loggerMock = createLoggerMock()
+        externalAccountRepoMock = createExternalUserAccountRepositoryMock()
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 SubscriptionService,
                 { provide: UserService, useValue: { getUserById: jest.fn() } },
                 { provide: IServiceRepository, useValue: createServiceRepositoryMock() },
-                { provide: IUserAccountRepository, useValue: userAccountRepositoryMock },
-                { provide: AccountIntegrationRegistry, useValue: { getEnabled: jest.fn().mockResolvedValue([]) } },
+                { provide: ISubscriptionRepository, useValue: userAccountRepositoryMock },
+                { provide: IExternalUserAccountRepository, useValue: externalAccountRepoMock },
+                { provide: SubscriptionProvisionerResolver, useValue: { resolve: jest.fn() } },
+                {
+                    provide: SubscriptionCascadeService,
+                    useValue: { onActivated: jest.fn(), onDeactivated: jest.fn(), onReactivated: jest.fn(), onExpiryChanged: jest.fn() },
+                },
                 { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
 
         service = module.get<SubscriptionService>(SubscriptionService)
+
+        externalAccountRepoMock.findBySubscriptionId.mockResolvedValue(createExternalUserAccountFixture())
     })
 
     // #region renew
@@ -65,7 +76,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
 
         it('extends expiry from current expiresAt when still in the future', async () => {
             const futureExpiry = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) // 10 days from now
-            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId, expiresAt: futureExpiry })
+            const account = createSubscriptionFixture({ id: subscriptionId, userId, serviceId, expiresAt: futureExpiry })
             const updated = { ...account, expiresAt: new Date(futureExpiry.getTime() + 30 * 24 * 60 * 60 * 1000) }
             userAccountRepositoryMock.findById.mockResolvedValue(account)
             userAccountRepositoryMock.update.mockResolvedValue(updated)
@@ -79,7 +90,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
 
         it('extends expiry from now when already expired', async () => {
             const pastExpiry = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) // 5 days ago
-            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId, expiresAt: pastExpiry })
+            const account = createSubscriptionFixture({ id: subscriptionId, userId, serviceId, expiresAt: pastExpiry })
             const updated = { ...account }
             userAccountRepositoryMock.findById.mockResolvedValue(account)
             userAccountRepositoryMock.update.mockResolvedValue(updated)
@@ -93,7 +104,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
         })
 
         it('throws BadRequestException when update returns null', async () => {
-            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId })
+            const account = createSubscriptionFixture({ id: subscriptionId, userId, serviceId })
             userAccountRepositoryMock.findById.mockResolvedValue(account)
             userAccountRepositoryMock.update.mockResolvedValue(null)
 
@@ -121,7 +132,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
         })
 
         it('sets autoRenew to true', async () => {
-            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId, autoRenew: false })
+            const account = createSubscriptionFixture({ id: subscriptionId, userId, serviceId, autoRenew: false })
             const updated = { ...account, autoRenew: true }
             userAccountRepositoryMock.findById.mockResolvedValueOnce(account).mockResolvedValueOnce(updated)
             userAccountRepositoryMock.update.mockResolvedValue(updated)
@@ -135,7 +146,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
         })
 
         it('sets autoRenew to false', async () => {
-            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId, autoRenew: true })
+            const account = createSubscriptionFixture({ id: subscriptionId, userId, serviceId, autoRenew: true })
             const updated = { ...account, autoRenew: false }
             userAccountRepositoryMock.findById.mockResolvedValueOnce(account).mockResolvedValueOnce(updated)
             userAccountRepositoryMock.update.mockResolvedValue(updated)
@@ -149,7 +160,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
         })
 
         it('throws BadRequestException when update returns null', async () => {
-            const account = createUserAccountFixture({ id: subscriptionId, userId, serviceId })
+            const account = createSubscriptionFixture({ id: subscriptionId, userId, serviceId })
             userAccountRepositoryMock.findById.mockResolvedValue(account)
             userAccountRepositoryMock.update.mockResolvedValue(null)
 
@@ -164,8 +175,8 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
     describe('listAll', () => {
         it('returns all subscriptions', async () => {
             const accounts = [
-                createUserAccountFixture({ userId: 'a', serviceId: 1 }),
-                createUserAccountFixture({ userId: 'b', serviceId: 2 }),
+                createSubscriptionFixture({ userId: 'a', serviceId: 1 }),
+                createSubscriptionFixture({ userId: 'b', serviceId: 2 }),
             ]
             userAccountRepositoryMock.findMany.mockResolvedValue(accounts)
 
@@ -193,8 +204,8 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
 
         it('returns subscriptions filtered by userId', async () => {
             const accounts = [
-                createUserAccountFixture({ userId, serviceId: 1 }),
-                createUserAccountFixture({ userId, serviceId: 2 }),
+                createSubscriptionFixture({ userId, serviceId: 1 }),
+                createSubscriptionFixture({ userId, serviceId: 2 }),
             ]
             userAccountRepositoryMock.findMany.mockResolvedValue(accounts)
 

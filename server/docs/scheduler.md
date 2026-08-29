@@ -189,8 +189,8 @@ Accepts a partial update body. Validates the cron expression and applies changes
   - `debug`: `Task '<name>' started`
   - `debug`: `Task '<name>' finished in <ms>ms with success=<true|false>`
   - `error` (on throw): `Task '<name>' failed after <ms>ms` with the stack trace attached
-- **Dangerous tasks**: `sync_integration_accounts` defaults to `runOnStartup: false` because it disables external users flagged as orphans (no local record). If the local DB is empty or incomplete, this will mass-disable legitimate users.
-- **Recovery script**: `scripts/enable-jellyfin-users.ts` re-enables disabled Jellyfin users. Run with `--apply` to execute (dry-run by default).
+- **Dangerous tasks**: `sync_integration_accounts` defaults to `runOnStartup: false` because it **deletes** external users flagged as orphans (no local record). HomeGate accounts only legitimately exist because HomeGate created them, so an orphan is by definition illegitimate — but this is irreversible. As a blast-radius guard the task refuses to reconcile a service that has external accounts while HomeGate holds *no* local records for it, since that indicates a database problem rather than mass orphaning.
+- **Recovery script**: `scripts/enable-jellyfin-users.ts` re-enables disabled Jellyfin users. Run with `--apply` to execute (dry-run by default). Note it cannot recover deleted accounts — restore from a database and vendor backup instead.
 
 ## Failure Modes
 

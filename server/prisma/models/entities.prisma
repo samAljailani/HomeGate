@@ -61,7 +61,7 @@ model Service {
   url                    String?              @db.VarChar(512)
   imageUrl               String?              @map("image_url") @db.VarChar(512)
 
-  accountType            AccountType          @default(MANAGED) @map("account_type")
+  accountType            AccountType          @map("account_type")
   integrationProvider    IntegrationProvider? @map("integration_provider")
   accountSourceServiceId Int?                 @map("account_source_service_id")
   defaultAllowed         Boolean              @default(true) @map("default_allowed")

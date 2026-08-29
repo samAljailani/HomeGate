@@ -2,7 +2,6 @@ import { Injectable, Inject, NotFoundException, BadRequestException } from '@nes
 import { IServiceRepository } from '@/data/repositories'
 import { ServiceModel } from '@/types/models/service'
 import { ExternalAccountResponseDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
-import { IntegrationProvider } from '@/types/enums'
 import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { ApplicationUserModel } from '@/types/params/accountIntegration'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
@@ -15,15 +14,21 @@ export class ServiceManagementService {
     ) {}
 
     serviceModelToResponseDto(service: ServiceModel): ServiceResponseDto {
-        const dto: ServiceResponseDto = {
+        const provider = this.integrationRegistry.get(service.integrationProvider)
+
+        return {
             id: service.id,
             name: service.name,
+            slug: service.slug,
             enabled: service.enabled,
+            accountType: service.accountType,
+            integrationProvider: service.integrationProvider,
+            accountSourceServiceId: service.accountSourceServiceId,
+            defaultAllowed: service.defaultAllowed,
             url: service.url,
             imageUrl: service.imageUrl,
+            ...(provider && { requiredInputs: provider.requiredInputs }),
         }
-
-        return dto
     }
 
     applicationUserModelToResponseDto(user: ApplicationUserModel): ExternalAccountResponseDto {
@@ -35,12 +40,20 @@ export class ServiceManagementService {
         }
     }
 
-    async listExternalAccounts(name: IntegrationProvider): Promise<ExternalAccountResponseDto[]> {
-        if (!this.integrationRegistry.has(name)) {
-            throw new BadRequestException(`Service '${name}' is not an integrated external client`)
+    async listExternalAccounts(slug: string): Promise<ExternalAccountResponseDto[]> {
+        const service = await this.serviceRepository.findBySlug(slug)
+
+        if (!service) {
+            throw new NotFoundException(`Service '${slug}' not found`)
         }
 
-        const users = await this.integrationRegistry.get(name).getAllUsers()
+        const provider = this.integrationRegistry.get(service.integrationProvider)
+
+        if (!provider) {
+            throw new BadRequestException(`Service '${slug}' does not manage external accounts`)
+        }
+
+        const users = await provider.getAllUsers()
         return (users ?? []).map((u) => this.applicationUserModelToResponseDto(u))
     }
 
@@ -52,37 +65,44 @@ export class ServiceManagementService {
         return new PaginatedResponseDto(services.map((s) => this.serviceModelToResponseDto(s)), total, skip)
     }
 
-    async enable(name: IntegrationProvider): Promise<ServiceResponseDto> {
-        if (this.integrationRegistry.has(name)) {
-            await this.integrationRegistry.enable(name)
-        } else {
-            await this.serviceRepository.setEnabled(name, true)
+    private async setEnabled(slug: string, enabled: boolean): Promise<ServiceResponseDto> {
+        const service = await this.serviceRepository.findBySlug(slug)
+
+        if (!service) {
+            throw new NotFoundException(`Service '${slug}' not found`)
         }
-        const service = await this.serviceRepository.findByName(name)
-        if (!service) throw new NotFoundException(`Service '${name}' not found`)
-        return this.serviceModelToResponseDto(service)
-    }
 
-    async disable(name: IntegrationProvider): Promise<ServiceResponseDto> {
-        if (this.integrationRegistry.has(name)) {
-            await this.integrationRegistry.disable(name)
+        // A REFERENCED or NONE service has no provider to notify; the flag alone is the state.
+        if (this.integrationRegistry.has(service.integrationProvider)) {
+            await (enabled
+                ? this.integrationRegistry.enable(service.integrationProvider!)
+                : this.integrationRegistry.disable(service.integrationProvider!))
         } else {
-            await this.serviceRepository.setEnabled(name, false)
+            await this.serviceRepository.setEnabled(slug, enabled)
         }
-        const service = await this.serviceRepository.findByName(name)
-        if (!service) throw new NotFoundException(`Service '${name}' not found`)
+
+        const updated = await this.serviceRepository.findBySlug(slug)
+        if (!updated) throw new NotFoundException(`Service '${slug}' not found`)
+        return this.serviceModelToResponseDto(updated)
+    }
+
+    async enable(slug: string): Promise<ServiceResponseDto> {
+        return this.setEnabled(slug, true)
+    }
+
+    async disable(slug: string): Promise<ServiceResponseDto> {
+        return this.setEnabled(slug, false)
+    }
+
+    async updateImageUrl(slug: string, imageUrl: string | null): Promise<ServiceResponseDto> {
+        const service = await this.serviceRepository.setImageUrl(slug, imageUrl)
+        if (!service) throw new NotFoundException(`Service '${slug}' not found`)
         return this.serviceModelToResponseDto(service)
     }
 
-    async updateImageUrl(name: IntegrationProvider, imageUrl: string | null): Promise<ServiceResponseDto> {
-        const service = await this.serviceRepository.setImageUrl(name, imageUrl)
-        if (!service) throw new NotFoundException(`Service '${name}' not found`)
-        return this.serviceModelToResponseDto(service)
-    }
-
-    async updateUrl(name: IntegrationProvider, url: string | null): Promise<ServiceResponseDto> {
-        const service = await this.serviceRepository.setUrl(name, url)
-        if (!service) throw new NotFoundException(`Service '${name}' not found`)
+    async updateUrl(slug: string, url: string | null): Promise<ServiceResponseDto> {
+        const service = await this.serviceRepository.setUrl(slug, url)
+        if (!service) throw new NotFoundException(`Service '${slug}' not found`)
         return this.serviceModelToResponseDto(service)
     }
 }

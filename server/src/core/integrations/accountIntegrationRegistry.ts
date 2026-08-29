@@ -1,17 +1,28 @@
 import { LoggingProvider } from '@/infrastructure/logger.provider'
-import { IntegrationProvider } from '@/types/enums'
+import { AccountType, IntegrationProvider } from '@/types/enums'
 import { Inject, Injectable } from '@nestjs/common'
 import { IAccountIntegrationProvider } from './IAccountIntegrationProvider'
 import { IServiceRepository } from '@/data/repositories'
+import { ServiceModel } from '@/types/models/service'
 
+/**
+ * Holds the vendor integrations HomeGate can provision accounts through, keyed by provider.
+ * REFERENCED and NONE services have no provider and must never reach this registry.
+ */
 @Injectable()
 export class AccountIntegrationRegistry {
     private readonly providers = new Map<IntegrationProvider, IAccountIntegrationProvider>()
+
     constructor(
         @Inject(LoggingProvider) private logger: LoggingProvider,
         @Inject(IServiceRepository) private serviceRepository: IServiceRepository
     ) {
         this.logger.setContext(this.constructor.name)
+    }
+
+    /** True when the service provisions accounts through an integration and therefore needs a provider. */
+    static requiresIntegration(service: Pick<ServiceModel, 'accountType' | 'integrationProvider'>): boolean {
+        return service.accountType === AccountType.MANAGED && service.integrationProvider !== null
     }
 
     async register(provider: IAccountIntegrationProvider): Promise<void> {
@@ -20,32 +31,25 @@ export class AccountIntegrationRegistry {
             throw new Error(`Account integration provider "${provider.name}" is already registered`)
         }
 
-        const dbService = await this.serviceRepository.findByName(provider.name)
+        const service = await this.serviceRepository.findByIntegrationProvider(provider.name)
 
-        if (!dbService || dbService.name == '') {
-            this.logger.fatal(
-                `Cannot register account integration provider "${provider.name}". It is not a configured service`
+        // Not fatal: an admin may have removed the service. The provider simply stays unavailable.
+        if (!service) {
+            this.logger.warn(
+                `Account integration provider "${provider.name}" has no configured service and was not registered`
             )
-            throw new Error(
-                `Cannot register account integration provider "${provider.name}". It is not a configured service`
-            )
+            return
         }
 
         this.providers.set(provider.name, provider)
     }
 
-    has(name: IntegrationProvider): boolean {
-        return this.providers.has(name)
+    has(name: IntegrationProvider | null): boolean {
+        return name !== null && this.providers.has(name)
     }
 
-    get(name: IntegrationProvider): IAccountIntegrationProvider {
-        const provider = this.providers.get(name)
-
-        if (!provider) {
-            throw new Error(`Account integration provider "${name}" was not registered`)
-        }
-
-        return provider
+    get(name: IntegrationProvider | null): IAccountIntegrationProvider | null {
+        return name === null ? null : this.providers.get(name) ?? null
     }
 
     getAll(): IAccountIntegrationProvider[] {
@@ -53,48 +57,44 @@ export class AccountIntegrationRegistry {
     }
 
     async isEnabled(name: IntegrationProvider): Promise<boolean> {
-        this.get(name)
+        const service = await this.serviceRepository.findByIntegrationProvider(name)
 
-        return this.serviceRepository.isEnabled(name)
+        return service?.enabled ?? false
     }
 
     async enable(name: IntegrationProvider): Promise<void> {
         const provider = this.get(name)
+        const service = await this.serviceRepository.findByIntegrationProvider(name)
 
-        const alreadyEnabled = await this.serviceRepository.isEnabled(name)
-
-        if (alreadyEnabled) {
+        if (!provider || !service || service.enabled) {
             return
         }
 
-        await this.serviceRepository.setEnabled(name, true)
+        await this.serviceRepository.setEnabled(service.slug, true)
         await provider.onEnable?.()
     }
 
     async disable(name: IntegrationProvider): Promise<void> {
         const provider = this.get(name)
+        const service = await this.serviceRepository.findByIntegrationProvider(name)
 
-        const alreadyEnabled = await this.serviceRepository.isEnabled(name)
-
-        if (!alreadyEnabled) {
+        if (!provider || !service || !service.enabled) {
             return
         }
 
-        await this.serviceRepository.setEnabled(name, false)
+        await this.serviceRepository.setEnabled(service.slug, false)
         await provider.onDisable?.()
     }
 
+    /** Enabled MANAGED services only; a service without an integration can never appear here. */
     async getEnabled(): Promise<IAccountIntegrationProvider[]> {
-        const enabledProviders: IAccountIntegrationProvider[] = []
+        const services = await this.serviceRepository.findMany(
+            { enabled: true, accountType: AccountType.MANAGED },
+            Number.MAX_SAFE_INTEGER
+        )
 
-        for (const provider of this.providers.values()) {
-            const isEnabled = await this.serviceRepository.isEnabled(provider.name)
-
-            if (isEnabled) {
-                enabledProviders.push(provider)
-            }
-        }
-
-        return enabledProviders
+        return services
+            .map((service) => this.get(service.integrationProvider))
+            .filter((provider): provider is IAccountIntegrationProvider => provider !== null)
     }
 }

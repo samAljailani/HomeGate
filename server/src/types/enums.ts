@@ -40,7 +40,16 @@ export enum IntegrationProvider {
     Immich = 'immich',
 }
 
-export enum UserAccountStatus {
+export enum AccountType {
+    /** HomeGate provisions and owns an external account through an integration provider. */
+    MANAGED = 'MANAGED',
+    /** Access relies on another service's account; nothing to provision here. */
+    REFERENCED = 'REFERENCED',
+    /** No account of any kind; the subscription is purely an access grant. */
+    NONE = 'NONE',
+}
+
+export enum SubscriptionStatus {
     provisioning = 'provisioning',
     active = 'active',
     failed = 'failed',

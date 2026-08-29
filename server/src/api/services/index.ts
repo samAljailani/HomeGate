@@ -9,14 +9,20 @@ import { SchedulerService } from './scheduler.service'
 import { ServiceManagementService } from './serviceManagement.service'
 import { SessionService } from './session.service'
 import { SubscriptionService } from './subscriptions.service'
+import { SubscriptionLifecycleService } from './subscriptionLifecycle.service'
 import { TaskService } from './tasks.service'
 import { UserService } from './user.service'
+import { subscriptionProvisioners } from '@/core/subscriptions/provisioners'
+import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 
 export const services = [
     ConfigService,
     UserService,
     AuthService,
     SubscriptionService,
+    SubscriptionLifecycleService,
+    SubscriptionCascadeService,
+    ...subscriptionProvisioners,
     InviteService,
     InviteAccountLinkingService,
     ServiceManagementService,

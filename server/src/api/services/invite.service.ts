@@ -283,7 +283,7 @@ export class InviteService extends BaseService {
             if (serviceName == null) {
                 throw new BadRequestException(`Service '${account.serviceName}' is not a valid service name.`)
             }
-            const service = await this.serviceRepository.findByName(serviceName)
+            const service = await this.serviceRepository.findBySlug(serviceName)
             if (service == null) {
                 throw new BadRequestException(`Service '${account.serviceName}' not found.`)
             }

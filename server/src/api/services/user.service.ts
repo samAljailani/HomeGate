@@ -15,7 +15,7 @@ import { OAuthIdentityCreateRequestDto, OAuthIdentityResponseDto } from '@/types
 import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
-import { SubscriptionService } from './subscriptions.service'
+import { SubscriptionLifecycleService } from './subscriptionLifecycle.service'
 
 @Injectable()
 export class UserService extends BaseService {
@@ -26,7 +26,8 @@ export class UserService extends BaseService {
         @Inject(IUserRepository) userRepository: IUserRepository,
         @Inject(LoggingProvider) logger: LoggingProvider,
         @Inject(IUserOAuthIdentityRepository) userOAuthIdentityRepository: IUserOAuthIdentityRepository,
-        @Inject(forwardRef(() => SubscriptionService)) private readonly subscriptionService: SubscriptionService,
+        @Inject(forwardRef(() => SubscriptionLifecycleService))
+        private readonly subscriptionLifecycle: SubscriptionLifecycleService,
         @Inject(ISessionRepository) private readonly sessionRepository: ISessionRepository
     ) {
         super(logger)
@@ -142,7 +143,7 @@ export class UserService extends BaseService {
     // #region Delete Methods
 
     async softDeleteUser(userId: string): Promise<boolean> {
-        await this.subscriptionService.disableAllForUser(userId)
+        await this.subscriptionLifecycle.disableAllForUser(userId)
         await this.cleanupUserSessions(userId)
         const success = await this.userRepository.softDelete(userId)
         this.logger.log(`User ${userId} soft deleted`)
