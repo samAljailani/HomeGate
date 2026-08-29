@@ -25,8 +25,8 @@ export function useServicesPage() {
         load()
     }, [load])
 
-    const patchService = useCallback((name: string, patch: Partial<ServiceResponseDto>) => {
-        setServices((prev) => prev.map((s) => s.name === name ? { ...s, ...patch } : s))
+    const patchService = useCallback((slug: string, patch: Partial<ServiceResponseDto>) => {
+        setServices((prev) => prev.map((s) => s.slug === slug ? { ...s, ...patch } : s))
     }, [])
 
     return {

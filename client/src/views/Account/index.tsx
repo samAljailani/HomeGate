@@ -39,7 +39,7 @@ export function Account() {
                                 <StatusBadge tone={sub.status === 'active' ? 'success' : 'neutral'}>{sub.status}</StatusBadge>
                             </div>
                             <div className="text-sm text-muted-foreground space-y-1">
-                                <p>Username: {sub.username}</p>
+                                {sub.username && <p>Username: {sub.username}</p>}
                                 <p>Expires: {formatDate(sub.expiresAt)}</p>
                                 <p>Auto-renew: {sub.autoRenew ? 'On' : 'Off'}</p>
                             </div>

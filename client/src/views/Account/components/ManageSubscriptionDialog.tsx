@@ -119,22 +119,24 @@ export function ManageSubscriptionDialog({
                     <span className="text-sm">Auto-renew subscription</span>
                 </label>
 
-                <form className="grid gap-3" onSubmit={resetPassword}>
-                    <p className="text-sm font-medium">Reset service password</p>
-                    <div className="grid gap-2">
-                        <Label htmlFor="newPassword">New password</Label>
-                        <Input id="newPassword" type="password" autoComplete="new-password" {...register('newPassword', { required: 'Required' })} />
-                        {errors.newPassword && <p className="text-sm text-destructive">{errors.newPassword.message}</p>}
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="confirmPassword">Confirm password</Label>
-                        <Input id="confirmPassword" type="password" autoComplete="new-password" {...register('confirmPassword', { required: 'Required' })} />
-                        {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
-                    </div>
-                    <Button type="submit" disabled={isSaving}>
-                        Update password
-                    </Button>
-                </form>
+                {subscription.accountType === 'MANAGED' && (
+                    <form className="grid gap-3" onSubmit={resetPassword}>
+                        <p className="text-sm font-medium">Reset service password</p>
+                        <div className="grid gap-2">
+                            <Label htmlFor="newPassword">New password</Label>
+                            <Input id="newPassword" type="password" autoComplete="new-password" {...register('newPassword', { required: 'Required' })} />
+                            {errors.newPassword && <p className="text-sm text-destructive">{errors.newPassword.message}</p>}
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="confirmPassword">Confirm password</Label>
+                            <Input id="confirmPassword" type="password" autoComplete="new-password" {...register('confirmPassword', { required: 'Required' })} />
+                            {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
+                        </div>
+                        <Button type="submit" disabled={isSaving}>
+                            Update password
+                        </Button>
+                    </form>
+                )}
 
                 <div className="border-t pt-4">
                     <Button variant="destructive" disabled={isSaving} onClick={cancel}>

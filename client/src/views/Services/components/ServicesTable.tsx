@@ -78,6 +78,22 @@ export function ServicesTable({ services, isLoading, pendingName, onUpdate }: Se
             cell: ({ row }) => row.original.url ?? '—',
         },
         {
+            id: 'accountType',
+            accessorKey: 'accountType',
+            header: 'Account Type',
+            cell: ({ row }) => (
+                <StatusBadge tone={row.original.accountType === 'MANAGED' ? 'info' : 'neutral'}>
+                    {row.original.accountType}
+                </StatusBadge>
+            ),
+        },
+        {
+            id: 'defaultAllowed',
+            accessorKey: 'defaultAllowed',
+            header: 'Default Allowed',
+            cell: ({ row }) => (row.original.defaultAllowed ? 'Yes' : 'No'),
+        },
+        {
             id: 'status',
             accessorKey: 'enabled',
             header: 'Status',
@@ -97,7 +113,7 @@ export function ServicesTable({ services, isLoading, pendingName, onUpdate }: Se
                     variant="ghost"
                     size="icon-sm"
                     title="Edit"
-                    disabled={pendingName === row.original.name}
+                    disabled={pendingName === row.original.slug}
                     onClick={() => setEditingService(row.original)}
                 >
                     <Pencil className="size-4" />
@@ -158,7 +174,7 @@ export function ServicesTable({ services, isLoading, pendingName, onUpdate }: Se
                 service={editingService}
                 open={editingService !== null}
                 setOpen={(open) => !open && setEditingService(null)}
-                isSaving={pendingName === editingService?.name}
+                isSaving={pendingName === editingService?.slug}
                 onSave={onUpdate}
             />
         </div>

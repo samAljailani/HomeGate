@@ -13,7 +13,7 @@ interface ServiceEditDialogProps {
     open: boolean
     setOpen: Dispatch<SetStateAction<boolean>>
     isSaving: boolean
-    onSave: (name: string, patch: ServicePatchRequestDto) => Promise<void>
+    onSave: (slug: string, patch: ServicePatchRequestDto) => Promise<void>
 }
 
 export function ServiceEditDialog({ service, open, setOpen, isSaving, onSave }: ServiceEditDialogProps) {
@@ -31,7 +31,7 @@ export function ServiceEditDialog({ service, open, setOpen, isSaving, onSave }: 
     if (!service) return null
 
     const handleSave = async () => {
-        await onSave(service.name, {
+        await onSave(service.slug, {
             enabled,
             url: url.trim() === '' ? null : url.trim(),
             imageUrl: imageUrl.trim() === '' ? null : imageUrl.trim(),

@@ -119,6 +119,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/forward": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Traefik ForwardAuth — validates session and service entitlement */
+        get: operations["ForwardAuthController_forward"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/csrf": {
         parameters: {
             query?: never;
@@ -344,6 +361,41 @@ export interface paths {
         head?: never;
         /** Update a user account state — enabled/admin (admin only) */
         patch: operations["UserController_updateUser"];
+        trace?: never;
+    };
+    "/api/users/{id}/service-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a user's service access policies */
+        get: operations["UserController_listPolicies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set a service access policy for a user (upsert) */
+        patch: operations["UserController_setPolicy"];
+        trace?: never;
+    };
+    "/api/users/{id}/service-policies/{serviceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a service access policy, reverting to the service default */
+        delete: operations["UserController_deletePolicy"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/services": {
@@ -968,6 +1020,27 @@ export interface components {
             hard?: boolean;
         };
         /** @enum {string} */
+        PolicyEffect: "ALLOW" | "DENY";
+        UserServicePolicyResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            serviceId: number;
+            serviceName: string;
+            serviceSlug: string;
+            effect: components["schemas"]["PolicyEffect"];
+            /** Format: uuid */
+            createdByUserId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        UserServicePolicySetRequestDto: {
+            /** @description Target service ID */
+            serviceId: number;
+            effect: components["schemas"]["PolicyEffect"];
+        };
+        /** @enum {string} */
         AccountType: "MANAGED" | "REFERENCED" | "NONE";
         /** @enum {string} */
         IntegrationProvider: "jellyfin" | "immich";
@@ -992,6 +1065,8 @@ export interface components {
             imageUrl?: string | null;
             /** @description Credentials the signup form must collect; absent when nothing is provisioned */
             requiredInputs?: components["schemas"]["ServiceRequiredInputsDto"];
+            /** @description Whether the requesting user is allowed to subscribe; present on list responses */
+            allowed?: boolean;
         };
         /**
          * @description MANAGED is rejected: it requires a built-in integration provider
@@ -1250,6 +1325,23 @@ export interface operations {
         requestBody?: never;
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ForwardAuthController_forward: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1850,6 +1942,73 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UserResponseForAdminDto"];
                 };
+            };
+        };
+    };
+    UserController_listPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserServicePolicyResponseDto"][];
+                };
+            };
+        };
+    };
+    UserController_setPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserServicePolicySetRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserServicePolicyResponseDto"];
+                };
+            };
+        };
+    };
+    UserController_deletePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: number;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Policy removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

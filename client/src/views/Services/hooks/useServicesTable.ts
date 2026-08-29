@@ -5,19 +5,19 @@ import { serviceService, type ServicePatchRequestDto, type ServiceResponseDto } 
 import { addToastMessage } from '@/lib/utils'
 
 interface ServicesListMutators {
-    patchService: (name: string, patch: Partial<ServiceResponseDto>) => void
+    patchService: (slug: string, patch: Partial<ServiceResponseDto>) => void
 }
 
 export function useServicesTable({ patchService }: ServicesListMutators) {
     const [actionError, setActionError] = useState<string | null>(null)
     const [pendingName, setPendingName] = useState<string | null>(null)
 
-    const updateService = useCallback(async (name: string, patch: ServicePatchRequestDto) => {
+    const updateService = useCallback(async (slug: string, patch: ServicePatchRequestDto) => {
         setActionError(null)
-        setPendingName(name)
+        setPendingName(slug)
         try {
-            await serviceService.updateService(name, patch)
-            patchService(name, patch)
+            await serviceService.updateService(slug, patch)
+            patchService(slug, patch)
             addToastMessage('success', 'Service updated')
         } catch {
             setActionError('Failed to update service')

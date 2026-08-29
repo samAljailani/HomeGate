@@ -33,6 +33,9 @@ export function Home() {
                                 isLocked={
                                     !subscribedServiceIds.includes(service.id)
                                 }
+                                allowed={service.allowed !== false}
+                                accountType={service.accountType}
+                                requiredInputs={service.requiredInputs}
                                 imageUrl={service.imageUrl}
                                 url={service.url}
                                 className="sm:basis-1/2 md:basis-1/3 lg:basis-1/4"

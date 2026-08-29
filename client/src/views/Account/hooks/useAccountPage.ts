@@ -7,6 +7,7 @@ import { serviceService, type ServiceResponseDto } from '@/services/service.serv
 
 export interface AccountSubscription extends SubscriptionResponseDto {
     serviceName: string
+    accountType: ServiceResponseDto['accountType']
 }
 
 export function useAccountPage() {
@@ -22,8 +23,13 @@ export function useAccountPage() {
             ])
 
             const nameById = new Map<number, string>(services.map((s: ServiceResponseDto) => [s.id, s.name]))
+            const typeById = new Map<number, ServiceResponseDto['accountType']>(services.map((s) => [s.id, s.accountType]))
             setSubscriptions(
-                subs.map((s) => ({ ...s, serviceName: nameById.get(s.serviceId) ?? `Service ${s.serviceId}` }))
+                subs.map((s) => ({
+                    ...s,
+                    serviceName: nameById.get(s.serviceId) ?? `Service ${s.serviceId}`,
+                    accountType: typeById.get(s.serviceId) ?? 'NONE',
+                }))
             )
         } catch {
             addToastMessage('error', 'Failed to load your subscriptions')

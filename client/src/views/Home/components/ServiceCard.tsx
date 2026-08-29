@@ -17,6 +17,7 @@ import { classNames } from '@/utils/styles'
 import { SignUpForm } from '@/views/Home/components/SignUp'
 import { addToastMessage, capitalizeFirstLetter, copyToClipboard } from '@/lib/utils'
 import { config } from '@/constants/app'
+import type { ServiceResponseDto } from '@/services/service.service'
 
 // const ServiceCardsVariants = cva(
 //   "",
@@ -39,6 +40,9 @@ import { config } from '@/constants/app'
 // export function CardTopImage({isLocked = true, size = "default" }: { isLocked: boolean } & VariantProps<typeof CardTopImageVariants>) {
 export interface ServiceCardProps {
     isLocked: boolean
+    allowed?: boolean
+    accountType?: ServiceResponseDto['accountType']
+    requiredInputs?: ServiceResponseDto['requiredInputs']
     className?: string
     /** Service display name, shown as the card title and used for image alt text / fallback initial. */
     name?: string
@@ -52,6 +56,9 @@ export interface ServiceCardProps {
 
 export function ServiceCard({
     isLocked = true,
+    allowed = true,
+    accountType,
+    requiredInputs,
     className,
     name = 'Service',
     imageUrl,
@@ -87,6 +94,7 @@ export function ServiceCard({
             <Button
                 className="h-8 px-3 text-xs md:h-9 md:px-4 md:text-sm lg:h-10 lg:px-6 z-20"
                 onClick={() => setSignUpOpen(true)}
+                disabled={!allowed}
             >
                 Sign Up
             </Button>
@@ -148,6 +156,8 @@ export function ServiceCard({
                 open={signUpOpen}
                 setOpen={setSignUpOpen}
                 serviceId={serviceId}
+                accountType={accountType}
+                requiredInputs={requiredInputs}
             />
         </div>
     )

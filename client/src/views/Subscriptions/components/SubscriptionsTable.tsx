@@ -127,6 +127,7 @@ export function SubscriptionsTable({
             id: 'accountUsername',
             accessorKey: 'username',
             header: 'Account Username',
+            cell: ({ row }) => row.original.username ?? '—',
         },
         {
             id: 'status',
