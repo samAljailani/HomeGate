@@ -4,6 +4,7 @@ import type { InviteClaimedEvent } from '@/types/events/invite-claimed.event'
 import { IExternalUserAccountRepository, ISubscriptionRepository } from '@/data/repositories'
 import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { IntegrationProvider, AppEvent, SubscriptionStatus } from '@/types/enums'
+import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { BaseService } from './base.service'
 import { ConfigService } from './config.service'
@@ -17,7 +18,8 @@ export class InviteAccountLinkingService extends BaseService {
         @Inject(IExternalUserAccountRepository)
         private externalAccountRepository: IExternalUserAccountRepository,
         @Inject(AccountIntegrationRegistry) private integrationRegistry: AccountIntegrationRegistry,
-        @Inject(ConfigService) private configService: ConfigService
+        @Inject(ConfigService) private configService: ConfigService,
+        @Inject(SubscriptionCascadeService) private cascade: SubscriptionCascadeService
     ) {
         super(logger)
     }
@@ -105,6 +107,15 @@ export class InviteAccountLinkingService extends BaseService {
             username: result.user.username,
             externalAccountId: result.user.id,
         })
+
+        try {
+            await this.cascade.onActivated(subscription)
+        } catch (error) {
+            this.logger.error(
+                `Failed to cascade linked '${serviceName}' subscription for user ${userId} to referenced services`,
+                { stackTrace: error instanceof Error ? error.stack : undefined }
+            )
+        }
 
         this.logger.log(
             `Linked existing '${serviceName}' account '${result.user.username}' to user ${userId}`
