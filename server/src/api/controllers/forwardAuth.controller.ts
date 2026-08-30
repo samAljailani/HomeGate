@@ -26,7 +26,7 @@ export class ForwardAuthController {
 
     @Get(routes.auth.subPath.forward)
     @Public()
-    @Throttle({ default: { ttl: 60_000, limit: 10000 } })
+    @Throttle({ default: { ttl: 60_000, limit: 6000 } })
     @ApiOperation({ summary: 'Traefik ForwardAuth — validates session and service entitlement' })
     async forward(@Req() req: Request, @Res() res: Response): Promise<void> {       
         const hostname = this.getForwardedHostname(req)
