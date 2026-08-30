@@ -101,23 +101,31 @@ export class InviteService extends BaseService {
         const invite = await this.inviteRepository.findByToken(token)
 
         if (invite == null) {
+            this.logger.warn(`Invite redemption attempt with unknown token`)
             throw new NotFoundException('Invite token not found.')
         }
 
         if (invite.revokedAt != null) {
+            this.logger.warn(`Invite ${invite.id} redemption attempt rejected: token revoked`)
             throw new UnprocessableEntityException('Invite token has been revoked.')
         }
 
         if (invite.usedAt != null) {
+            this.logger.warn(`Invite ${invite.id} redemption attempt rejected: token already used`)
             throw new ConflictException('Invite token has already been used.')
         }
 
         if (invite.expiresAt < new Date()) {
+            this.logger.warn(`Invite ${invite.id} redemption attempt rejected: token expired`)
             throw new UnprocessableEntityException('Invite token has expired.')
         }
 
         if (email != null && invite.email != null && invite.email !== email) {
             const failedAttempts = await this.inviteRepository.incrementFailedAttempts(invite.id)
+
+            this.logger.warn(
+                `Invite ${invite.id} redemption attempt rejected: email mismatch (failed attempts: ${failedAttempts})`
+            )
 
             if (failedAttempts >= MAX_INVITE_FAILED_ATTEMPTS) {
                 await this.inviteRepository.revoke(invite.id, InviteRevokedReason.AUTO_FAILED_ATTEMPTS, null)

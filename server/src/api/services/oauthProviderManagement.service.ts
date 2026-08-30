@@ -3,13 +3,17 @@ import { IOAuthProviderRepository } from '@/data/repositories/IOAuthProviderRepo
 import { ISessionRepository } from '@/data/repositories/ISessionRepository'
 import { OAuthProviderModel, OAuthProviderName } from '@/types/models/oauthProvider'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
 
 @Injectable()
 export class OAuthProviderManagementService {
     constructor(
         @Inject(IOAuthProviderRepository) private readonly oauthProviderRepository: IOAuthProviderRepository,
-        @Inject(ISessionRepository) private readonly sessionRepository: ISessionRepository
-    ) {}
+        @Inject(ISessionRepository) private readonly sessionRepository: ISessionRepository,
+        @Inject(LoggingProvider) private readonly logger: LoggingProvider
+    ) {
+        this.logger.setContext(this.constructor.name)
+    }
 
     async list(take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<OAuthProviderModel>> {
         const [providers, total] = await Promise.all([
@@ -27,6 +31,7 @@ export class OAuthProviderManagementService {
     async enable(name: OAuthProviderName): Promise<OAuthProviderModel> {
         const provider = await this.oauthProviderRepository.setEnabled(name, true)
         if (!provider) throw new NotFoundException(`OAuth provider '${name}' not found`)
+        this.logger.log(`OAuth provider '${name}' enabled`)
         return provider
     }
 
@@ -35,6 +40,7 @@ export class OAuthProviderManagementService {
         if (!provider) throw new NotFoundException(`OAuth provider '${name}' not found`)
 
         await this.sessionRepository.deleteByProviderId(provider.id)
+        this.logger.warn(`OAuth provider '${name}' disabled and all of its sessions invalidated`)
 
         return provider
     }

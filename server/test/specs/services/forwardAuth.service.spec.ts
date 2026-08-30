@@ -31,12 +31,14 @@ describe('ForwardAuthService', () => {
     let subscriptionRepo: ReturnType<typeof createSubscriptionRepoMock>
     let accessService: ReturnType<typeof createAccessServiceMock>
     let cascade: ReturnType<typeof createCascadeMock>
+    let loggerMock: ReturnType<typeof createLoggerMock>
 
     beforeEach(async () => {
         serviceRepo = createServiceRepoMock()
         subscriptionRepo = createSubscriptionRepoMock()
         accessService = createAccessServiceMock()
         cascade = createCascadeMock()
+        loggerMock = createLoggerMock()
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -45,7 +47,7 @@ describe('ForwardAuthService', () => {
                 { provide: ISubscriptionRepository, useValue: subscriptionRepo },
                 { provide: ServiceAccessService, useValue: accessService },
                 { provide: SubscriptionCascadeService, useValue: cascade },
-                { provide: LoggingProvider, useValue: createLoggerMock() },
+                { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
 
@@ -100,11 +102,17 @@ describe('ForwardAuthService', () => {
 
             const result = await service.isAuthorized(userId, svc)
             expect(result).toBe(false)
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`Forward-auth denied for user '${userId}' on service '${svc.slug}': not allowed by policy`)
+            )
         })
 
         it('returns false when no subscription exists', async () => {
             const result = await service.isAuthorized(userId, svc)
             expect(result).toBe(false)
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`Forward-auth denied for user '${userId}' on service '${svc.slug}': no subscription`)
+            )
         })
 
         it('returns false when entitlement is not active', async () => {
@@ -113,6 +121,9 @@ describe('ForwardAuthService', () => {
 
             const result = await service.isAuthorized(userId, svc)
             expect(result).toBe(false)
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`Forward-auth denied for user '${userId}' on service '${svc.slug}': subscription not entitled`)
+            )
         })
 
         it('caches the result and does not re-query on second call', async () => {
@@ -141,6 +152,10 @@ describe('ForwardAuthService', () => {
 
             service.handleInvalidation({ userId })
 
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`Invalidated 1 forward-auth cache entry for user '${userId}'`)
+            )
+
             subscriptionRepo.find.mockResolvedValue(null)
             const result = await service.isAuthorized(userId, svc)
 
@@ -154,6 +169,10 @@ describe('ForwardAuthService', () => {
             await service.isAuthorized('user-2', svc)
 
             service.handleInvalidation({ userId: 'user-1' })
+
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`Invalidated 0 forward-auth cache entries for user 'user-1'`)
+            )
 
             await service.isAuthorized('user-2', svc)
             expect(subscriptionRepo.find).toHaveBeenCalledTimes(1)

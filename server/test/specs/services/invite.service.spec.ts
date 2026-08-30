@@ -111,12 +111,18 @@ describe('InviteService', () => {
             inviteRepositoryMock.findByToken.mockResolvedValue(createInviteFixture({ revokedAt: new Date() }))
 
             await expect(service.validateToken('raw-token')).rejects.toThrow(UnprocessableEntityException)
+            expect(loggerMock.warn).toHaveBeenCalledWith(
+                expect.stringContaining(`Invite invite-id-123 redemption attempt rejected: token revoked`)
+            )
         })
 
         it('throws when the invite is already used', async () => {
             inviteRepositoryMock.findByToken.mockResolvedValue(createInviteFixture({ usedAt: new Date() }))
 
             await expect(service.validateToken('raw-token')).rejects.toThrow(ConflictException)
+            expect(loggerMock.warn).toHaveBeenCalledWith(
+                expect.stringContaining(`Invite invite-id-123 redemption attempt rejected: token already used`)
+            )
         })
 
         it('throws when the invite is expired', async () => {
@@ -125,6 +131,9 @@ describe('InviteService', () => {
             )
 
             await expect(service.validateToken('raw-token')).rejects.toThrow(UnprocessableEntityException)
+            expect(loggerMock.warn).toHaveBeenCalledWith(
+                expect.stringContaining(`Invite invite-id-123 redemption attempt rejected: token expired`)
+            )
         })
 
         it('returns the invite for a valid unbound token', async () => {
@@ -141,6 +150,9 @@ describe('InviteService', () => {
             await expect(service.validateToken('raw-token', 'other@b.com')).rejects.toThrow(ForbiddenException)
             expect(inviteRepositoryMock.incrementFailedAttempts).toHaveBeenCalled()
             expect(inviteRepositoryMock.revoke).not.toHaveBeenCalled()
+            expect(loggerMock.warn).toHaveBeenCalledWith(
+                expect.stringContaining(`Invite invite-id-123 redemption attempt rejected: email mismatch (failed attempts: 1)`)
+            )
         })
 
         it('auto-revokes after reaching the failed-attempt threshold', async () => {
@@ -153,6 +165,9 @@ describe('InviteService', () => {
                 'bound-invite',
                 InviteRevokedReason.AUTO_FAILED_ATTEMPTS,
                 null
+            )
+            expect(loggerMock.warn).toHaveBeenCalledWith(
+                expect.stringContaining(`Invite bound-invite auto-revoked after ${MAX_INVITE_FAILED_ATTEMPTS} failed redemption attempts`)
             )
         })
 

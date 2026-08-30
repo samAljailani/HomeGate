@@ -5,6 +5,8 @@ import { IOAuthProviderRepository } from '@/data/repositories/IOAuthProviderRepo
 import { ISessionRepository } from '@/data/repositories/ISessionRepository'
 import { createOAuthProviderFixture } from '../../fixtures/oauthProvider.stub'
 import { OAuthProviderName } from '@prisma/generated'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { createLoggerMock } from '../../mocks/logger.provider.mock'
 
 function createOAuthProviderRepositoryMock(): jest.Mocked<
     Pick<IOAuthProviderRepository, 'findMany' | 'count' | 'setEnabled' | 'findById'>
@@ -27,16 +29,19 @@ describe('OAuthProviderManagementService', () => {
     let service: OAuthProviderManagementService
     let providerRepositoryMock: ReturnType<typeof createOAuthProviderRepositoryMock>
     let sessionRepositoryMock: ReturnType<typeof createSessionRepositoryMock>
+    let loggerMock: ReturnType<typeof createLoggerMock>
 
     beforeEach(async () => {
         providerRepositoryMock = createOAuthProviderRepositoryMock()
         sessionRepositoryMock = createSessionRepositoryMock()
+        loggerMock = createLoggerMock()
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 OAuthProviderManagementService,
                 { provide: IOAuthProviderRepository, useValue: providerRepositoryMock },
                 { provide: ISessionRepository, useValue: sessionRepositoryMock },
+                { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
 
@@ -99,6 +104,7 @@ describe('OAuthProviderManagementService', () => {
             await service.enable(name)
 
             expect(providerRepositoryMock.setEnabled).toHaveBeenCalledWith(name, true)
+            expect(loggerMock.log).toHaveBeenCalledWith(`OAuth provider '${name}' enabled`)
         })
 
         it('returns the updated provider', async () => {
@@ -141,6 +147,9 @@ describe('OAuthProviderManagementService', () => {
             await service.disable(name)
 
             expect(providerRepositoryMock.setEnabled).toHaveBeenCalledWith(name, false)
+            expect(loggerMock.warn).toHaveBeenCalledWith(
+                `OAuth provider '${name}' disabled and all of its sessions invalidated`
+            )
         })
 
         it('revokes all sessions for that provider', async () => {

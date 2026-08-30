@@ -599,6 +599,11 @@ export class SubscriptionService {
             failedOperation,
             lastError,
         })
+
+        this.logger.warn(
+            `Subscription for user '${userId}' on service '${serviceId}' moved to 'failed' ` +
+                `(operation: ${failedOperation}${lastError ? `, error: ${lastError}` : ''})`
+        )
     }
 
     // #region Mappers

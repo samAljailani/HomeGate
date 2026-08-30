@@ -46,6 +46,7 @@ export class UserService extends BaseService {
 
         if (savedUser) {
             response = this.userModelToLoadRequestForAdmin(savedUser!)
+            this.logger.log(`User created for '${savedUser.email}' (status: ${savedUser.status})`)
         }
 
         return response
@@ -58,16 +59,19 @@ export class UserService extends BaseService {
     ): Promise<UserResponseForAdminDto> {
         const username = await this.generateUsername(newUser.email)
         const user = await this.userRepository.createWithOAuthIdentity({ ...newUser, username }, providerId, profileId)
+        this.logger.log(`User created for '${user.email}' with OAuth identity (provider ${providerId})`)
         return this.userModelToLoadRequestForAdmin(user)
     }
 
     async activateUser(userId: string): Promise<UserResponseForAdminDto> {
         const user = await this.userRepository.activate(userId)
+        this.logger.log(`User ${userId} activated`)
         return this.userModelToLoadRequestForAdmin(user)
     }
 
     async updateAvatar(userId: string, avatarUrl: string): Promise<void> {
         await this.userRepository.setAvatar(userId, avatarUrl)
+        this.logger.log(`User ${userId} avatar updated`)
     }
 
     async getAvatarUrl(userId: string): Promise<string | null> {

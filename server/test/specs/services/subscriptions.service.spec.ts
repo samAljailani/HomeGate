@@ -401,6 +401,11 @@ describe('SubscriptionService', () => {
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ status: SubscriptionStatus.failed })
             )
+            expect(loggerMock.warn).toHaveBeenCalledWith(
+                expect.stringContaining(
+                    `Subscription for user '${userId}' on service '1' moved to 'failed' (operation: ${FailedOperation.provisioning}`
+                )
+            )
         })
     })
 
@@ -498,6 +503,11 @@ describe('SubscriptionService', () => {
             expect(result).toBe(false)
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ status: SubscriptionStatus.failed })
+            )
+            expect(loggerMock.warn).toHaveBeenCalledWith(
+                expect.stringContaining(
+                    `Subscription for user '${currentUserId}' on service '1' moved to 'failed' (operation: ${FailedOperation.cancellation}`
+                )
             )
         })
 
@@ -669,6 +679,11 @@ describe('SubscriptionService', () => {
 
             await expect(service.update(subscriptionId, { enabled: true })).rejects.toThrow(
                 ServiceUnavailableException
+            )
+            expect(loggerMock.warn).toHaveBeenCalledWith(
+                expect.stringContaining(
+                    `Subscription for user '${userId}' on service '${serviceId}' moved to 'failed' (operation: ${FailedOperation.cancellation}`
+                )
             )
         })
 

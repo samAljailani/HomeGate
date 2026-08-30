@@ -26,6 +26,7 @@ function createServiceRepositoryMock(): jest.Mocked<
         | 'findById'
         | 'setImageUrl'
         | 'setUrl'
+        | 'setSlug'
         | 'create'
         | 'update'
         | 'delete'
@@ -39,6 +40,7 @@ function createServiceRepositoryMock(): jest.Mocked<
         findById: jest.fn(),
         setImageUrl: jest.fn(),
         setUrl: jest.fn(),
+        setSlug: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
@@ -71,6 +73,7 @@ describe('ServiceManagementService', () => {
     let subscriptionRepositoryMock: ReturnType<typeof createSubscriptionRepositoryMock>
     let eventEmitterMock: { emit: jest.Mock }
     let cascadeMock: { onReferencedServiceCreated: jest.Mock }
+    let loggerMock: ReturnType<typeof createLoggerMock>
 
     beforeEach(async () => {
         serviceRepositoryMock = createServiceRepositoryMock()
@@ -79,6 +82,7 @@ describe('ServiceManagementService', () => {
         subscriptionRepositoryMock = createSubscriptionRepositoryMock()
         eventEmitterMock = { emit: jest.fn() }
         cascadeMock = { onReferencedServiceCreated: jest.fn().mockResolvedValue([]) }
+        loggerMock = createLoggerMock()
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -89,7 +93,7 @@ describe('ServiceManagementService', () => {
                 { provide: ServiceAccessService, useValue: accessServiceMock },
                 { provide: SubscriptionCascadeService, useValue: cascadeMock },
                 { provide: EventEmitter2, useValue: eventEmitterMock },
-                { provide: LoggingProvider, useValue: createLoggerMock() },
+                { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
 
@@ -246,6 +250,7 @@ describe('ServiceManagementService', () => {
 
             expect(clientRegistryMock.enable).toHaveBeenCalledWith(name)
             expect(serviceRepositoryMock.setEnabled).not.toHaveBeenCalled()
+            expect(loggerMock.log).toHaveBeenCalledWith(expect.stringContaining(`Service '${name}' enabled`))
         })
 
         it('uses repo.setEnabled when client is not registered', async () => {
@@ -258,6 +263,7 @@ describe('ServiceManagementService', () => {
 
             expect(serviceRepositoryMock.setEnabled).toHaveBeenCalledWith(name, true)
             expect(clientRegistryMock.enable).not.toHaveBeenCalled()
+            expect(loggerMock.log).toHaveBeenCalledWith(expect.stringContaining(`Service '${name}' enabled`))
         })
 
         it('returns the updated service record', async () => {
@@ -269,6 +275,7 @@ describe('ServiceManagementService', () => {
             const result = await service.enable(name)
 
             expect(result).toEqual(expect.objectContaining({ id: svc.id, name: svc.name, slug: svc.slug, enabled: svc.enabled, accountType: svc.accountType }))
+            expect(loggerMock.log).toHaveBeenCalledWith(expect.stringContaining(`Service '${name}' enabled`))
         })
 
         it('throws NotFoundException when service record is not found after update', async () => {
@@ -297,6 +304,7 @@ describe('ServiceManagementService', () => {
 
             expect(clientRegistryMock.disable).toHaveBeenCalledWith(name)
             expect(serviceRepositoryMock.setEnabled).not.toHaveBeenCalled()
+            expect(loggerMock.log).toHaveBeenCalledWith(expect.stringContaining(`Service '${name}' disabled`))
         })
 
         it('uses repo.setEnabled when client is not registered', async () => {
@@ -308,6 +316,7 @@ describe('ServiceManagementService', () => {
             await service.disable(name)
 
             expect(serviceRepositoryMock.setEnabled).toHaveBeenCalledWith(name, false)
+            expect(loggerMock.log).toHaveBeenCalledWith(expect.stringContaining(`Service '${name}' disabled`))
         })
 
         it('returns the updated service record', async () => {
@@ -319,10 +328,34 @@ describe('ServiceManagementService', () => {
             const result = await service.disable(name)
 
             expect(result).toEqual(expect.objectContaining({ id: svc.id, name: svc.name, slug: svc.slug, enabled: svc.enabled, accountType: svc.accountType }))
+            expect(loggerMock.log).toHaveBeenCalledWith(expect.stringContaining(`Service '${name}' disabled`))
         })
     })
 
     // #endregion disable
+
+    // #region updateSlug
+
+    describe('updateSlug', () => {
+        const name = IntegrationProvider.Jellyfin
+        const newSlug = 'jellyfin2'
+
+        it('renames the service and logs the old and new slug', async () => {
+            const svc = createServiceFixture({ name, slug: newSlug })
+            serviceRepositoryMock.findBySlug.mockResolvedValue(null)
+            serviceRepositoryMock.setSlug.mockResolvedValue(svc)
+
+            const result = await service.updateSlug(name, newSlug)
+
+            expect(serviceRepositoryMock.setSlug).toHaveBeenCalledWith(name, newSlug)
+            expect(result).toEqual(expect.objectContaining({ id: svc.id, slug: newSlug }))
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`Service renamed from '${name}' to '${newSlug}'`)
+            )
+        })
+    })
+
+    // #endregion updateSlug
 
     // #region updateImageUrl
 
@@ -337,6 +370,9 @@ describe('ServiceManagementService', () => {
 
             expect(serviceRepositoryMock.setImageUrl).toHaveBeenCalledWith(name, 'https://example.com/logo.png')
             expect(result).toEqual(expect.objectContaining({ id: svc.id, name: svc.name, slug: svc.slug, enabled: svc.enabled, accountType: svc.accountType }))
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`Service '${name}' image url set to 'https://example.com/logo.png'`)
+            )
         })
 
         it('throws NotFoundException when service record is not found', async () => {
@@ -363,6 +399,9 @@ describe('ServiceManagementService', () => {
 
             expect(serviceRepositoryMock.setUrl).toHaveBeenCalledWith(name, 'https://jellyfin.example.com')
             expect(result).toEqual(expect.objectContaining({ id: svc.id, name: svc.name, slug: svc.slug, enabled: svc.enabled, accountType: svc.accountType }))
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`Service '${name}' url set to 'https://jellyfin.example.com'`)
+            )
         })
 
         it('throws NotFoundException when service record is not found', async () => {

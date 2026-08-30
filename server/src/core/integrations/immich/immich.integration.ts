@@ -258,6 +258,7 @@ export class ImmichIntegration implements IAccountIntegrationProvider {
                 return false
             }
 
+            this.logger.log(`Successfully deleted Immich user with service account id '${userServiceAccountId}'`)
             return true
         } catch (error) {
             this.logger.error(
@@ -364,6 +365,7 @@ export class ImmichIntegration implements IAccountIntegrationProvider {
                 return false
             }
 
+            this.logger.log(`Successfully reset Immich password for service account '${userServiceAccountId}'`)
             return true
         } catch (error) {
             this.logger.error(`Error resetting Immich password for service account '${userServiceAccountId}'.`, {

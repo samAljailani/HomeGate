@@ -5,6 +5,8 @@ import { IUserServicePolicyRepository } from '@/data/repositories'
 import { PolicyEffect, AccountType, IntegrationProvider } from '@/types/enums'
 import { UserServicePolicyModel } from '@/types/models/userServicePolicy'
 import { ServiceModel } from '@/types/models/service'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { createLoggerMock } from '../../mocks/logger.provider.mock'
 
 function createPolicyRepositoryMock(): jest.Mocked<IUserServicePolicyRepository> {
     return {
@@ -46,14 +48,17 @@ function stubPolicy(overrides: Partial<UserServicePolicyModel> = {}): UserServic
 describe('ServiceAccessService', () => {
     let access: ServiceAccessService
     let policyRepo: ReturnType<typeof createPolicyRepositoryMock>
+    let loggerMock: ReturnType<typeof createLoggerMock>
 
     beforeEach(async () => {
         policyRepo = createPolicyRepositoryMock()
+        loggerMock = createLoggerMock()
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 ServiceAccessService,
                 { provide: IUserServicePolicyRepository, useValue: policyRepo },
+                { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
 
@@ -101,6 +106,9 @@ describe('ServiceAccessService', () => {
             policyRepo.find.mockResolvedValue(stubPolicy({ effect: PolicyEffect.DENY }))
 
             await expect(access.assertCanSubscribe('user-1', stubService())).rejects.toThrow(ForbiddenException)
+            expect(loggerMock.warn).toHaveBeenCalledWith(
+                "Access denied for user 'user-1' on service 'jellyfin' (id 1): not allowed by policy"
+            )
         })
     })
 

@@ -10,7 +10,21 @@ import { createUserFixture } from '../../fixtures/user.stub'
 import { UserStatus } from '@/types/models/user'
 
 function createUserRepositoryMock(): jest.Mocked<
-    Pick<IUserRepository, 'findById' | 'softDelete' | 'hardDelete' | 'setEnabled' | 'setAdmin' | 'findMany' | 'count'>
+    Pick<
+        IUserRepository,
+        | 'findById'
+        | 'softDelete'
+        | 'hardDelete'
+        | 'setEnabled'
+        | 'setAdmin'
+        | 'findMany'
+        | 'count'
+        | 'create'
+        | 'usernameExists'
+        | 'createWithOAuthIdentity'
+        | 'activate'
+        | 'setAvatar'
+    >
 > {
     return {
         findById: jest.fn(),
@@ -20,6 +34,11 @@ function createUserRepositoryMock(): jest.Mocked<
         setAdmin: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
+        create: jest.fn(),
+        usernameExists: jest.fn(),
+        createWithOAuthIdentity: jest.fn(),
+        activate: jest.fn(),
+        setAvatar: jest.fn(),
     }
 }
 
@@ -75,6 +94,79 @@ describe('UserService', () => {
     it('should be defined', () => {
         expect(service).toBeDefined()
     })
+
+    // #region createUser
+
+    describe('createUser', () => {
+        it('logs the created user with its status', async () => {
+            const user = createUserFixture({ email: 'new@example.com', status: UserStatus.ACTIVE })
+            userRepositoryMock.usernameExists.mockResolvedValue(false)
+            userRepositoryMock.create.mockResolvedValue(user)
+
+            await service.createUser({ email: 'new@example.com' } as never)
+
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`User created for 'new@example.com' (status: ACTIVE)`)
+            )
+        })
+    })
+
+    // #endregion createUser
+
+    // #region createUserWithOAuthIdentity
+
+    describe('createUserWithOAuthIdentity', () => {
+        it('logs the created user with the OAuth provider', async () => {
+            const user = createUserFixture({ email: 'new@example.com' })
+            userRepositoryMock.usernameExists.mockResolvedValue(false)
+            userRepositoryMock.createWithOAuthIdentity.mockResolvedValue(user)
+
+            await service.createUserWithOAuthIdentity({ email: 'new@example.com' } as never, 3, 'profile-1')
+
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`User created for 'new@example.com' with OAuth identity (provider 3)`)
+            )
+        })
+    })
+
+    // #endregion createUserWithOAuthIdentity
+
+    // #region activateUser
+
+    describe('activateUser', () => {
+        const userId = 'user-uuid-1'
+
+        it('logs the activated user', async () => {
+            userRepositoryMock.activate.mockResolvedValue(createUserFixture({ id: userId }))
+
+            await service.activateUser(userId)
+
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`User ${userId} activated`)
+            )
+        })
+    })
+
+    // #endregion activateUser
+
+    // #region updateAvatar
+
+    describe('updateAvatar', () => {
+        const userId = 'user-uuid-1'
+
+        it('logs the avatar update', async () => {
+            userRepositoryMock.setAvatar.mockResolvedValue(createUserFixture({ id: userId }))
+
+            await service.updateAvatar(userId, 'https://example.com/avatar.png')
+
+            expect(userRepositoryMock.setAvatar).toHaveBeenCalledWith(userId, 'https://example.com/avatar.png')
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`User ${userId} avatar updated`)
+            )
+        })
+    })
+
+    // #endregion updateAvatar
 
     // #region softDeleteUser
 

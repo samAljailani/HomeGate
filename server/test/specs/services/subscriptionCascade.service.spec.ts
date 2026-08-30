@@ -17,17 +17,19 @@ describe('SubscriptionCascadeService', () => {
     let cascade: SubscriptionCascadeService
     let subscriptionRepoMock: ReturnType<typeof createSubscriptionRepositoryMock>
     let serviceRepoMock: ReturnType<typeof createServiceRepositoryMock>
+    let loggerMock: ReturnType<typeof createLoggerMock>
 
     beforeEach(async () => {
         subscriptionRepoMock = createSubscriptionRepositoryMock()
         serviceRepoMock = createServiceRepositoryMock()
+        loggerMock = createLoggerMock()
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 SubscriptionCascadeService,
                 { provide: ISubscriptionRepository, useValue: subscriptionRepoMock },
                 { provide: IServiceRepository, useValue: serviceRepoMock },
-                { provide: LoggingProvider, useValue: createLoggerMock() },
+                { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
 
@@ -250,6 +252,9 @@ describe('SubscriptionCascadeService', () => {
 
             expect(subscriptionRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ serviceId: 2, expiresAt: IN_10_DAYS })
+            )
+            expect(loggerMock.log).toHaveBeenCalledWith(
+                expect.stringContaining(`Derived subscription 'derived-1' expiry re-clamped to '${IN_10_DAYS.toISOString()}' from source 'source-1'`)
             )
         })
 

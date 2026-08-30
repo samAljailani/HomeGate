@@ -200,6 +200,7 @@ export class ServiceManagementService {
 
         const updated = await this.serviceRepository.findBySlug(slug)
         if (!updated) throw new NotFoundException(`Service '${slug}' not found`)
+        this.logger.log(`Service '${slug}' ${enabled ? 'enabled' : 'disabled'}`)
         return this.serviceModelToResponseDto(updated)
     }
 
@@ -224,6 +225,7 @@ export class ServiceManagementService {
 
         const service = await this.serviceRepository.setSlug(slug, newSlug)
         if (!service) throw new NotFoundException(`Service '${slug}' not found`)
+        this.logger.log(`Service renamed from '${slug}' to '${newSlug}'`)
         return this.serviceModelToResponseDto(service)
     }
 
@@ -253,12 +255,14 @@ export class ServiceManagementService {
     async updateImageUrl(slug: string, imageUrl: string | null): Promise<ServiceResponseDto> {
         const service = await this.serviceRepository.setImageUrl(slug, imageUrl)
         if (!service) throw new NotFoundException(`Service '${slug}' not found`)
+        this.logger.log(`Service '${slug}' image url ${imageUrl ? `set to '${imageUrl}'` : 'cleared'}`)
         return this.serviceModelToResponseDto(service)
     }
 
     async updateUrl(slug: string, url: string | null): Promise<ServiceResponseDto> {
         const service = await this.serviceRepository.setUrl(slug, url)
         if (!service) throw new NotFoundException(`Service '${slug}' not found`)
+        this.logger.log(`Service '${slug}' url ${url ? `set to '${url}'` : 'cleared'}`)
         return this.serviceModelToResponseDto(service)
     }
 

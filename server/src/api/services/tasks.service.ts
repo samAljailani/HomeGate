@@ -63,6 +63,8 @@ export class TaskService extends BaseService {
             const deleted = await this.taskRunRepository.deleteOlderThan(cutoff)
             if (deleted > 0) {
                 this.logger.log(`Purged ${deleted} task run record(s) older than ${TASK_RUN_RETENTION_DAYS} days`)
+            } else {
+                this.logger.log(`No task run records older than ${TASK_RUN_RETENTION_DAYS} days to purge`)
             }
             return true
         })
@@ -74,6 +76,8 @@ export class TaskService extends BaseService {
             const deleted = await this.sessionRepository.deleteExpired(new Date())
             if (deleted > 0) {
                 this.logger.log(`Purged ${deleted} expired session(s)`)
+            } else {
+                this.logger.log('No expired sessions to purge')
             }
             return true
         })
@@ -88,7 +92,7 @@ export class TaskService extends BaseService {
         const startedAt = new Date()
         const elapsedMs = () => Date.now() - startedAt.getTime()
 
-        this.logger.debugFn(() => `Task '${taskName}' started`)
+        this.logger.log(`Task '${taskName}' started`)
 
         let success = false
         let errorMessage: string | null = null
@@ -96,7 +100,7 @@ export class TaskService extends BaseService {
         try {
             success = await work()
 
-            this.logger.debugFn(() => `Task '${taskName}' finished in ${elapsedMs()}ms with success=${success}`)
+            this.logger.log(`Task '${taskName}' finished in ${elapsedMs()}ms with success=${success}`)
         } catch (error) {
             errorMessage = error instanceof Error ? error.message : String(error)
 

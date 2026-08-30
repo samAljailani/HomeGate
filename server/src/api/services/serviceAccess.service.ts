@@ -2,13 +2,18 @@ import { ForbiddenException, Inject, Injectable } from '@nestjs/common'
 import { IUserServicePolicyRepository } from '@/data/repositories'
 import { PolicyEffect } from '@/types/enums'
 import { ServiceModel } from '@/types/models/service'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
 
 @Injectable()
 export class ServiceAccessService {
     constructor(
         @Inject(IUserServicePolicyRepository)
-        private readonly policyRepository: IUserServicePolicyRepository
-    ) {}
+        private readonly policyRepository: IUserServicePolicyRepository,
+        @Inject(LoggingProvider)
+        private readonly logger: LoggingProvider
+    ) {
+        this.logger.setContext(this.constructor.name)
+    }
 
     /** DENY → ALLOW → service.defaultAllowed → deny. */
     async canSubscribe(userId: string, service: ServiceModel): Promise<boolean> {
@@ -19,6 +24,9 @@ export class ServiceAccessService {
 
     async assertCanSubscribe(userId: string, service: ServiceModel): Promise<void> {
         if (!(await this.canSubscribe(userId, service))) {
+            this.logger.warn(
+                `Access denied for user '${userId}' on service '${service.slug}' (id ${service.id}): not allowed by policy`
+            )
             throw new ForbiddenException('You do not have access to this service')
         }
     }

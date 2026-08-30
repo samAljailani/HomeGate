@@ -314,6 +314,7 @@ export class JellyfinIntegration implements IAccountIntegrationProvider {
                 return false
             }
 
+            this.logger.log(`Successfully reset Jellyfin password for service account '${userServiceAccountId}'`)
             return true
         } catch (error) {
             this.logger.error(`Error resetting Jellyfin password for service account '${userServiceAccountId}'.`, {
@@ -383,6 +384,9 @@ export class JellyfinIntegration implements IAccountIntegrationProvider {
                 return false
             }
 
+            this.logger.log(
+                `Successfully ${isDisabled ? 'disabled' : 'enabled'} Jellyfin user with service account id '${userServiceAccountId}'`
+            )
             return true
         } catch (error) {
             this.logger.error(

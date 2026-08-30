@@ -60,24 +60,36 @@ export class ForwardAuthService {
 
     private async evaluateAccess(userId: string, service: ServiceModel): Promise<boolean> {
         if (!(await this.accessService.canSubscribe(userId, service))) {
+            this.logger.log(`Forward-auth denied for user '${userId}' on service '${service.slug}': not allowed by policy`)
             return false
         }
 
         const subscription = await this.subscriptionRepository.find(userId, service.id)
-        if (!subscription) return false
+        if (!subscription) {
+            this.logger.log(`Forward-auth denied for user '${userId}' on service '${service.slug}': no subscription`)
+            return false
+        }
 
         const entitlement = await this.cascade.resolveEffectiveEntitlement(subscription)
-        return entitlement.active
+        if (!entitlement.active) {
+            this.logger.log(`Forward-auth denied for user '${userId}' on service '${service.slug}': subscription not entitled`)
+            return false
+        }
+
+        return true
     }
 
     @OnEvent(AppEvent.SUBSCRIPTION_CHANGED, { async: true })
     @OnEvent(AppEvent.SERVICE_POLICY_CHANGED, { async: true })
     handleInvalidation(payload: { userId: string }): void {
         const prefix = `${payload.userId}:`
+        let removed = 0
         for (const key of this.cache.keys()) {
             if (key.startsWith(prefix)) {
                 this.cache.delete(key)
+                removed++
             }
         }
+        this.logger.log(`Invalidated ${removed} forward-auth cache entr${removed === 1 ? 'y' : 'ies'} for user '${payload.userId}'`)
     }
 }

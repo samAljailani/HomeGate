@@ -212,6 +212,10 @@ export class SubscriptionCascadeService {
                 serviceId: subscription.serviceId,
                 expiresAt: source.expiresAt,
             })
+
+            this.logger.log(
+                `Derived subscription '${subscription.id}' expiry re-clamped to '${source.expiresAt?.toISOString() ?? 'null'}' from source '${source.id}'`
+            )
         }
     }
 
