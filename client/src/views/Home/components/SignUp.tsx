@@ -26,9 +26,10 @@ interface SignUpFormProps {
     serviceId: number
     accountType?: ServiceResponseDto['accountType']
     requiredInputs?: ServiceResponseDto['requiredInputs']
+    onSubscribed?: () => void
 }
 
-export function SignUpForm({ open, setOpen, serviceId, accountType, requiredInputs }: SignUpFormProps) {
+export function SignUpForm({ open, setOpen, serviceId, accountType, requiredInputs, onSubscribed }: SignUpFormProps) {
     const needsCredentials = accountType === 'MANAGED' && requiredInputs
 
     return (
@@ -42,7 +43,12 @@ export function SignUpForm({ open, setOpen, serviceId, accountType, requiredInpu
                     : 'Subscribe to this service.'
             }
         >
-            <Form serviceId={serviceId} setOpen={setOpen} requiredInputs={needsCredentials ? requiredInputs : undefined} />
+            <Form
+                serviceId={serviceId}
+                setOpen={setOpen}
+                onSubscribed={onSubscribed}
+                requiredInputs={needsCredentials ? requiredInputs : undefined}
+            />
         </ResponsiveModal>
     )
 }
@@ -52,10 +58,12 @@ function Form({
     serviceId,
     setOpen,
     requiredInputs,
+    onSubscribed,
 }: React.ComponentProps<'form'> & {
     serviceId: number
     setOpen: React.Dispatch<React.SetStateAction<boolean>>
     requiredInputs?: ServiceResponseDto['requiredInputs']
+    onSubscribed?: () => void
 }) {
     const {
         register,
@@ -74,6 +82,7 @@ function Form({
             await subscriptionService.subscribe(data)
             addToastMessage('success', 'subscription successfully created.')
             setOpen(false)
+            onSubscribed?.()
         } catch {
             const message =
                 'failed to create subscription. Verify the validity of the inserted information.'

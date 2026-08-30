@@ -5,7 +5,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { useHomePage } from '@/views/Home/hooks/useHomePage'
 
 export function Home() {
-    const { services, subscribedServiceIds, isLoading } = useHomePage()
+    const { services, subscribedServiceIds, isLoading, refresh } = useHomePage()
 
     return (
         <div className="py-8 space-y-8">
@@ -28,6 +28,7 @@ export function Home() {
                         return (
                             <ServiceCard
                                 key={service.id}
+                                onSubscribed={() => void refresh()}
                                 serviceId={service.id}
                                 name={service.name}
                                 isLocked={
