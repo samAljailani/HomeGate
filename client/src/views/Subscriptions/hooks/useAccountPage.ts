@@ -14,8 +14,8 @@ export function useAccountPage() {
     const [subscriptions, setSubscriptions] = useState<AccountSubscription[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
-    const load = useCallback(async () => {
-        setIsLoading(true)
+    const load = useCallback(async (options?: { silent?: boolean }) => {
+        if (!options?.silent) setIsLoading(true)
         try {
             const [subs, services] = await Promise.all([
                 subscriptionService.getMySubscriptions(),
@@ -34,7 +34,7 @@ export function useAccountPage() {
         } catch {
             addToastMessage('error', 'Failed to load your subscriptions')
         } finally {
-            setIsLoading(false)
+            if (!options?.silent) setIsLoading(false)
         }
     }, [])
 
@@ -46,9 +46,5 @@ export function useAccountPage() {
         setSubscriptions((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
     }, [])
 
-    const removeSubscription = useCallback((id: string) => {
-        setSubscriptions((prev) => prev.filter((s) => s.id !== id))
-    }, [])
-
-    return { subscriptions, isLoading, patchSubscription, removeSubscription, reload: load }
+    return { subscriptions, isLoading, patchSubscription, reload: load }
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { subscriptionService, type SubscriptionResponseDto } from '@/services/subscription.service'
+import { policyService } from '@/services/policy.service'
 import { addToastMessage } from '@/lib/utils'
 
 interface SubscriptionsListMutators {
@@ -58,12 +59,18 @@ export function useSubscriptionsTable({ patchSubscription, removeSubscription }:
         }
     }, [patchSubscription])
 
-    const cancel = useCallback(async (id: string) => {
+    const cancel = useCallback(async (subscription: SubscriptionResponseDto, addDenyPolicy = false) => {
         setActionError(null)
-        setPendingId(id)
+        setPendingId(subscription.id)
         try {
-            await subscriptionService.cancelSubscription(id, { immediate: true })
-            removeSubscription(id)
+            await subscriptionService.cancelSubscription(subscription.id, { immediate: true })
+            if (addDenyPolicy) {
+                await policyService.set(subscription.userId, {
+                    serviceId: subscription.serviceId,
+                    effect: 'DENY',
+                })
+            }
+            removeSubscription(subscription.id)
             addToastMessage('success', 'Subscription cancelled')
         } catch {
             setActionError('Failed to cancel subscription')

@@ -14,6 +14,7 @@ interface ConfirmDialogProps {
     cancelLabel?: string
     variant?: 'default' | 'destructive'
     onConfirm: () => void | Promise<void>
+    children?: ReactNode
 }
 
 export function ConfirmDialog({
@@ -25,6 +26,7 @@ export function ConfirmDialog({
     cancelLabel = 'Cancel',
     variant = 'default',
     onConfirm,
+    children,
 }: ConfirmDialogProps) {
     const [isConfirming, setIsConfirming] = useState(false)
 
@@ -40,6 +42,7 @@ export function ConfirmDialog({
 
     return (
         <ResponsiveModal open={open} setOpen={setOpen} title={title} description={description}>
+            {children}
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <Button variant="outline" onClick={() => setOpen(false)} disabled={isConfirming}>
                     {cancelLabel}

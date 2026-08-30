@@ -14,7 +14,7 @@ import { NavItem, NavItemLink } from './navItem'
 
 const navigationItems: NavItem[] = [
     { name: 'Dashboard', href: config.routes.home, current: false },
-    { name: 'Account', href: config.routes.account, current: false },
+    { name: 'Subscriptions', href: config.routes.subscriptions, current: false },
     {
         name: 'Admin',
         current: false,
@@ -23,9 +23,10 @@ const navigationItems: NavItem[] = [
             { label: 'dashboard', href: config.routes.adminDashboard },
             { label: 'invites', href: config.routes.invites },
             { label: 'users',   href: config.routes.users },
+            { label: 'policies', href: config.routes.policies },
             { label: 'services', href: config.routes.services },
             { label: 'oauth providers', href: config.routes.oauthProviders },
-            { label: 'subscriptions', href: config.routes.subscriptions },
+            { label: 'subscriptions', href: config.routes.adminSubscriptions },
             { label: 'logs', href: config.routes.logs },
             { label: 'scheduled tasks', href: config.routes.scheduledTasks },
             { label: 'sessions', href: config.routes.sessions },

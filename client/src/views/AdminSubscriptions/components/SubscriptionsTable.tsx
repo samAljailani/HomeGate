@@ -33,7 +33,7 @@ interface SubscriptionsTableProps {
     onSetEnabled: (id: string, enabled: boolean) => Promise<void>
     onSetAutoRenew: (id: string, autoRenew: boolean) => Promise<void>
     onRenew: (id: string) => Promise<void>
-    onCancel: (id: string) => Promise<void>
+    onCancel: (subscription: SubscriptionResponseDto, addDenyPolicy: boolean) => Promise<void>
 }
 
 type PendingAction = {
@@ -76,6 +76,7 @@ export function SubscriptionsTable({
     const { getColumnVisibility, setColumnVisibility } = usePreferences()
     const [sorting, setSorting] = useState<SortingState>([])
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+    const [addDenyPolicy, setAddDenyPolicy] = useState(false)
     const [userFilter, setUserFilter] = useState('')
     const [serviceFilter, setServiceFilter] = useState('')
     const columnVisibility = getColumnVisibility(preferences.columns.adminSubscriptions)
@@ -128,6 +129,16 @@ export function SubscriptionsTable({
             accessorKey: 'username',
             header: 'Account Username',
             cell: ({ row }) => row.original.username ?? '—',
+        },
+        {
+            id: 'accountType',
+            accessorKey: 'accountType',
+            header: 'Account Type',
+            cell: ({ row }) => (
+                <StatusBadge tone={row.original.accountType === 'MANAGED' ? 'info' : 'neutral'}>
+                    {row.original.accountType}
+                </StatusBadge>
+            ),
         },
         {
             id: 'status',
@@ -213,7 +224,10 @@ export function SubscriptionsTable({
                             size="icon-sm"
                             title="Cancel"
                             disabled={isPending}
-                            onClick={() => setPendingAction({ type: 'cancel', subscription })}
+                            onClick={() => {
+                                setAddDenyPolicy(false)
+                                setPendingAction({ type: 'cancel', subscription })
+                            }}
                         >
                             <Trash2 className="size-4 text-destructive" />
                         </Button>
@@ -234,13 +248,16 @@ export function SubscriptionsTable({
         getSortedRowModel: getSortedRowModel(),
     })
 
-    const closeConfirm = () => setPendingAction(null)
+    const closeConfirm = () => {
+        setAddDenyPolicy(false)
+        setPendingAction(null)
+    }
 
     const runPendingAction = async () => {
         if (!pendingAction) return
         const { type, subscription } = pendingAction
         if (type === 'disable') await onSetEnabled(subscription.id, false)
-        if (type === 'cancel') await onCancel(subscription.id)
+        if (type === 'cancel') await onCancel(subscription, addDenyPolicy)
     }
 
     if (isLoading) {
@@ -318,7 +335,19 @@ export function SubscriptionsTable({
                 confirmLabel={pendingAction?.type === 'cancel' ? 'Cancel Subscription' : 'Disable'}
                 variant="destructive"
                 onConfirm={runPendingAction}
-            />
+            >
+                {pendingAction?.type === 'cancel' && pendingAction.subscription.accountType === 'REFERENCED' && (
+                    <label className="mb-2 flex items-center gap-2 text-sm cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            className="size-4"
+                            checked={addDenyPolicy}
+                            onChange={(e) => setAddDenyPolicy(e.target.checked)}
+                        />
+                        Also add a persistent DENY policy so the next source renewal does not recreate it
+                    </label>
+                )}
+            </ConfirmDialog>
         </div>
     )
 }
