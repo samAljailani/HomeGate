@@ -11,6 +11,7 @@ import { EnvRepository } from '@/data/repositories/env.repository'
 @Controller(routes.auth.basePath)
 export class ForwardAuthController {
     private readonly homeUrl: string
+    private readonly homeHostname: string
 
     constructor(
         @Inject(ForwardAuthService) private readonly forwardAuth: ForwardAuthService,
@@ -19,12 +20,13 @@ export class ForwardAuthController {
     ) {
         this.logger.setContext(this.constructor.name)
         this.homeUrl = this.env.getEnv().host
+        this.homeHostname = new URL(this.homeUrl).hostname
     }
 
     @Get(routes.auth.subPath.forward)
     @Public()
     @ApiOperation({ summary: 'Traefik ForwardAuth — validates session and service entitlement' })
-    async forward(@Req() req: Request, @Res() res: Response): Promise<void> {
+async forward(@Req() req: Request, @Res() res: Response): Promise<void> {
         const forwardedHost = req.headers['x-forwarded-host']
         const hostname = Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost
 
@@ -32,6 +34,9 @@ export class ForwardAuthController {
             res.status(400).send()
             return
         }
+
+        const requestedUrl = this.buildReturnUrl(req)
+        this.logger.debug(`Forward auth: request for '${requestedUrl}'`)
 
         const userId = req.session?.userId
         if (!userId) {
@@ -58,10 +63,16 @@ export class ForwardAuthController {
             return
         }
 
+        if (this.isHomeHost(hostname)) {
+            res.status(200).send()
+            return
+        }
+
         const service = await this.forwardAuth.resolveService(hostname)
+        this.logger.debug(`Forward auth: host '${hostname}' resolved to service '${service?.id ?? 'none'}'`)
 
         if (!service) {
-            this.logger.warn(`Forward auth: no service found for host '${hostname}'`)
+            this.logger.warn(`Forward auth: no service found for '${requestedUrl}'`)
             if (this.isNavigationRequest(req)) {
                 this.redirectToError(res, 'access_denied', hostname)
             } else {
@@ -73,7 +84,7 @@ export class ForwardAuthController {
         const allowed = await this.forwardAuth.isAuthorized(userId, service)
 
         if (!allowed) {
-            this.logger.warn(`Forward auth: denied user '${userId}' for service '${service.slug}'`)
+            this.logger.warn(`Forward auth: denied user '${userId}' for service '${service.slug}' (${requestedUrl})`)
             if (this.isNavigationRequest(req)) {
                 this.redirectToError(res, 'access_denied', service.name)
             } else {
@@ -96,6 +107,10 @@ export class ForwardAuthController {
     private isNavigationRequest(req: Request): boolean {
         const accept = req.headers['accept'] ?? ''
         return accept.includes('text/html')
+    }
+
+    private isHomeHost(hostname: string): boolean {
+        return hostname.toLowerCase() === this.homeHostname.toLowerCase()
     }
 
     private buildReturnUrl(req: Request): string {

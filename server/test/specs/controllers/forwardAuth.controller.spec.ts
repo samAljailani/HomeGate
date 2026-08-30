@@ -24,16 +24,18 @@ function createForwardAuthServiceMock() {
 describe('ForwardAuthController', () => {
     let controller: ForwardAuthController
     let forwardAuthMock: ReturnType<typeof createForwardAuthServiceMock>
+    let loggerMock: ReturnType<typeof createLoggerMock>
 
     beforeEach(async () => {
         forwardAuthMock = createForwardAuthServiceMock()
+        loggerMock = createLoggerMock()
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 ForwardAuthController,
                 { provide: ForwardAuthService, useValue: forwardAuthMock },
                 { provide: EnvRepository, useValue: createEnvRepositoryMock() },
-                { provide: LoggingProvider, useValue: createLoggerMock() },
+                { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
 
@@ -155,6 +157,24 @@ describe('ForwardAuthController', () => {
 
             expect(res.status).toHaveBeenCalledWith(403)
             expect(res.send).toHaveBeenCalled()
+        })
+
+        it('allows an authenticated request to the HomeGate host itself without a service match', async () => {
+            const req = createRequestMock({
+                headers: { 'x-forwarded-host': 'home.example.com', accept: 'text/html' },
+            })
+            req.session.userId = 'user-1'
+            const res = createResponseMock()
+
+            await controller.forward(req, res)
+
+            expect(forwardAuthMock.resolveService).not.toHaveBeenCalled()
+            expect(res.status).toHaveBeenCalledWith(200)
+            expect(res.send).toHaveBeenCalled()
+            expect(res.redirect).not.toHaveBeenCalled()
+            expect(loggerMock.debug).toHaveBeenCalledWith(
+                "Forward auth: request for 'https://home.example.com/'"
+            )
         })
 
         it('redirects a navigation for an unresolvable service to the error page naming the host', async () => {
