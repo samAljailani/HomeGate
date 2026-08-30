@@ -90,28 +90,24 @@ export class DatabaseLogger implements IAppLogger {
         const context = options?.context ?? this.context ?? null
         const stackTrace = options?.stackTrace ?? null
 
-        this.loggingRepository.create({
-            userId: null,
-            sessionId: null,
-            correlationId: this.cls?.getId() ?? null,
-            message: logMessage,
-            context,
-            stackTrace,
-            logLevel: level,
-        })
-        // void Promise.resolve(
-        //     this.loggingRepository.post({
-        //         userId: null,
-        //         sessionId: null,
-        //         correlationId: this.cls?.getId() ?? null,
-        //         message: logMessage,
-        //         context,
-        //         stackTrace,
-        //         logLevel: level,
-        //     })
-        // ).catch((error) => {
-        //     console.error('Failed to write log to database', error)
-        // })
+        this.loggingRepository
+            .create({
+                userId: null,
+                sessionId: null,
+                correlationId: this.cls?.getId() ?? null,
+                message: logMessage,
+                context,
+                stackTrace,
+                logLevel: level,
+            })
+            .then((written) => {
+                if (!written) {
+                    console.error(`[${DatabaseLogger.name}] Failed to write log entry to the database`)
+                }
+            })
+            .catch((error) => {
+                console.error(`[${DatabaseLogger.name}] Failed to write log entry to the database`, error)
+            })
     }
 
     public setContext(context: string) {
