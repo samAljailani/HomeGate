@@ -2252,6 +2252,8 @@ export interface operations {
     LogController_list: {
         parameters: {
             query?: {
+                orderDirection?: "asc" | "desc";
+                orderBy?: "createdAt" | "logLevel" | "context" | "message" | "userId";
                 skip?: number;
                 take?: number;
                 search?: string;
