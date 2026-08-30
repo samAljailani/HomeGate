@@ -26,15 +26,13 @@ export class ForwardAuthController {
     @Get(routes.auth.subPath.forward)
     @Public()
     @ApiOperation({ summary: 'Traefik ForwardAuth — validates session and service entitlement' })
-async forward(@Req() req: Request, @Res() res: Response): Promise<void> {
-        const forwardedHost = req.headers['x-forwarded-host']
-        const hostname = Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost
+    async forward(@Req() req: Request, @Res() res: Response): Promise<void> {       
+        const hostname = this.getForwardedHostname(req)
 
         if (!hostname) {
-            res.status(400).send()
-            return
+           res.status(400).send()
+           return
         }
-
         const requestedUrl = this.buildReturnUrl(req)
         this.logger.debug(`Forward auth: request for '${requestedUrl}'`)
 
@@ -118,5 +116,22 @@ async forward(@Req() req: Request, @Res() res: Response): Promise<void> {
         const host = req.headers['x-forwarded-host'] || ''
         const uri = req.headers['x-forwarded-uri'] || '/'
         return `${proto}://${host}${uri}`
+    }
+
+    private getForwardedHostname(req: Request): string | null {
+        const raw = req.headers['x-forwarded-host']
+        const value = Array.isArray(raw) ? raw[0] : raw
+
+        if (!value) return null
+
+        // Proxies may send multiple hosts, and the Host header may contain a port.
+        const host = value.split(',')[0].trim()
+        if (!host) return null
+
+        try {
+            return new URL(`https://${host}`).hostname.toLowerCase()
+        } catch {
+            return null
+        }
     }
 }
