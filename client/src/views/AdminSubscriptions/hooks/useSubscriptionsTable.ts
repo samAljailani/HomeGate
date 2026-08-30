@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react'
 import { subscriptionService, type SubscriptionResponseDto } from '@/services/subscription.service'
 import { policyService } from '@/services/policy.service'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 
 interface SubscriptionsListMutators {
     patchSubscription: (id: string, patch: Partial<SubscriptionResponseDto>) => void
@@ -21,9 +21,13 @@ export function useSubscriptionsTable({ patchSubscription, removeSubscription }:
             const updated = await subscriptionService.updateSubscription(id, { enabled })
             patchSubscription(id, { status: updated.status })
             addToastMessage('success', enabled ? 'Subscription enabled' : 'Subscription disabled')
-        } catch {
-            setActionError('Failed to update subscription')
-            addToastMessage('error', 'Failed to update subscription')
+        } catch (error) {
+            const message = getErrorMessage(
+                error,
+                'Failed to update subscription'
+            )
+            setActionError(message)
+            addToastMessage('error', message)
         } finally {
             setPendingId(null)
         }
@@ -36,9 +40,13 @@ export function useSubscriptionsTable({ patchSubscription, removeSubscription }:
             await subscriptionService.updateSubscription(id, { autoRenew })
             patchSubscription(id, { autoRenew })
             addToastMessage('success', autoRenew ? 'Auto-renew enabled' : 'Auto-renew disabled')
-        } catch {
-            setActionError('Failed to update auto-renew')
-            addToastMessage('error', 'Failed to update auto-renew')
+        } catch (error) {
+            const message = getErrorMessage(
+                error,
+                'Failed to update auto-renew'
+            )
+            setActionError(message)
+            addToastMessage('error', message)
         } finally {
             setPendingId(null)
         }
@@ -51,9 +59,13 @@ export function useSubscriptionsTable({ patchSubscription, removeSubscription }:
             const updated = await subscriptionService.renewSubscription(id)
             patchSubscription(id, { expiresAt: updated.expiresAt, status: updated.status })
             addToastMessage('success', 'Subscription renewed')
-        } catch {
-            setActionError('Failed to renew subscription')
-            addToastMessage('error', 'Failed to renew subscription')
+        } catch (error) {
+            const message = getErrorMessage(
+                error,
+                'Failed to renew subscription'
+            )
+            setActionError(message)
+            addToastMessage('error', message)
         } finally {
             setPendingId(null)
         }
@@ -72,9 +84,13 @@ export function useSubscriptionsTable({ patchSubscription, removeSubscription }:
             }
             removeSubscription(subscription.id)
             addToastMessage('success', 'Subscription cancelled')
-        } catch {
-            setActionError('Failed to cancel subscription')
-            addToastMessage('error', 'Failed to cancel subscription')
+        } catch (error) {
+            const message = getErrorMessage(
+                error,
+                'Failed to cancel subscription'
+            )
+            setActionError(message)
+            addToastMessage('error', message)
         } finally {
             setPendingId(null)
         }

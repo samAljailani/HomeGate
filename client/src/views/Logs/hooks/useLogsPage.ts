@@ -7,7 +7,7 @@ import {
     type LogResponseDto,
     type LogSortField,
 } from '@/services/log.service'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 
 const PAGE_SIZE = 50
 
@@ -33,9 +33,10 @@ export function useLogsPage() {
             setLogs(page.data)
             setTotal(page.total)
             setHasMore(page.hasMore)
-        } catch {
-            setError('Failed to load logs')
-            addToastMessage('error', 'Failed to load logs')
+        } catch (error) {
+            const message = getErrorMessage(error, 'Failed to load logs')
+            setError(message)
+            addToastMessage('error', message)
         } finally {
             setIsLoading(false)
         }
@@ -53,9 +54,13 @@ export function useLogsPage() {
             setLogs((prev) => [...prev, ...page.data])
             setTotal(page.total)
             setHasMore(page.hasMore)
-        } catch {
-            setError('Failed to load more logs')
-            addToastMessage('error', 'Failed to load more logs')
+        } catch (error) {
+            const message = getErrorMessage(
+                error,
+                'Failed to load more logs'
+            )
+            setError(message)
+            addToastMessage('error', message)
         } finally {
             setIsLoadingMore(false)
         }

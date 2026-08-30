@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { subscriptionService, type SubscriptionResponseDto } from '@/services/subscription.service'
+import { getErrorMessage } from '@/lib/utils'
 
 export function useSubscriptionsPage() {
     const [subscriptions, setSubscriptions] = useState<SubscriptionResponseDto[]>([])
@@ -14,8 +15,8 @@ export function useSubscriptionsPage() {
             setError(null)
             const subscriptions = await subscriptionService.getAllSubscriptions()
             setSubscriptions(subscriptions)
-        } catch {
-            setError('Failed to load subscriptions')
+        } catch (error) {
+            setError(getErrorMessage(error, 'Failed to load subscriptions'))
         } finally {
             setIsLoading(false)
         }

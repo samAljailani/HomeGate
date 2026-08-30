@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 import { sessionService } from '@/services/session.service'
 
 export function SessionConfigCard() {
@@ -15,7 +15,12 @@ export function SessionConfigCard() {
         sessionService
             .getConfig()
             .then((config) => setMaxPerUser(String(config.maxPerUser)))
-            .catch(() => addToastMessage('error', 'Failed to load session settings'))
+            .catch((error) =>
+                addToastMessage(
+                    'error',
+                    getErrorMessage(error, 'Failed to load session settings')
+                )
+            )
             .finally(() => setIsLoading(false))
     }, [])
 
@@ -31,8 +36,11 @@ export function SessionConfigCard() {
             const updated = await sessionService.updateConfig(value)
             setMaxPerUser(String(updated.maxPerUser))
             addToastMessage('success', 'Session settings saved')
-        } catch {
-            addToastMessage('error', 'Failed to save session settings')
+        } catch (error) {
+            addToastMessage(
+                'error',
+                getErrorMessage(error, 'Failed to save session settings')
+            )
         } finally {
             setIsSaving(false)
         }

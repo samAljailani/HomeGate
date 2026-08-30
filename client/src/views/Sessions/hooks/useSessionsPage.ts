@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 import { sessionService, type SessionResponseDto } from '@/services/session.service'
 
 export function useSessionsPage() {
@@ -13,8 +13,11 @@ export function useSessionsPage() {
         try {
             const response = await sessionService.getSessions()
             setSessions(response.data)
-        } catch {
-            addToastMessage('error', 'Failed to load sessions')
+        } catch (error) {
+            addToastMessage(
+                'error',
+                getErrorMessage(error, 'Failed to load sessions')
+            )
         } finally {
             setIsLoading(false)
         }

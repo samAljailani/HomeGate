@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useForm, type SubmitHandler } from 'react-hook-form'
-import { cn, addToastMessage } from '@/lib/utils'
+import { cn, addToastMessage, getErrorMessage } from '@/lib/utils'
 import { ResponsiveModal } from '@/components/ResponsiveModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,8 +52,10 @@ function ServiceCreateForm({
             addToastMessage('success', `Service '${data.name}' created`)
             onCreated()
             setOpen(false)
-        } catch {
-            setError('root', { message: 'Failed to create service' })
+        } catch (error) {
+            setError('root', {
+                message: getErrorMessage(error, 'Failed to create service'),
+            })
         }
     }
 

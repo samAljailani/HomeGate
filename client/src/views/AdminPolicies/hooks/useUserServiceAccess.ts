@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 import { policyService, type PolicyEffect } from '@/services/policy.service'
 import { serviceService, type ServiceResponseDto } from '@/services/service.service'
 import type { UserResponseForAdminDto } from '@/services/user.service'
@@ -25,7 +25,12 @@ export function useUserServiceAccess(users: UserResponseForAdminDto[]) {
         serviceService
             .getAllServices()
             .then(setServices)
-            .catch(() => addToastMessage('error', 'Failed to load services'))
+            .catch((error) =>
+                addToastMessage(
+                    'error',
+                    getErrorMessage(error, 'Failed to load services')
+                )
+            )
     }, [])
 
     useEffect(() => {
@@ -34,7 +39,12 @@ export function useUserServiceAccess(users: UserResponseForAdminDto[]) {
         policyService
             .listForUser(selectedUserId)
             .then((list) => setPolicies(new Map(list.map((p) => [p.serviceId, p.effect]))))
-            .catch(() => addToastMessage('error', 'Failed to load access policies'))
+            .catch((error) =>
+                addToastMessage(
+                    'error',
+                    getErrorMessage(error, 'Failed to load access policies')
+                )
+            )
             .finally(() => setIsLoading(false))
     }, [selectedUserId])
 
@@ -56,8 +66,11 @@ export function useUserServiceAccess(users: UserResponseForAdminDto[]) {
                     setPolicies((prev) => new Map(prev).set(serviceId, effect))
                     addToastMessage('success', `${effect} policy saved`)
                 }
-            } catch {
-                addToastMessage('error', 'Failed to update policy')
+            } catch (error) {
+                addToastMessage(
+                    'error',
+                    getErrorMessage(error, 'Failed to update policy')
+                )
             } finally {
                 setPendingServiceId(null)
             }

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { inviteService, type InviteResponseDto, type InvitePatchRequestDto, type InviteAccountDto } from '@/services/invite.service'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 
 export interface EditingState {
     id: string
@@ -62,8 +62,11 @@ export function useInviteTable(refresh: () => void) {
             addToastMessage('success', editDraft.isNew ? 'Invite created' : 'Invite updated')
             refresh()
             discardEdit()
-        } catch {
-            const msg = editDraft.isNew ? 'Failed to create invite' : 'Failed to save changes'
+        } catch (error) {
+            const fallback = editDraft.isNew
+                ? 'Failed to create invite'
+                : 'Failed to save changes'
+            const msg = getErrorMessage(error, fallback)
             setActionError(msg)
             addToastMessage('error', msg)
         }
@@ -96,9 +99,10 @@ export function useInviteTable(refresh: () => void) {
             await inviteService.deleteInvite(id)
             addToastMessage('success', 'Invite deleted')
             refresh()
-        } catch {
-            setActionError('Failed to delete invite')
-            addToastMessage('error', 'Failed to delete invite')
+        } catch (error) {
+            const msg = getErrorMessage(error, 'Failed to delete invite')
+            setActionError(msg)
+            addToastMessage('error', msg)
         }
     }, [refresh])
 

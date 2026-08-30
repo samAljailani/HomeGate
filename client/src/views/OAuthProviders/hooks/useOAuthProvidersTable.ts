@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { oauthProviderService, type OAuthProviderResponseDto } from '@/services/oauthProvider.service'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 
 interface OAuthProvidersListMutators {
     patchProvider: (id: number, patch: Partial<OAuthProviderResponseDto>) => void
@@ -19,9 +19,13 @@ export function useOAuthProvidersTable({ patchProvider }: OAuthProvidersListMuta
             await oauthProviderService.updateOAuthProvider(id, { enabled })
             patchProvider(id, { enabled })
             addToastMessage('success', enabled ? 'Provider enabled' : 'Provider disabled')
-        } catch {
-            setActionError('Failed to update provider')
-            addToastMessage('error', 'Failed to update provider')
+        } catch (error) {
+            const message = getErrorMessage(
+                error,
+                'Failed to update provider'
+            )
+            setActionError(message)
+            addToastMessage('error', message)
         } finally {
             setPendingId(null)
         }

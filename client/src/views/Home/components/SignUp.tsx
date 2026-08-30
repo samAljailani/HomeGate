@@ -8,7 +8,7 @@ import {
     UseFormRegister,
     UseFormWatch,
 } from 'react-hook-form'
-import { addToastMessage, cn } from '@/lib/utils'
+import { addToastMessage, cn, getErrorMessage } from '@/lib/utils'
 import { ResponsiveModal } from '@/components/ResponsiveModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -85,9 +85,11 @@ function Form({
             addToastMessage('success', 'subscription successfully created.')
             setOpen(false)
             onSubscribed?.()
-        } catch {
-            const message =
+        } catch (error) {
+            const message = getErrorMessage(
+                error,
                 'failed to create subscription. Verify the validity of the inserted information.'
+            )
             setError('root', { message })
         }
     }

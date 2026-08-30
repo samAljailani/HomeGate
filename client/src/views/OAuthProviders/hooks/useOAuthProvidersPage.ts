@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { oauthProviderService, type OAuthProviderResponseDto } from '@/services/oauthProvider.service'
+import { getErrorMessage } from '@/lib/utils'
 
 export function useOAuthProvidersPage() {
     const [providers, setProviders] = useState<OAuthProviderResponseDto[]>([])
@@ -14,8 +15,10 @@ export function useOAuthProvidersPage() {
             setError(null)
             const providers = await oauthProviderService.getAllOAuthProviders()
             setProviders(providers)
-        } catch {
-            setError('Failed to load OAuth providers')
+        } catch (error) {
+            setError(
+                getErrorMessage(error, 'Failed to load OAuth providers')
+            )
         } finally {
             setIsLoading(false)
         }

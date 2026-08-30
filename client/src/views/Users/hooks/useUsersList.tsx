@@ -1,5 +1,6 @@
 import { UserResponseForAdminDto, userService } from "@/services/user.service"
 import { useCallback, useEffect, useState } from "react"
+import { getErrorMessage } from "@/lib/utils"
 
 export function useUsersList(){
     const [isLoading, setIsLoading ] = useState(true)
@@ -12,8 +13,8 @@ export function useUsersList(){
             setError(null)
             const users = await userService.getAllUsers()
             setUsers(users)
-        }catch{
-            setError("Failed to load users")
+        }catch(error){
+            setError(getErrorMessage(error, "Failed to load users"))
         }finally{
             setIsLoading(false)
         }

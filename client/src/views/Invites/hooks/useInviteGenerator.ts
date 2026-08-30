@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { inviteService, type CreateInviteResponseDto, type InviteAccountDto } from '@/services/invite.service'
 import { authService } from '@/services/auth.service'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 
 const emptyAccount = (): InviteAccountDto => ({ serviceName: '', username: '', email: '', accountId: '' })
 
@@ -112,9 +112,10 @@ export function useInviteGenerator(onGenerated?: () => void) {
             setGeneratedLink(link)
             addToastMessage('success', 'Invite generated')
             onGenerated?.()
-        } catch {
-            setError('Failed to generate invite')
-            addToastMessage('error', 'Failed to generate invite')
+        } catch (error) {
+            const message = getErrorMessage(error, 'Failed to generate invite')
+            setError(message)
+            addToastMessage('error', message)
         } finally {
             setIsGenerating(false)
         }

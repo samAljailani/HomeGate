@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 import { taskService, type TaskConfigResponseDto, type UpdateTaskConfigDto } from '@/services/task.service'
 
 interface ScheduledTasksMutators {
@@ -17,9 +17,13 @@ export function useScheduledTasksTable({ replaceTask }: ScheduledTasksMutators) 
             const updated = await taskService.updateTask(name, patch)
             replaceTask(updated)
             addToastMessage('success', 'Task configuration updated')
-        } catch {
-            addToastMessage('error', 'Failed to update task configuration')
-            throw new Error('Failed to update task configuration')
+        } catch (error) {
+            const message = getErrorMessage(
+                error,
+                'Failed to update task configuration'
+            )
+            addToastMessage('error', message)
+            throw new Error(message, { cause: error })
         } finally {
             setPendingName(null)
         }
@@ -31,8 +35,11 @@ export function useScheduledTasksTable({ replaceTask }: ScheduledTasksMutators) 
             const updated = await taskService.startTask(name)
             replaceTask(updated)
             addToastMessage('success', 'Task started')
-        } catch {
-            addToastMessage('error', 'Failed to start task')
+        } catch (error) {
+            addToastMessage(
+                'error',
+                getErrorMessage(error, 'Failed to start task')
+            )
         } finally {
             setPendingName(null)
         }
@@ -44,8 +51,11 @@ export function useScheduledTasksTable({ replaceTask }: ScheduledTasksMutators) 
             const updated = await taskService.stopTask(name)
             replaceTask(updated)
             addToastMessage('success', 'Task stopped')
-        } catch {
-            addToastMessage('error', 'Failed to stop task')
+        } catch (error) {
+            addToastMessage(
+                'error',
+                getErrorMessage(error, 'Failed to stop task')
+            )
         } finally {
             setPendingName(null)
         }
@@ -57,8 +67,11 @@ export function useScheduledTasksTable({ replaceTask }: ScheduledTasksMutators) 
             const updated = await taskService.runTask(name)
             replaceTask(updated)
             addToastMessage('success', 'Task run completed')
-        } catch {
-            addToastMessage('error', 'Failed to run task')
+        } catch (error) {
+            addToastMessage(
+                'error',
+                getErrorMessage(error, 'Failed to run task')
+            )
         } finally {
             setPendingName(null)
         }

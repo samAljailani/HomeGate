@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 import { sessionService } from '@/services/session.service'
 
 interface SessionsMutators {
@@ -17,8 +17,11 @@ export function useSessionsTable({ removeSession }: SessionsMutators) {
             await sessionService.revokeSession(id)
             removeSession(id)
             addToastMessage('success', 'Session revoked')
-        } catch {
-            addToastMessage('error', 'Failed to revoke session')
+        } catch (error) {
+            addToastMessage(
+                'error',
+                getErrorMessage(error, 'Failed to revoke session')
+            )
         } finally {
             setPendingId(null)
         }

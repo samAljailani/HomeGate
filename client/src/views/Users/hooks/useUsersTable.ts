@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { userService, type UserResponseForAdminDto, type UserStatus } from '@/services/user.service'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 
 interface UsersListMutators {
     patchUser: (id: string, patch: Partial<UserResponseForAdminDto>) => void
@@ -23,9 +23,10 @@ export function useUsersTable({ patchUser, removeUser, transitionStatus, decreme
             patchUser(id, { status: 'DISABLED' })
             transitionStatus('ACTIVE', 'DISABLED')
             addToastMessage('success', 'User disabled')
-        } catch {
-            setActionError('Failed to disable user')
-            addToastMessage('error', 'Failed to disable user')
+        } catch (error) {
+            const message = getErrorMessage(error, 'Failed to disable user')
+            setActionError(message)
+            addToastMessage('error', message)
         } finally {
             setPendingId(null)
         }
@@ -39,9 +40,10 @@ export function useUsersTable({ patchUser, removeUser, transitionStatus, decreme
             patchUser(id, { status: 'ACTIVE' })
             transitionStatus(currentStatus, 'ACTIVE')
             addToastMessage('success', 'User enabled')
-        } catch {
-            setActionError('Failed to enable user')
-            addToastMessage('error', 'Failed to enable user')
+        } catch (error) {
+            const message = getErrorMessage(error, 'Failed to enable user')
+            setActionError(message)
+            addToastMessage('error', message)
         } finally {
             setPendingId(null)
         }
@@ -55,9 +57,10 @@ export function useUsersTable({ patchUser, removeUser, transitionStatus, decreme
             patchUser(id, { status: 'DELETED' })
             transitionStatus(currentStatus, 'DELETED')
             addToastMessage('success', 'User deleted')
-        } catch {
-            setActionError('Failed to delete user')
-            addToastMessage('error', 'Failed to delete user')
+        } catch (error) {
+            const message = getErrorMessage(error, 'Failed to delete user')
+            setActionError(message)
+            addToastMessage('error', message)
         } finally {
             setPendingId(null)
         }
@@ -71,9 +74,13 @@ export function useUsersTable({ patchUser, removeUser, transitionStatus, decreme
             removeUser(id)
             decrement(currentStatus)
             addToastMessage('success', 'User permanently deleted')
-        } catch {
-            setActionError('Failed to permanently delete user')
-            addToastMessage('error', 'Failed to permanently delete user')
+        } catch (error) {
+            const message = getErrorMessage(
+                error,
+                'Failed to permanently delete user'
+            )
+            setActionError(message)
+            addToastMessage('error', message)
         } finally {
             setPendingId(null)
         }
@@ -86,9 +93,13 @@ export function useUsersTable({ patchUser, removeUser, transitionStatus, decreme
             await userService.updateUser(id, { admin })
             patchUser(id, { isAdmin: admin })
             addToastMessage('success', admin ? 'User promoted to admin' : 'User admin access revoked')
-        } catch {
-            setActionError('Failed to update admin access')
-            addToastMessage('error', 'Failed to update admin access')
+        } catch (error) {
+            const message = getErrorMessage(
+                error,
+                'Failed to update admin access'
+            )
+            setActionError(message)
+            addToastMessage('error', message)
         } finally {
             setPendingId(null)
         }

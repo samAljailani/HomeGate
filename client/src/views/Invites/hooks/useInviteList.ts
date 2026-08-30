@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { inviteService, type InviteResponseDto } from '@/services/invite.service'
+import { getErrorMessage } from '@/lib/utils'
 
 export function useInviteList() {
     const [invites, setInvites] = useState<InviteResponseDto[]>([])
@@ -14,8 +15,8 @@ export function useInviteList() {
         try {
             const result = await inviteService.getAllInvites()
             setInvites(result)
-        } catch {
-            setError('Failed to load invites')
+        } catch (error) {
+            setError(getErrorMessage(error, 'Failed to load invites'))
         } finally {
             setIsLoading(false)
         }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 import { dashboardService, type DashboardStatsResponseDto } from '@/services/dashboard.service'
 
 export function useDashboard() {
@@ -12,7 +12,12 @@ export function useDashboard() {
         dashboardService
             .getStats()
             .then(setStats)
-            .catch(() => addToastMessage('error', 'Failed to load dashboard'))
+            .catch((error) =>
+                addToastMessage(
+                    'error',
+                    getErrorMessage(error, 'Failed to load dashboard')
+                )
+            )
             .finally(() => setIsLoading(false))
     }, [])
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { taskService, type TaskConfigResponseDto } from '@/services/task.service'
+import { getErrorMessage } from '@/lib/utils'
 
 export function useScheduledTasksPage() {
     const [tasks, setTasks] = useState<TaskConfigResponseDto[]>([])
@@ -13,8 +14,10 @@ export function useScheduledTasksPage() {
             setIsLoading(true)
             setError(null)
             setTasks(await taskService.getAllTasks())
-        } catch {
-            setError('Failed to load scheduled tasks')
+        } catch (error) {
+            setError(
+                getErrorMessage(error, 'Failed to load scheduled tasks')
+            )
         } finally {
             setIsLoading(false)
         }

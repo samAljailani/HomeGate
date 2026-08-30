@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { serviceService, type ServiceResponseDto } from '@/services/service.service'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 
 export function useServicesPage() {
     const [services, setServices] = useState<ServiceResponseDto[]>([])
@@ -15,8 +15,8 @@ export function useServicesPage() {
             setError(null)
             const services = await serviceService.getAllServices()
             setServices(services)
-        } catch {
-            setError('Failed to load services')
+        } catch (error) {
+            setError(getErrorMessage(error, 'Failed to load services'))
         } finally {
             setIsLoading(false)
         }
@@ -35,9 +35,10 @@ export function useServicesPage() {
             await serviceService.deleteService(slug)
             setServices((prev) => prev.filter((s) => s.slug !== slug))
             addToastMessage('success', 'Service deleted')
-        } catch {
-            addToastMessage('error', 'Failed to delete service')
-            throw new Error('Failed to delete service')
+        } catch (error) {
+            const message = getErrorMessage(error, 'Failed to delete service')
+            addToastMessage('error', message)
+            throw new Error(message, { cause: error })
         }
     }, [])
 

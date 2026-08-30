@@ -1,5 +1,6 @@
 import { userService, UserStatsResponseDto, UserStatus } from "@/services/user.service"
 import { useCallback, useEffect, useState } from "react"
+import { getErrorMessage } from "@/lib/utils"
 
 export function useUsersStats(){
     const [isLoading, setIsLoading ] = useState(true)
@@ -12,8 +13,8 @@ export function useUsersStats(){
             setError(null)
             const stats = await userService.getUserStats()
             setStats(stats)
-        }catch{
-            setError("Failed to load user statistics")
+        }catch(error){
+            setError(getErrorMessage(error, "Failed to load user statistics"))
         }finally{
             setIsLoading(false)
         }

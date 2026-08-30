@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { addToastMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 import { subscriptionService, type SubscriptionResponseDto } from '@/services/subscription.service'
 import { serviceService, type ServiceResponseDto } from '@/services/service.service'
 
@@ -31,8 +31,11 @@ export function useAccountPage() {
                     accountType: typeById.get(s.serviceId) ?? 'NONE',
                 }))
             )
-        } catch {
-            addToastMessage('error', 'Failed to load your subscriptions')
+        } catch (error) {
+            addToastMessage(
+                'error',
+                getErrorMessage(error, 'Failed to load your subscriptions')
+            )
         } finally {
             if (!options?.silent) setIsLoading(false)
         }

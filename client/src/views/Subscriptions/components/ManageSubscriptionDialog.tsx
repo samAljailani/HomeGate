@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
-import { addToastMessage, cn } from '@/lib/utils'
+import { addToastMessage, cn, getErrorMessage } from '@/lib/utils'
 import { ResponsiveModal } from '@/components/ResponsiveModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -53,8 +53,11 @@ export function ManageSubscriptionDialog({
             const updated = await subscriptionService.setAutoRenew(subscription.id, !subscription.autoRenew)
             onAutoRenewChanged(subscription.id, updated.autoRenew)
             addToastMessage('success', `Auto-renew ${updated.autoRenew ? 'enabled' : 'disabled'}`)
-        } catch {
-            addToastMessage('error', 'Failed to update auto-renew')
+        } catch (error) {
+            addToastMessage(
+                'error',
+                getErrorMessage(error, 'Failed to update auto-renew')
+            )
         } finally {
             setIsSaving(false)
         }
@@ -67,8 +70,11 @@ export function ManageSubscriptionDialog({
             onCancelled(subscription.id)
             addToastMessage('success', 'Subscription cancelled')
             setOpen(false)
-        } catch {
-            addToastMessage('error', 'Failed to cancel subscription')
+        } catch (error) {
+            addToastMessage(
+                'error',
+                getErrorMessage(error, 'Failed to cancel subscription')
+            )
         } finally {
             setIsSaving(false)
         }
@@ -84,8 +90,11 @@ export function ManageSubscriptionDialog({
             await subscriptionService.resetPassword(subscription.id, values.newPassword, values.confirmPassword)
             addToastMessage('success', 'Password updated')
             reset({ newPassword: '', confirmPassword: '' })
-        } catch {
-            addToastMessage('error', 'Failed to reset password')
+        } catch (error) {
+            addToastMessage(
+                'error',
+                getErrorMessage(error, 'Failed to reset password')
+            )
         } finally {
             setIsSaving(false)
         }
