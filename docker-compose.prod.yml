@@ -34,9 +34,6 @@ services:
       - "traefik.http.routers.homegate.rule=Host(`${APP_SUBDOMAIN}.${DOMAIN}`)"
       - "traefik.http.routers.homegate.tls.certresolver=sslresolver"
       - "traefik.http.services.homegate.loadbalancer.server.port=${PORT:-3003}"
-      # ForwardAuth middleware — other services reference this as homegate-forward-auth@docker
-      - "traefik.http.middlewares.homegate-forward-auth.forwardauth.address=http://homegate-server:${PORT:-3003}/api/auth/forward"
-      - "traefik.http.middlewares.homegate-forward-auth.forwardauth.trustForwardHeader=true"
     networks:
       - traefik
 
