@@ -10,6 +10,7 @@ export function createServiceRepositoryMock(): jest.Mocked<IServiceRepository> {
         findEnabled: jest.fn(),
         isEnabled: jest.fn(),
         setEnabled: jest.fn(),
+        setSlug: jest.fn(),
         setImageUrl: jest.fn(),
         setUrl: jest.fn(),
         create: jest.fn(),

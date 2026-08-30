@@ -1,17 +1,19 @@
 import { Injectable, Inject, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common'
-import { IServiceRepository } from '@/data/repositories'
+import { IServiceRepository, ISubscriptionRepository } from '@/data/repositories'
 import { ServiceModel } from '@/types/models/service'
 import {
     CREATABLE_ACCOUNT_TYPES,
     ExternalAccountResponseDto,
+    ServicePatchRequestDto,
     ServiceResponseDto,
     ServicePutRequestDto,
 } from '@/types/dtos/serviceDto'
 import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { ApplicationUserModel } from '@/types/params/accountIntegration'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
-import { AccountType } from '@/types/enums'
+import { AccountType, AppEvent } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { ServiceAccessService } from './serviceAccess.service'
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
@@ -20,8 +22,10 @@ const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 export class ServiceManagementService {
     constructor(
         @Inject(IServiceRepository) private readonly serviceRepository: IServiceRepository,
+        @Inject(ISubscriptionRepository) private readonly subscriptionRepository: ISubscriptionRepository,
         @Inject(AccountIntegrationRegistry) private readonly integrationRegistry: AccountIntegrationRegistry,
         @Inject(ServiceAccessService) private readonly accessService: ServiceAccessService,
+        @Inject(EventEmitter2) private readonly events: EventEmitter2,
         @Inject(LoggingProvider) private readonly logger: LoggingProvider
     ) {
         this.logger.setContext(this.constructor.name)
@@ -197,6 +201,45 @@ export class ServiceManagementService {
         return this.setEnabled(slug, false)
     }
 
+    async updateSlug(slug: string, newSlug: string): Promise<ServiceResponseDto> {
+        if (newSlug === slug) {
+            const service = await this.serviceRepository.findBySlug(slug)
+            if (!service) throw new NotFoundException(`Service '${slug}' not found`)
+            return this.serviceModelToResponseDto(service)
+        }
+
+        if (await this.serviceRepository.findBySlug(newSlug)) {
+            throw new ConflictException(`A service with slug '${newSlug}' already exists`)
+        }
+
+        const service = await this.serviceRepository.setSlug(slug, newSlug)
+        if (!service) throw new NotFoundException(`Service '${slug}' not found`)
+        return this.serviceModelToResponseDto(service)
+    }
+
+    /**
+     * Full update: slug (optional rename), enabled, url and imageUrl (optional).
+     * The rename applies first so every subsequent write targets the new slug.
+     */
+    async update(slug: string, request: ServicePatchRequestDto): Promise<ServiceResponseDto> {
+        let currentSlug = slug
+
+        if (request.slug !== slug) {
+            currentSlug = (await this.updateSlug(slug, request.slug)).slug
+        }
+
+        await this.setEnabled(currentSlug, request.enabled)
+        await this.updateUrl(currentSlug, request.url)
+
+        if (request.imageUrl !== undefined) {
+            return this.updateImageUrl(currentSlug, request.imageUrl)
+        }
+
+        return this.serviceModelToResponseDto(
+            (await this.serviceRepository.findBySlug(currentSlug))!
+        )
+    }
+
     async updateImageUrl(slug: string, imageUrl: string | null): Promise<ServiceResponseDto> {
         const service = await this.serviceRepository.setImageUrl(slug, imageUrl)
         if (!service) throw new NotFoundException(`Service '${slug}' not found`)
@@ -206,6 +249,50 @@ export class ServiceManagementService {
     async updateUrl(slug: string, url: string | null): Promise<ServiceResponseDto> {
         const service = await this.serviceRepository.setUrl(slug, url)
         if (!service) throw new NotFoundException(`Service '${slug}' not found`)
+        return this.serviceModelToResponseDto(service)
+    }
+
+    /**
+     * Deletes a service. MANAGED services are excluded: they back built-in integrations and
+     * cannot be removed at runtime.
+     *
+     * Deleting a REFERENCED service cascades its subscriptions (and their external accounts and
+     * derived subscriptions, handled by the database) before the service row itself goes. Other
+     * dependencies — invite subscriptions or an account-source reference — are protected by the
+     * database's NO ACTION foreign keys, so a deletion only succeeds when none remain.
+     */
+    async delete(slug: string): Promise<ServiceResponseDto> {
+        const service = await this.serviceRepository.findBySlug(slug)
+
+        if (!service) {
+            throw new NotFoundException(`Service '${slug}' not found`)
+        }
+
+        if (service.accountType === AccountType.MANAGED) {
+            throw new BadRequestException(
+                `Service '${slug}' is MANAGED and cannot be deleted through the API; ` +
+                    `it requires a built-in integration provider`
+            )
+        }
+
+        if (service.accountType === AccountType.REFERENCED) {
+            const subscriptions = await this.subscriptionRepository.findMany({ serviceId: service.id })
+            const deleted = await this.subscriptionRepository.deleteByServiceId(service.id)
+
+            if (deleted > 0) {
+                this.logger.log(
+                    `Deleted ${deleted} subscription(s) cascaded from referenced service '${slug}'`
+                )
+            }
+
+            const impactedUserIds = [...new Set(subscriptions.map((s) => s.userId))]
+            for (const userId of impactedUserIds) {
+                this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId })
+            }
+        }
+
+        await this.serviceRepository.delete(service.id)
+        this.logger.log(`Service '${slug}' deleted (${service.accountType})`)
         return this.serviceModelToResponseDto(service)
     }
 }

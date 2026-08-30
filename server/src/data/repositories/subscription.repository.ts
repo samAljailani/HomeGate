@@ -156,4 +156,18 @@ export class SubscriptionRepository extends BaseRepository implements ISubscript
             mapPrismaError(error, repositoryErrorMessages.subscription)
         }
     }
+
+    async deleteByServiceId(serviceId: number): Promise<number> {
+        try {
+            const result = await this.db.subscription.deleteMany({
+                where: { serviceId },
+            })
+            return result.count
+        } catch (error) {
+            this.logger.error(`deleteByServiceId failed for serviceId: ${serviceId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.subscription)
+        }
+    }
 }

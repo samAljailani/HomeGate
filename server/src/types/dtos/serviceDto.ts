@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { Transform } from 'class-transformer'
 import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator'
 import { AccountType, IntegrationProvider } from '@/types/enums'
+import { EmptyStringToUndefined } from '../../../lib/utils'
 
 export const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
@@ -105,12 +107,14 @@ export class ServicePutRequestDto {
     @IsBoolean()
     defaultAllowed?: boolean
 
-    @ApiPropertyOptional({ type: String, nullable: true })
-    @IsOptional()
+    @ApiProperty({ type: String, description: "The service's public base URL" })
+    @Transform(EmptyStringToUndefined)
     @IsString()
-    url?: string | null
+    @IsNotEmpty()
+    url: string
 
     @ApiPropertyOptional({ type: String, nullable: true })
+    @Transform(EmptyStringToUndefined)
     @IsOptional()
     @IsString()
     imageUrl?: string | null
@@ -174,17 +178,27 @@ export class ServiceResponseDto {
 }
 
 export class ServicePatchRequestDto {
-    @ApiPropertyOptional({ type: Boolean })
-    @IsOptional()
-    @IsBoolean()
-    enabled?: boolean
-
-    @ApiPropertyOptional({ type: String, nullable: true })
-    @IsOptional()
+    @ApiProperty({ type: String, maxLength: 64, description: 'URL-safe identifier, e.g. "jellyseerr"' })
     @IsString()
-    url?: string | null
+    @IsNotEmpty()
+    @MaxLength(64)
+    @Matches(SLUG_PATTERN, {
+        message: 'slug must be lowercase alphanumeric words separated by single hyphens',
+    })
+    slug: string
+
+    @ApiProperty({ type: Boolean })
+    @IsBoolean()
+    enabled: boolean
+
+    @ApiProperty({ type: String, description: "The service's public base URL" })
+    @Transform(EmptyStringToUndefined)
+    @IsString()
+    @IsNotEmpty()
+    url: string
 
     @ApiPropertyOptional({ type: String, nullable: true })
+    @Transform(EmptyStringToUndefined)
     @IsOptional()
     @IsString()
     imageUrl?: string | null

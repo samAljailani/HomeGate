@@ -15,4 +15,5 @@ export interface ISubscriptionRepository {
     create(request: CreateSubscriptionModel): Promise<SubscriptionModel | null>
     update(request: UpdateSubscriptionModel): Promise<SubscriptionModel | null>
     delete(userId: string, serviceId: number): Promise<void>
+    deleteByServiceId(serviceId: number): Promise<number>
 }

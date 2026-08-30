@@ -10,6 +10,7 @@ export function createSubscriptionRepositoryMock(): jest.Mocked<ISubscriptionRep
         update: jest.fn(),
         count: jest.fn(),
         delete: jest.fn(),
+        deleteByServiceId: jest.fn().mockResolvedValue(0),
     }
 }
 

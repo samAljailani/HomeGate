@@ -152,6 +152,23 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
+    async setSlug(slug: string, newSlug: string): Promise<ServiceModel | null> {
+        try {
+            const service = await this.db.service.update({
+                where: { slug },
+                data: { slug: newSlug },
+            })
+
+            return this.mapService(service)
+        } catch (error) {
+            this.logger.error(`setSlug failed for slug: ${slug}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+
+            mapPrismaError(error, repositoryErrorMessages.service)
+        }
+    }
+
     async setImageUrl(slug: string, imageUrl: string | null): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.update({

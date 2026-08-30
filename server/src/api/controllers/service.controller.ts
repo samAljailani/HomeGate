@@ -1,5 +1,5 @@
-import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Put, Query, Request } from '@nestjs/common'
-import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Put, Query, Request } from '@nestjs/common'
+import { ApiBadRequestResponse, ApiBody, ApiConflictResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
@@ -43,33 +43,28 @@ export class ServiceController {
 
     @Patch(routes.services.subPath.update)
     @AdminRoute()
-    @ApiOperation({ summary: 'Update service state — enabled, imageUrl (admin only)' })
+    @ApiOperation({
+        summary: 'Update a service — slug, enabled, url, imageUrl (admin only)',
+    })
     @ApiParam({ name: 'slug', type: String })
     @ApiBody({ type: ServicePatchRequestDto })
     @ApiOkResponse({ type: ServiceResponseDto })
     async update(@Param() params: ServiceParamsDto, @Body() request: ServicePatchRequestDto): Promise<ServiceResponseDto> {
-        if (request.enabled === undefined && request.url === undefined && request.imageUrl === undefined) {
-            throw new BadRequestException('No fields provided to update')
-        }
+        return this.serviceManagementService.update(params.slug, request)
+    }
 
-        const { slug } = params
-        let service: ServiceResponseDto | undefined
-
-        if (request.enabled !== undefined) {
-            service = request.enabled
-                ? await this.serviceManagementService.enable(slug)
-                : await this.serviceManagementService.disable(slug)
-        }
-
-        if (request.url !== undefined) {
-            service = await this.serviceManagementService.updateUrl(slug, request.url)
-        }
-
-        if (request.imageUrl !== undefined) {
-            service = await this.serviceManagementService.updateImageUrl(slug, request.imageUrl)
-        }
-
-        return service!
+    @Delete(routes.services.subPath.delete)
+    @AdminRoute()
+    @ApiOperation({
+        summary: 'Delete a service (admin only). MANAGED services cannot be deleted.',
+    })
+    @ApiParam({ name: 'slug', type: String })
+    @ApiOkResponse({ type: ServiceResponseDto })
+    @ApiBadRequestResponse({ description: 'MANAGED services cannot be deleted through the API' })
+    @ApiNotFoundResponse({ description: 'Service not found' })
+    @ApiConflictResponse({ description: 'Service is referenced by subscriptions, accounts or other services' })
+    async remove(@Param() params: ServiceParamsDto): Promise<ServiceResponseDto> {
+        return this.serviceManagementService.delete(params.slug)
     }
 
     @Get(routes.services.subPath.accounts)

@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
-import { IServiceRepository } from '@/data/repositories'
+import { IServiceRepository, ISubscriptionRepository } from '@/data/repositories'
 import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { ServicePutRequestDto } from '@/types/dtos/serviceDto'
 import {
@@ -26,6 +27,7 @@ function createServiceRepositoryMock(): jest.Mocked<
         | 'setUrl'
         | 'create'
         | 'update'
+        | 'delete'
     >
 > {
     return {
@@ -38,6 +40,7 @@ function createServiceRepositoryMock(): jest.Mocked<
         setUrl: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        delete: jest.fn(),
     }
 }
 
@@ -50,23 +53,38 @@ function createClientRegistryMock(): jest.Mocked<Pick<AccountIntegrationRegistry
     }
 }
 
+function createSubscriptionRepositoryMock(): jest.Mocked<
+    Pick<ISubscriptionRepository, 'findMany' | 'deleteByServiceId'>
+> {
+    return {
+        findMany: jest.fn().mockResolvedValue([]),
+        deleteByServiceId: jest.fn().mockResolvedValue(0),
+    }
+}
+
 describe('ServiceManagementService', () => {
     let service: ServiceManagementService
     let serviceRepositoryMock: ReturnType<typeof createServiceRepositoryMock>
     let clientRegistryMock: ReturnType<typeof createClientRegistryMock>
     let accessServiceMock: jest.Mocked<Pick<ServiceAccessService, 'resolveAccess'>>
+    let subscriptionRepositoryMock: ReturnType<typeof createSubscriptionRepositoryMock>
+    let eventEmitterMock: { emit: jest.Mock }
 
     beforeEach(async () => {
         serviceRepositoryMock = createServiceRepositoryMock()
         clientRegistryMock = createClientRegistryMock()
         accessServiceMock = { resolveAccess: jest.fn().mockResolvedValue(new Map()) }
+        subscriptionRepositoryMock = createSubscriptionRepositoryMock()
+        eventEmitterMock = { emit: jest.fn() }
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 ServiceManagementService,
                 { provide: IServiceRepository, useValue: serviceRepositoryMock },
+                { provide: ISubscriptionRepository, useValue: subscriptionRepositoryMock },
                 { provide: AccountIntegrationRegistry, useValue: clientRegistryMock },
                 { provide: ServiceAccessService, useValue: accessServiceMock },
+                { provide: EventEmitter2, useValue: eventEmitterMock },
                 { provide: LoggingProvider, useValue: createLoggerMock() },
             ],
         }).compile()
@@ -379,4 +397,82 @@ describe('ServiceManagementService', () => {
     })
 
     // #endregion listExternalAccounts
+
+    // #region delete
+
+    describe('delete', () => {
+        it('deletes a NONE service by its repository id', async () => {
+            const svc = createNoAccountServiceFixture({ id: 7, slug: 'wiki' })
+            serviceRepositoryMock.findBySlug.mockResolvedValue(svc)
+
+            const result = await service.delete('wiki')
+
+            expect(serviceRepositoryMock.findBySlug).toHaveBeenCalledWith('wiki')
+            expect(serviceRepositoryMock.delete).toHaveBeenCalledWith(7)
+            expect(result).toEqual(expect.objectContaining({ id: 7, slug: 'wiki', accountType: AccountType.NONE }))
+        })
+
+        it('deletes a REFERENCED service', async () => {
+            const svc = createReferencedServiceFixture({ id: 8, slug: 'jellyseerr' })
+            serviceRepositoryMock.findBySlug.mockResolvedValue(svc)
+
+            const result = await service.delete('jellyseerr')
+
+            expect(serviceRepositoryMock.delete).toHaveBeenCalledWith(8)
+            expect(result).toEqual(expect.objectContaining({ slug: 'jellyseerr', accountType: AccountType.REFERENCED }))
+        })
+
+        it('cascades subscriptions of a REFERENCED service and notifies its users', async () => {
+            const svc = createReferencedServiceFixture({ id: 8, slug: 'jellyseerr' })
+            const subscriptions = [
+                { id: 'sub-1', userId: 'user-a' },
+                { id: 'sub-2', userId: 'user-b' },
+                { id: 'sub-3', userId: 'user-a' },
+            ]
+            serviceRepositoryMock.findBySlug.mockResolvedValue(svc)
+            subscriptionRepositoryMock.findMany.mockResolvedValue(subscriptions as any)
+            subscriptionRepositoryMock.deleteByServiceId.mockResolvedValue(3)
+
+            await service.delete('jellyseerr')
+
+            expect(subscriptionRepositoryMock.findMany).toHaveBeenCalledWith({ serviceId: 8 })
+            expect(subscriptionRepositoryMock.deleteByServiceId).toHaveBeenCalledWith(8)
+            expect(serviceRepositoryMock.delete).toHaveBeenCalledWith(8)
+            for (const userId of ['user-a', 'user-b']) {
+                expect(eventEmitterMock.emit).toHaveBeenCalledWith('subscription.changed', { userId })
+            }
+        })
+
+        it('does not cascade for a NONE service', async () => {
+            const svc = createNoAccountServiceFixture({ id: 9, slug: 'wiki' })
+            serviceRepositoryMock.findBySlug.mockResolvedValue(svc)
+
+            await service.delete('wiki')
+
+            expect(subscriptionRepositoryMock.deleteByServiceId).not.toHaveBeenCalled()
+        })
+
+        it('throws NotFoundException when the service does not exist', async () => {
+            serviceRepositoryMock.findBySlug.mockResolvedValue(null)
+
+            await expect(service.delete('missing')).rejects.toThrow(NotFoundException)
+            expect(serviceRepositoryMock.delete).not.toHaveBeenCalled()
+        })
+
+        it('throws BadRequestException when the service is MANAGED', async () => {
+            serviceRepositoryMock.findBySlug.mockResolvedValue(createServiceFixture({ slug: 'jellyfin' }))
+
+            await expect(service.delete('jellyfin')).rejects.toThrow(BadRequestException)
+            expect(serviceRepositoryMock.delete).not.toHaveBeenCalled()
+        })
+
+        it('propagates a ConflictException when the service is still referenced', async () => {
+            serviceRepositoryMock.findBySlug.mockResolvedValue(createNoAccountServiceFixture({ slug: 'wiki' }))
+            serviceRepositoryMock.delete.mockRejectedValue(new ConflictException('still referenced'))
+
+            await expect(service.delete('wiki')).rejects.toThrow(ConflictException)
+        })
+    })
+
+    // #endregion delete
 })
