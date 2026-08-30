@@ -14,6 +14,7 @@ import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { AccountType, IntegrationProvider } from '@/types/enums'
 import { ServiceAccessService } from '@/api/services/serviceAccess.service'
+import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 
 function createServiceRepositoryMock(): jest.Mocked<
     Pick<
@@ -69,6 +70,7 @@ describe('ServiceManagementService', () => {
     let accessServiceMock: jest.Mocked<Pick<ServiceAccessService, 'resolveAccess'>>
     let subscriptionRepositoryMock: ReturnType<typeof createSubscriptionRepositoryMock>
     let eventEmitterMock: { emit: jest.Mock }
+    let cascadeMock: { onReferencedServiceCreated: jest.Mock }
 
     beforeEach(async () => {
         serviceRepositoryMock = createServiceRepositoryMock()
@@ -76,6 +78,7 @@ describe('ServiceManagementService', () => {
         accessServiceMock = { resolveAccess: jest.fn().mockResolvedValue(new Map()) }
         subscriptionRepositoryMock = createSubscriptionRepositoryMock()
         eventEmitterMock = { emit: jest.fn() }
+        cascadeMock = { onReferencedServiceCreated: jest.fn().mockResolvedValue([]) }
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -84,6 +87,7 @@ describe('ServiceManagementService', () => {
                 { provide: ISubscriptionRepository, useValue: subscriptionRepositoryMock },
                 { provide: AccountIntegrationRegistry, useValue: clientRegistryMock },
                 { provide: ServiceAccessService, useValue: accessServiceMock },
+                { provide: SubscriptionCascadeService, useValue: cascadeMock },
                 { provide: EventEmitter2, useValue: eventEmitterMock },
                 { provide: LoggingProvider, useValue: createLoggerMock() },
             ],
@@ -128,12 +132,29 @@ describe('ServiceManagementService', () => {
             serviceRepositoryMock.findBySlug.mockResolvedValue(null)
             serviceRepositoryMock.findById.mockResolvedValue(createServiceFixture())
             serviceRepositoryMock.create.mockImplementation(async (r) => ({ id: 9, ...r }))
+            cascadeMock.onReferencedServiceCreated.mockResolvedValue(['user-a', 'user-b'])
 
             await service.create(referencedBody)
 
             expect(serviceRepositoryMock.create).toHaveBeenCalledWith(
                 expect.objectContaining({ accountType: AccountType.REFERENCED, accountSourceServiceId: 1 })
             )
+            expect(cascadeMock.onReferencedServiceCreated).toHaveBeenCalledWith(
+                expect.objectContaining({ id: 9, accountType: AccountType.REFERENCED, accountSourceServiceId: 1 })
+            )
+            for (const userId of ['user-a', 'user-b']) {
+                expect(eventEmitterMock.emit).toHaveBeenCalledWith('subscription.changed', { userId })
+            }
+        })
+
+        it('does not mirror subscriptions when creating a NONE service', async () => {
+            serviceRepositoryMock.findBySlug.mockResolvedValue(null)
+            serviceRepositoryMock.create.mockImplementation(async (r) => ({ id: 9, ...r }))
+
+            await service.create(noneBody)
+
+            expect(cascadeMock.onReferencedServiceCreated).not.toHaveBeenCalled()
+            expect(eventEmitterMock.emit).not.toHaveBeenCalled()
         })
 
         it('rejects MANAGED because it needs a built-in integration', async () => {

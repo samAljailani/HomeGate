@@ -15,6 +15,7 @@ import { AccountType, AppEvent } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { EventEmitter2 } from '@nestjs/event-emitter'
 import { ServiceAccessService } from './serviceAccess.service'
+import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
@@ -25,6 +26,7 @@ export class ServiceManagementService {
         @Inject(ISubscriptionRepository) private readonly subscriptionRepository: ISubscriptionRepository,
         @Inject(AccountIntegrationRegistry) private readonly integrationRegistry: AccountIntegrationRegistry,
         @Inject(ServiceAccessService) private readonly accessService: ServiceAccessService,
+        @Inject(SubscriptionCascadeService) private readonly cascade: SubscriptionCascadeService,
         @Inject(EventEmitter2) private readonly events: EventEmitter2,
         @Inject(LoggingProvider) private readonly logger: LoggingProvider
     ) {
@@ -139,6 +141,14 @@ export class ServiceManagementService {
             `Service '${service.slug}' created as ${service.accountType}` +
                 (accountSourceServiceId ? ` sourcing accounts from service '${accountSourceServiceId}'` : '')
         )
+
+        if (service.accountType === AccountType.REFERENCED) {
+            const affectedUserIds = await this.cascade.onReferencedServiceCreated(service)
+
+            for (const userId of affectedUserIds) {
+                this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId })
+            }
+        }
 
         return this.serviceModelToResponseDto(service)
     }

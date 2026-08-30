@@ -3,6 +3,7 @@ import { AccountType, SubscriptionStatus } from '@/types/enums'
 import { IServiceRepository, ISubscriptionRepository } from '@/data/repositories'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { SubscriptionModel } from '@/types/models/subscription'
+import { ServiceModel } from '@/types/models/service'
 
 /**
  * Propagates state between a MANAGED subscription and the REFERENCED subscriptions that draw on it,
@@ -98,6 +99,64 @@ export class SubscriptionCascadeService {
                 `Derived subscription for user '${source.userId}' on referenced service '${service.id}' is active`
             )
         }
+    }
+
+    /**
+     * Mirrors the account source's live subscriptions onto a newly created REFERENCED service, so
+     * existing subscribers gain access without a manual sign-up. Returns the affected user IDs.
+     */
+    async onReferencedServiceCreated(
+        service: Pick<ServiceModel, 'id' | 'slug' | 'accountSourceServiceId'>
+    ): Promise<string[]> {
+        const sourceServiceId = service.accountSourceServiceId
+        if (sourceServiceId === null) return []
+
+        const now = Date.now()
+        const sources = await this.subscriptionRepository.findMany(
+            { serviceId: sourceServiceId, status: SubscriptionStatus.active },
+            Number.MAX_SAFE_INTEGER
+        )
+
+        const impacted = new Set<string>()
+
+        for (const source of sources) {
+            if (source.expiresAt !== null && source.expiresAt.getTime() <= now) {
+                continue
+            }
+
+            const existing = await this.subscriptionRepository.find(source.userId, service.id)
+
+            if (existing) {
+                await this.subscriptionRepository.update({
+                    userId: source.userId,
+                    serviceId: service.id,
+                    status: SubscriptionStatus.active,
+                    autoRenew: source.autoRenew,
+                    expiresAt: source.expiresAt,
+                    derivedFromSubscriptionId: source.id,
+                    cancelledAt: null,
+                    lastError: null,
+                    failedAt: null,
+                })
+            } else {
+                await this.subscriptionRepository.create({
+                    userId: source.userId,
+                    serviceId: service.id,
+                    status: SubscriptionStatus.active,
+                    autoRenew: source.autoRenew,
+                    expiresAt: source.expiresAt,
+                    derivedFromSubscriptionId: source.id,
+                    provisionedAt: new Date(),
+                })
+            }
+
+            impacted.add(source.userId)
+            this.logger.log(
+                `Derived subscription for user '${source.userId}' on referenced service '${service.slug}' mirrors account source`
+            )
+        }
+
+        return [...impacted]
     }
 
     /** Applies a terminal or paused status to everything derived from this subscription. */
