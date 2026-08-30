@@ -9,7 +9,7 @@
   - To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.
 - ***** END LICENSE BLOCK ***** -->
 <svg version="1.1" id="installer-header" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px"
-	 y="0px" viewBox="0 0 2100 798" style="enable-background:new 0 0 2100 798;" xml:space="preserve">
+	 y="0px" viewBox="0 -191 2100 1181.25" style="enable-background:new 0 0 2100 1181.25;" xml:space="preserve">
      <defs>
      <linearGradient id="linear-gradient" gradientUnits="userSpaceOnUse" x1="288.366" y1="400.438" x2="674.256" y2="177.6481" gradientTransform="matrix(1 0 0 -1 0 752)">
 			<stop  offset="0" style="stop-color:#AA5CC3"/>
@@ -17,7 +17,7 @@
 		</linearGradient>
      </defs>
     <g>
-        <rect id="installer-header-background" x="-0.9" y="0" class="st0" width="2100" height="798" fill="#000B25"/>
+        <rect id="installer-header-background" x="-0.9" y="-191" class="st0" width="2100" height="1181.25" fill="#000B25"/>
         <g id="installer-header-icon">
             <path id="inner-shape" d="M439.5,339.9c-20.4,0-86.2,119.3-76.2,139.4s142.5,19.9,152.4,0
                 C525.6,459.4,459.9,339.9,439.5,339.9z" fill="url(#linear-gradient)"/>

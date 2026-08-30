@@ -15,7 +15,11 @@ import { IconMoreOptions } from '../../../components/ui/icons/IconMoreOptions'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import { classNames } from '@/utils/styles'
 import { SignUpForm } from '@/views/Home/components/SignUp'
-import { addToastMessage, capitalizeFirstLetter, copyToClipboard } from '@/lib/utils'
+import {
+    addToastMessage,
+    capitalizeFirstLetter,
+    copyToClipboard,
+} from '@/lib/utils'
 import { config } from '@/constants/app'
 import type { ServiceResponseDto } from '@/services/service.service'
 
@@ -97,9 +101,12 @@ export function ServiceCard({
 
     if (isLocked && accountType === 'REFERENCED') {
         footerButton = (
-            <p className="w-full text-center text-xs text-muted-foreground">
-                Subscribe to {sourceServiceName != null ? capitalizeFirstLetter(sourceServiceName) : 'the source service'} to get
-                access to this app
+            <p className="w-full h-8 md:h-9 lg:h-10 flex items-center justify-center text-center text-xs text-muted-foreground">
+                Subscribe to{' '}
+                {sourceServiceName != null
+                    ? capitalizeFirstLetter(sourceServiceName)
+                    : 'the source service'}{' '}
+                to get access to this app
             </p>
         )
     } else if (isLocked) {
@@ -127,7 +134,7 @@ export function ServiceCard({
 
     return (
         <div className={classNames('px-0.5 py-1 sm:p-2 w-full', className)}>
-            <Card className="relative w-full pt-0 flex flex-col rounded-lg border bg-linear-to-br to-card shadow-sm transition-shadow hover:shadow-md">
+            <Card className="relative w-full pt-0 flex flex-col rounded-lg border bg-linear-to-br to-card shadow-sm transition-shadow hover:shadow-md dark:shadow-white/10">
                 {isLocked && (
                     <div className="absolute top-0 left-0 w-full h-full bg-stone-500/50 z-10 flex items-center justify-center rounded-lg">
                         <IconLock className="size-10 " />
@@ -139,7 +146,7 @@ export function ServiceCard({
                             src={imageUrl}
                             alt={`${capitalizeFirstLetter(name)} logo`}
                             loading="lazy"
-                            className="w-full aspect-video object-cover"
+                            className="w-full aspect-video object-contain object-top"
                             onError={() => setImageFailed(true)}
                         />
                     ) : (
