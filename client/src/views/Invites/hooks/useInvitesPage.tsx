@@ -11,8 +11,7 @@ export function useInvitesPage() {
     const loadServiceOptions = useCallback(async () => {
         try {
             const services = await serviceService.getAllServices()
-            // REFERENCED subscriptions are auto-created by the cascade; exclude from invites.
-            setServiceOptions(services.filter((s) => s.accountType !== 'REFERENCED').map((s) => s.name))
+            setServiceOptions(services.filter((s) => s.accountType === 'MANAGED').map((s) => s.name))
         } catch (e) {
             console.error('Failed to load services:', e)
         }

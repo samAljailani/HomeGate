@@ -45,7 +45,7 @@ export function useInviteGenerator(onGenerated?: () => void) {
     }, [])
 
     const updateAccount = useCallback((index: number, field: keyof InviteAccountDto, value: string) => {
-        setAccounts((prev) => prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)))
+        setAccounts((prev) => prev.map((a, i) => (i === index ? { ...a, [field]: value.trim() } : a)))
     }, [])
 
     const validate = useCallback((): boolean => {
@@ -59,8 +59,9 @@ export function useInviteGenerator(onGenerated?: () => void) {
         const accountErrors: Record<number, string> = {}
         const seenServices = new Map<string, number>()
         accounts.forEach((account, index) => {
-            if (!account.serviceName.trim()) return
-            const key = account.serviceName.toLowerCase()
+            const serviceName = account.serviceName.trim()
+            if (!serviceName) return
+            const key = serviceName.toLowerCase()
             const prevIndex = seenServices.get(key)
             if (prevIndex !== undefined) {
                 accountErrors[index] = 'Duplicate service'
@@ -68,7 +69,15 @@ export function useInviteGenerator(onGenerated?: () => void) {
             } else {
                 seenServices.set(key, index)
             }
-            const accountEmail = account.email?.trim()
+            const username = account.username?.trim() || ''
+            const accountEmail = account.email?.trim() || ''
+            const accountId = account.accountId?.trim() || ''
+            const hasCredentials = username || accountEmail || accountId
+            if (!hasCredentials) {
+                accountErrors[index] =
+                    'At least one of username, email, or account ID is required when linking a service'
+                return
+            }
             if (accountEmail) {
                 if (!trimmedEmail) {
                     accountErrors[index] = 'Attach email is required when account email is provided'
