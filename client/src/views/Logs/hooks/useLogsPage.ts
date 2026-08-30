@@ -1,10 +1,20 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { logService, type LogListRequestDto, type LogResponseDto } from '@/services/log.service'
+import {
+    logService,
+    type LogListRequestDto,
+    type LogResponseDto,
+    type LogSortField,
+} from '@/services/log.service'
 import { addToastMessage } from '@/lib/utils'
 
 const PAGE_SIZE = 50
+
+const DEFAULT_SORT: Pick<LogListRequestDto, 'orderBy' | 'orderDirection'> = {
+    orderBy: 'createdAt',
+    orderDirection: 'desc',
+}
 
 export function useLogsPage() {
     const [logs, setLogs] = useState<LogResponseDto[]>([])
@@ -13,7 +23,7 @@ export function useLogsPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [isLoadingMore, setIsLoadingMore] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [filters, setFilters] = useState<LogListRequestDto>({})
+    const [filters, setFilters] = useState<LogListRequestDto>({ ...DEFAULT_SORT })
 
     const load = useCallback(async (query: LogListRequestDto) => {
         try {
@@ -32,7 +42,7 @@ export function useLogsPage() {
     }, [])
 
     useEffect(() => {
-        load({})
+        load({ ...DEFAULT_SORT })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
@@ -52,9 +62,24 @@ export function useLogsPage() {
     }, [filters, logs.length])
 
     const applyFilters = useCallback((next: LogListRequestDto) => {
-        setFilters(next)
-        load(next)
+        const merged: LogListRequestDto = {
+            ...next,
+            orderBy: next.orderBy ?? DEFAULT_SORT.orderBy,
+            orderDirection: next.orderDirection ?? DEFAULT_SORT.orderDirection,
+        }
+        setFilters(merged)
+        load(merged)
     }, [load])
+
+    const applySort = useCallback((orderBy: LogSortField | undefined, orderDirection: 'asc' | 'desc') => {
+        const merged: LogListRequestDto = {
+            ...filters,
+            orderBy: orderBy ?? DEFAULT_SORT.orderBy,
+            orderDirection,
+        }
+        setFilters(merged)
+        load(merged)
+    }, [filters, load])
 
     return {
         logs,
@@ -65,6 +90,7 @@ export function useLogsPage() {
         error,
         filters,
         applyFilters,
+        applySort,
         loadMore,
         refresh: load,
     }

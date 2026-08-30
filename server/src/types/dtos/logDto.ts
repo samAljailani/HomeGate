@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator'
-import { LogLevel } from '@/types/enums'
+import { LogLevel, LogSortField, SortDirection } from '@/types/enums'
 
 export class LogResponseDto {
     @ApiProperty({ type: Number })
@@ -76,4 +76,14 @@ export class LogListRequestDto {
     @IsInt()
     @Min(0)
     skip?: number
+
+    @ApiPropertyOptional({ enum: LogSortField, default: LogSortField.CreatedAt })
+    @IsOptional()
+    @IsEnum(LogSortField)
+    orderBy?: LogSortField
+
+    @ApiPropertyOptional({ enum: SortDirection, default: SortDirection.Desc })
+    @IsOptional()
+    @IsEnum(SortDirection)
+    orderDirection?: SortDirection
 }

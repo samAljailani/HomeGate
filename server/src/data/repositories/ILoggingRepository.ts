@@ -1,5 +1,5 @@
 import { CreateLogModel, LogModel } from '@/types/models/logs'
-import { LogLevel } from '@/types/enums'
+import { LogLevel, LogSortField, SortDirection } from '@/types/enums'
 
 export const ILoggingRepository = Symbol('ILoggingRepository')
 
@@ -10,6 +10,8 @@ export type LogFilterOptions = {
     createdAfter?: Date
     createdBefore?: Date
     search?: string
+    orderBy?: LogSortField
+    orderDirection?: SortDirection
 }
 
 export interface ILoggingRepository {

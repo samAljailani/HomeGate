@@ -8,6 +8,7 @@ import {
     flexRender,
     type ColumnDef,
     type SortingState,
+    type Updater,
     type VisibilityState,
 } from '@tanstack/react-table'
 import { InfoIcon, Loader2 } from '@/components/ui/icons'
@@ -16,7 +17,7 @@ import { usePreferences } from '@/context/preferences-context'
 import { preferences } from '@/constants/preferences'
 import { DataTableColumnToggle, DataTableSortableHead } from '@/components/ui/data-table'
 import { StatusBadge, type StatusBadgeTone } from '@/components/ui/status-badge'
-import type { LogResponseDto } from '@/services/log.service'
+import type { LogResponseDto, LogSortField } from '@/services/log.service'
 import { LogDetailsDialog } from './LogDetailsDialog'
 import {
     Table,
@@ -33,6 +34,15 @@ interface LogsTableProps {
     hasMore: boolean
     isLoadingMore: boolean
     onLoadMore: () => void
+    onSortChange: (orderBy: LogSortField | undefined, orderDirection: 'asc' | 'desc') => void
+}
+
+const SORT_FIELDS: Record<string, LogSortField> = {
+    createdAt: 'createdAt',
+    logLevel: 'logLevel',
+    context: 'context',
+    message: 'message',
+    userId: 'userId',
 }
 
 const LEVEL_TONES: Record<string, StatusBadgeTone> = {
@@ -59,11 +69,35 @@ function truncate(value: string, length: number): string {
     return value.length > length ? `${value.slice(0, length)}…` : value
 }
 
-export function LogsTable({ logs, isLoading, total, hasMore, isLoadingMore, onLoadMore }: LogsTableProps) {
+export function LogsTable({
+    logs,
+    isLoading,
+    total,
+    hasMore,
+    isLoadingMore,
+    onLoadMore,
+    onSortChange,
+}: LogsTableProps) {
     const { getColumnVisibility, setColumnVisibility } = usePreferences()
     const [sorting, setSorting] = useState<SortingState>([])
     const [selectedLog, setSelectedLog] = useState<LogResponseDto | null>(null)
     const columnVisibility = getColumnVisibility(preferences.columns.adminLogs)
+
+    const onSortingChange = useCallback(
+        (updater: Updater<SortingState>) => {
+            const next = typeof updater === 'function' ? (updater as (prev: SortingState) => SortingState)(sorting) : updater
+            setSorting(next)
+
+            const column = next[0]
+            if (column) {
+                const field = SORT_FIELDS[column.id]
+                if (field) onSortChange(field, column.desc ? 'desc' : 'asc')
+            } else {
+                onSortChange(undefined, 'desc')
+            }
+        },
+        [sorting, onSortChange]
+    )
 
     const onColumnVisibilityChange = useCallback(
         (updater: VisibilityState | ((prev: VisibilityState) => VisibilityState)) => {
@@ -112,6 +146,7 @@ export function LogsTable({ logs, isLoading, total, hasMore, isLoadingMore, onLo
             id: 'sessionId',
             accessorKey: 'sessionId',
             header: 'Session',
+            enableSorting: false,
             cell: ({ row }) => row.original.sessionId ?? '—',
         },
         {
@@ -132,7 +167,7 @@ export function LogsTable({ logs, isLoading, total, hasMore, isLoadingMore, onLo
         data: logs,
         columns,
         state: { sorting, columnVisibility },
-        onSortingChange: setSorting,
+        onSortingChange,
         onColumnVisibilityChange: onColumnVisibilityChange,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),

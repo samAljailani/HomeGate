@@ -2,6 +2,7 @@ import { PrismaProvider } from '@/infrastructure/prisma.provider'
 import { CreateLogModel, LogModel } from '@/types/models/logs'
 import { Injectable, Inject } from '@nestjs/common'
 import { ILoggingRepository, LogFilterOptions } from './ILoggingRepository'
+import { LogSortField, SortDirection } from '@/types/enums'
 import { LogLevel } from '@prisma/generated'
 
 @Injectable()
@@ -32,7 +33,7 @@ export class LoggingRepository implements ILoggingRepository {
     public async findMany(filter: LogFilterOptions, take: number = 50, skip: number = 0): Promise<LogModel[]> {
         const logs = await this.db.log.findMany({
             where: this.buildWhere(filter),
-            orderBy: { createdAt: 'desc' },
+            orderBy: this.buildOrderBy(filter),
             take,
             skip,
         })
@@ -81,5 +82,11 @@ export class LoggingRepository implements ILoggingRepository {
                 ],
             }),
         }
+    }
+
+    private buildOrderBy(filter: LogFilterOptions): Record<string, SortDirection> {
+        const field = filter.orderBy ?? LogSortField.CreatedAt
+        const direction = filter.orderDirection ?? SortDirection.Desc
+        return { [field]: direction }
     }
 }

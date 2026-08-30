@@ -3,7 +3,11 @@ import type { components, operations } from '@samaljailani/homegate-types'
 import { apiClient } from './api-client'
 
 export type LogResponseDto = components['schemas']['LogResponseDto']
-export type LogListRequestDto = NonNullable<operations['LogController_list']['parameters']['query']>
+export type LogSortField = 'createdAt' | 'logLevel' | 'context' | 'message' | 'userId'
+export type LogListRequestDto = NonNullable<operations['LogController_list']['parameters']['query']> & {
+    orderBy?: LogSortField
+    orderDirection?: 'asc' | 'desc'
+}
 export type LogsPageResponseDto = {
     data: LogResponseDto[]
     total: number

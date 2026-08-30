@@ -30,6 +30,19 @@ export enum LogTarget {
     Database = 'database',
 }
 
+export enum LogSortField {
+    CreatedAt = 'createdAt',
+    LogLevel = 'logLevel',
+    Context = 'context',
+    Message = 'message',
+    UserId = 'userId',
+}
+
+export enum SortDirection {
+    Asc = 'asc',
+    Desc = 'desc',
+}
+
 export enum ImmichProvisioningMode {
     Local = 'local',
     OAuth = 'oauth',

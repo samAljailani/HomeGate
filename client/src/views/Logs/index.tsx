@@ -5,7 +5,7 @@ import { LogsFilters } from './components/LogsFilters'
 import { LogsTable } from './components/LogsTable'
 
 export function AdminLogs() {
-    const { logs, total, hasMore, isLoading, isLoadingMore, applyFilters, loadMore } = useLogsPage()
+    const { logs, total, hasMore, isLoading, isLoadingMore, applyFilters, applySort, loadMore } = useLogsPage()
 
     return (
         <div className="py-8 space-y-8">
@@ -23,6 +23,7 @@ export function AdminLogs() {
                 hasMore={hasMore}
                 isLoadingMore={isLoadingMore}
                 onLoadMore={loadMore}
+                onSortChange={applySort}
             />
         </div>
     )
