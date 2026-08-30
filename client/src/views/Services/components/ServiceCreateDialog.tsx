@@ -48,7 +48,7 @@ function ServiceCreateForm({
 
     const onSubmit: SubmitHandler<ServicePutRequestDto> = async (data) => {
         try {
-            await serviceService.createService(data)
+            await serviceService.createService({ ...data, url: data.url.trim() })
             addToastMessage('success', `Service '${data.name}' created`)
             onCreated()
             setOpen(false)
@@ -64,6 +64,7 @@ function ServiceCreateForm({
                 <Input
                     id="slug"
                     placeholder="my-service"
+                    aria-invalid={!!errors.slug}
                     {...register('slug', {
                         required: 'Slug is required',
                         pattern: { value: /^[a-z0-9]+(-[a-z0-9]+)*$/, message: 'Lowercase alphanumeric, hyphens only' },
@@ -74,7 +75,7 @@ function ServiceCreateForm({
 
             <div className="grid gap-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" placeholder="My Service" {...register('name', { required: 'Name is required' })} />
+                <Input id="name" placeholder="My Service" aria-invalid={!!errors.name} {...register('name', { required: 'Name is required' })} />
                 {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
 
@@ -95,7 +96,11 @@ function ServiceCreateForm({
                     <Label htmlFor="accountSourceServiceId">Account Source</Label>
                     <select
                         id="accountSourceServiceId"
-                        className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                        className={cn(
+                            'h-9 rounded-md border border-input bg-background px-3 text-sm',
+                            errors.accountSourceServiceId &&
+                                'border-destructive text-destructive focus-visible:border-destructive focus-visible:ring-destructive/50'
+                        )}
                         {...register('accountSourceServiceId', {
                             required: 'Account source is required for REFERENCED services',
                             valueAsNumber: true,
@@ -116,7 +121,8 @@ function ServiceCreateForm({
 
             <div className="grid gap-2">
                 <Label htmlFor="url">URL</Label>
-                <Input id="url" placeholder="https://service.example.com" {...register('url')} />
+                <Input id="url" placeholder="https://service.example.com" aria-invalid={!!errors.url} {...register('url', { validate: (value) => Boolean(value?.trim()) || 'URL is required' })} />
+                {errors.url && <p className="text-sm text-destructive">{errors.url.message}</p>}
             </div>
 
             <div className="grid gap-2">

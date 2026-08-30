@@ -47,6 +47,14 @@ class ServiceService {
         if (error) throw error
         return data
     }
+
+    async deleteService(slug: string): Promise<ServiceResponseDto> {
+        const { data, error } = await apiClient.DELETE('/api/services/{slug}', {
+            params: { path: { slug } },
+        })
+        if (error) throw error
+        return data!
+    }
 }
 
 export const serviceService = new ServiceService()
