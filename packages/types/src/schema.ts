@@ -426,10 +426,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete a service (admin only). MANAGED services cannot be deleted. */
+        delete: operations["ServiceController_remove"];
         options?: never;
         head?: never;
-        /** Update service state — enabled, imageUrl (admin only) */
+        /** Update a service — slug, enabled, url, imageUrl (admin only) */
         patch: operations["ServiceController_update"];
         trace?: never;
     };
@@ -710,7 +711,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["ClientRouteController_account"];
+        get: operations["ClientRouteController_legacyAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_subscriptions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -898,6 +915,11 @@ export interface components {
             confirmServicePassword: string;
             autoRenew: boolean;
         };
+        /**
+         * @description The subscribed-to service's account type
+         * @enum {string}
+         */
+        AccountType: "MANAGED" | "REFERENCED" | "NONE";
         SubscriptionResponseDto: {
             /** Format: uuid */
             id: string;
@@ -919,12 +941,21 @@ export interface components {
             provisionedAt?: string | null;
             /** Format: date-time */
             cancelledAt?: string | null;
+            /** @description The subscribed-to service's account type */
+            accountType: components["schemas"]["AccountType"];
+            /**
+             * Format: uuid
+             * @description Source subscription that auto-created this one (REFERENCED services)
+             */
+            derivedFromSubscriptionId: string | null;
             /** @description The subscribing user's HomeGate username (admin listings only) */
             userUsername?: string;
             /** @description The subscribing user's email (admin listings only) */
             userEmail?: string;
             /** @description The subscribed-to service's display name (admin listings only) */
             serviceName?: string;
+            /** @description The subscribed-to service's slug (admin listings only) */
+            serviceSlug?: string;
         };
         SubscriptionPatchRequestDto: {
             enabled?: boolean;
@@ -1041,8 +1072,6 @@ export interface components {
             effect: components["schemas"]["PolicyEffect"];
         };
         /** @enum {string} */
-        AccountType: "MANAGED" | "REFERENCED" | "NONE";
-        /** @enum {string} */
         IntegrationProvider: "jellyfin" | "immich";
         ServiceRequiredInputsDto: {
             username: boolean;
@@ -1083,12 +1112,16 @@ export interface components {
             accountSourceServiceId?: number | null;
             enabled?: boolean;
             defaultAllowed?: boolean;
-            url?: string | null;
+            /** @description The service's public base URL */
+            url: string;
             imageUrl?: string | null;
         };
         ServicePatchRequestDto: {
-            enabled?: boolean;
-            url?: string | null;
+            /** @description URL-safe identifier, e.g. "jellyseerr" */
+            slug: string;
+            enabled: boolean;
+            /** @description The service's public base URL */
+            url: string;
             imageUrl?: string | null;
         };
         ExternalAccountResponseDto: {
@@ -2061,6 +2094,48 @@ export interface operations {
             };
         };
     };
+    ServiceController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceResponseDto"];
+                };
+            };
+            /** @description MANAGED services cannot be deleted through the API */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Service not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Service is referenced by subscriptions, accounts or other services */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ServiceController_update: {
         parameters: {
             query?: never;
@@ -2455,7 +2530,24 @@ export interface operations {
             };
         };
     };
-    ClientRouteController_account: {
+    ClientRouteController_legacyAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_subscriptions: {
         parameters: {
             query?: never;
             header?: never;
