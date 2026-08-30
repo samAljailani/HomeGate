@@ -2,6 +2,7 @@ import { Controller, Get, Inject, Req, Res } from '@nestjs/common'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import type { Request, Response } from 'express'
 import { Public } from '@/decorators'
+import { Throttle } from '@nestjs/throttler'
 import { ForwardAuthService } from '@/api/services/forwardAuth.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { routes, clientRoutes } from '@/types/dtos/routes'
@@ -25,6 +26,7 @@ export class ForwardAuthController {
 
     @Get(routes.auth.subPath.forward)
     @Public()
+    @Throttle({ default: { ttl: 60_000, limit: 10000 } })
     @ApiOperation({ summary: 'Traefik ForwardAuth — validates session and service entitlement' })
     async forward(@Req() req: Request, @Res() res: Response): Promise<void> {       
         const hostname = this.getForwardedHostname(req)
