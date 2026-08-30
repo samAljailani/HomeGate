@@ -17,7 +17,8 @@ import { Throttle } from '@nestjs/throttler'
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express'
 import { AdminRoute } from '@/decorators'
 import { UserService } from '@/api/services/user.service'
-import { IServiceRepository, IUserServicePolicyRepository } from '@/data/repositories'
+import { SubscriptionService } from '@/api/services/subscriptions.service'
+import { IServiceRepository, ISubscriptionRepository, IUserServicePolicyRepository } from '@/data/repositories'
 import {
     UserDeleteRequestDto,
     UserParamsDto,
@@ -31,7 +32,7 @@ import {
 } from '@/types/dtos/userServicePolicyDto'
 import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
-import { AppEvent } from '@/types/enums'
+import { AppEvent, PolicyEffect } from '@/types/enums'
 import { EventEmitter2 } from '@nestjs/event-emitter'
 
 @ApiTags('Users')
@@ -41,6 +42,8 @@ export class UserController {
         @Inject(UserService) private readonly userService: UserService,
         @Inject(IUserServicePolicyRepository) private readonly policyRepository: IUserServicePolicyRepository,
         @Inject(IServiceRepository) private readonly serviceRepository: IServiceRepository,
+        @Inject(ISubscriptionRepository) private readonly subscriptionRepository: ISubscriptionRepository,
+        @Inject(SubscriptionService) private readonly subscriptionService: SubscriptionService,
         @Inject(EventEmitter2) private readonly events: EventEmitter2
     ) {}
 
@@ -226,6 +229,15 @@ export class UserController {
         }
 
         this.events.emit(AppEvent.SERVICE_POLICY_CHANGED, { userId: params.id })
+
+        if (body.effect === PolicyEffect.DENY) {
+            const subscription = await this.subscriptionRepository.find(params.id, body.serviceId)
+            if (subscription && this.subscriptionService.isCurrentlyActive(subscription)) {
+                await this.subscriptionService.delete(subscription.id, req.session.userId!, true)
+            }
+        } else if (body.effect === PolicyEffect.ALLOW) {
+            await this.subscriptionService.activateFromPolicy(params.id, service)
+        }
 
         return result
     }

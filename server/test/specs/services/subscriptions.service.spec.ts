@@ -37,7 +37,11 @@ import {
     createExternalUserAccountFixture,
     toSubscriptionResponseDto,
 } from '../../fixtures/subscription.stub'
-import { createServiceFixture } from '../../fixtures/service.stub'
+import {
+    createServiceFixture,
+    createNoAccountServiceFixture,
+    createReferencedServiceFixture,
+} from '../../fixtures/service.stub'
 import { SubscriptionCreateRequestDto } from '@/types/dtos/subscriptionsDto'
 
 describe('SubscriptionService', () => {
@@ -49,6 +53,7 @@ describe('SubscriptionService', () => {
     let clientRegistryMock: ReturnType<typeof createAccountIntegrationRegistryMock>
     let accessServiceMock: jest.Mocked<Pick<ServiceAccessService, 'assertCanSubscribe' | 'resolveAccess'>>
     let loggerMock: ReturnType<typeof createLoggerMock>
+    let eventsMock: jest.Mocked<Pick<EventEmitter2, 'emit'>>
 
     beforeEach(async () => {
         userServiceMock = createUserServiceMock()
@@ -58,6 +63,7 @@ describe('SubscriptionService', () => {
         clientRegistryMock = createAccountIntegrationRegistryMock()
         accessServiceMock = { assertCanSubscribe: jest.fn(), resolveAccess: jest.fn() }
         loggerMock = createLoggerMock()
+        eventsMock = { emit: jest.fn() }
 
         // Real provisioners and cascade so orchestration and integration behaviour are tested together.
         const module: TestingModule = await Test.createTestingModule({
@@ -74,7 +80,7 @@ describe('SubscriptionService', () => {
                 { provide: IServiceRepository, useValue: serviceRepoMock },
                 { provide: AccountIntegrationRegistry, useValue: clientRegistryMock },
                 { provide: ServiceAccessService, useValue: accessServiceMock },
-                { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+                { provide: EventEmitter2, useValue: eventsMock },
                 { provide: LoggingProvider, useValue: loggerMock },
             ],
         }).compile()
@@ -125,7 +131,11 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(toSubscriptionResponseDto(createdAccount, 'newuser'))
+            expect(result).toEqual({
+                ...toSubscriptionResponseDto(createdAccount, 'newuser'),
+                serviceName: 'jellyfin',
+                serviceSlug: 'jellyfin',
+            })
             expect(userAccountRepoMock.create).toHaveBeenCalledWith(
                 expect.objectContaining({ userId, status: SubscriptionStatus.provisioning })
             )
@@ -204,7 +214,11 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(toSubscriptionResponseDto(activeAccount, 'newuser'))
+            expect(result).toEqual({
+                ...toSubscriptionResponseDto(activeAccount, 'newuser'),
+                serviceName: 'jellyfin',
+                serviceSlug: 'jellyfin',
+            })
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ status: SubscriptionStatus.provisioning })
             )
@@ -234,7 +248,11 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(toSubscriptionResponseDto(reactivatedAccount))
+            expect(result).toEqual({
+                ...toSubscriptionResponseDto(reactivatedAccount),
+                serviceName: 'jellyfin',
+                serviceSlug: 'jellyfin',
+            })
             expect(client.enableUser).toHaveBeenCalledWith(
                 expect.objectContaining({ userServiceAccountId: 'old-ext-id' })
             )
@@ -265,7 +283,11 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(toSubscriptionResponseDto(reactivatedAccount))
+            expect(result).toEqual({
+                ...toSubscriptionResponseDto(reactivatedAccount),
+                serviceName: 'jellyfin',
+                serviceSlug: 'jellyfin',
+            })
             expect(client.enableUser).toHaveBeenCalledWith(
                 expect.objectContaining({ userServiceAccountId: 'old-ext-id' })
             )
@@ -299,7 +321,11 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(toSubscriptionResponseDto(activeAccount, 'newuser'))
+            expect(result).toEqual({
+                ...toSubscriptionResponseDto(activeAccount, 'newuser'),
+                serviceName: 'jellyfin',
+                serviceSlug: 'jellyfin',
+            })
             expect(client.createUser).toHaveBeenCalled()
         })
 
@@ -325,7 +351,11 @@ describe('SubscriptionService', () => {
 
             const result = await service.subscribe(request, userId)
 
-            expect(result).toEqual(toSubscriptionResponseDto(activeAccount, 'newuser'))
+            expect(result).toEqual({
+                ...toSubscriptionResponseDto(activeAccount, 'newuser'),
+                serviceName: 'jellyfin',
+                serviceSlug: 'jellyfin',
+            })
         })
 
         it.each([FailedOperation.cancellation, FailedOperation.expiration, FailedOperation.sync])(
@@ -752,4 +782,161 @@ describe('SubscriptionService', () => {
     })
 
     // #endregion listAll / listByUser / getById — detail hydration
+
+    // #region activateFromPolicy
+
+    describe('activateFromPolicy', () => {
+        const userId = 'user-uuid-1'
+
+        beforeEach(() => {
+            userAccountRepoMock.find.mockReset()
+            userAccountRepoMock.create.mockReset()
+            userAccountRepoMock.update.mockReset()
+            eventsMock.emit.mockClear()
+        })
+
+        describe('when the service is REFERENCED', () => {
+            const referenced = createReferencedServiceFixture()
+            const source = createSubscriptionFixture({
+                id: 'source-sub',
+                userId,
+                serviceId: 1,
+                status: SubscriptionStatus.active,
+                autoRenew: true,
+                expiresAt: new Date('2030-01-01'),
+            })
+
+            it('creates a subscription mirroring the account source when none exists', async () => {
+                userAccountRepoMock.find.mockResolvedValueOnce(source).mockResolvedValueOnce(null)
+
+                await service.activateFromPolicy(userId, referenced)
+
+                expect(userAccountRepoMock.create).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        userId,
+                        serviceId: 2,
+                        status: SubscriptionStatus.active,
+                        autoRenew: true,
+                        expiresAt: source.expiresAt,
+                        derivedFromSubscriptionId: 'source-sub',
+                    })
+                )
+                expect(eventsMock.emit).toHaveBeenCalledWith('subscription.changed', { userId })
+            })
+
+            it('updates an existing subscription to mirror the account source', async () => {
+                userAccountRepoMock.find
+                    .mockResolvedValueOnce(source)
+                    .mockResolvedValueOnce(
+                        createSubscriptionFixture({ id: 'derived-sub', userId, serviceId: 2 })
+                    )
+
+                await service.activateFromPolicy(userId, referenced)
+
+                expect(userAccountRepoMock.update).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        userId,
+                        serviceId: 2,
+                        status: SubscriptionStatus.active,
+                        autoRenew: true,
+                        expiresAt: source.expiresAt,
+                        derivedFromSubscriptionId: 'source-sub',
+                    })
+                )
+            })
+
+            it('does nothing when the account source subscription does not exist', async () => {
+                userAccountRepoMock.find.mockResolvedValue(null)
+
+                await service.activateFromPolicy(userId, referenced)
+
+                expect(userAccountRepoMock.create).not.toHaveBeenCalled()
+                expect(userAccountRepoMock.update).not.toHaveBeenCalled()
+                expect(eventsMock.emit).not.toHaveBeenCalled()
+            })
+
+            it('does nothing when the account source subscription is not active', async () => {
+                const inactiveSource = {
+                    ...source,
+                    status: SubscriptionStatus.cancelled,
+                    cancelledAt: new Date(),
+                }
+                userAccountRepoMock.find.mockResolvedValueOnce(inactiveSource)
+
+                await service.activateFromPolicy(userId, referenced)
+
+                expect(userAccountRepoMock.create).not.toHaveBeenCalled()
+                expect(userAccountRepoMock.update).not.toHaveBeenCalled()
+                expect(eventsMock.emit).not.toHaveBeenCalled()
+            })
+
+            it('does nothing when the account source subscription is expired', async () => {
+                const expiredSource = {
+                    ...source,
+                    status: SubscriptionStatus.expired,
+                    expiresAt: new Date(Date.now() - 1000),
+                }
+                userAccountRepoMock.find.mockResolvedValueOnce(expiredSource)
+
+                await service.activateFromPolicy(userId, referenced)
+
+                expect(userAccountRepoMock.create).not.toHaveBeenCalled()
+                expect(userAccountRepoMock.update).not.toHaveBeenCalled()
+                expect(eventsMock.emit).not.toHaveBeenCalled()
+            })
+        })
+
+        describe('when the service is NONE', () => {
+            const noneService = createNoAccountServiceFixture()
+
+            it('is a no-op even when a cancelled subscription exists', async () => {
+                userAccountRepoMock.find.mockResolvedValue(
+                    createSubscriptionFixture({
+                        id: 'none-sub',
+                        userId,
+                        serviceId: 3,
+                        status: SubscriptionStatus.cancelled,
+                        autoRenew: false,
+                    })
+                )
+
+                await service.activateFromPolicy(userId, noneService)
+
+                expect(userAccountRepoMock.create).not.toHaveBeenCalled()
+                expect(userAccountRepoMock.update).not.toHaveBeenCalled()
+                expect(eventsMock.emit).not.toHaveBeenCalled()
+            })
+
+            it('does nothing when no subscription exists', async () => {
+                userAccountRepoMock.find.mockResolvedValue(null)
+
+                await service.activateFromPolicy(userId, noneService)
+
+                expect(userAccountRepoMock.create).not.toHaveBeenCalled()
+                expect(userAccountRepoMock.update).not.toHaveBeenCalled()
+                expect(eventsMock.emit).not.toHaveBeenCalled()
+            })
+        })
+
+        describe('when the service is MANAGED', () => {
+            it('is a no-op', async () => {
+                userAccountRepoMock.find.mockResolvedValue(
+                    createSubscriptionFixture({
+                        id: 'managed-sub',
+                        userId,
+                        serviceId: 1,
+                        status: SubscriptionStatus.cancelled,
+                    })
+                )
+
+                await service.activateFromPolicy(userId, createServiceFixture())
+
+                expect(userAccountRepoMock.update).not.toHaveBeenCalled()
+                expect(userAccountRepoMock.create).not.toHaveBeenCalled()
+                expect(eventsMock.emit).not.toHaveBeenCalled()
+            })
+        })
+    })
+
+    // #endregion activateFromPolicy
 })

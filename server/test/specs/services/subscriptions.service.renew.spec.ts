@@ -8,6 +8,7 @@ import { SubscriptionProvisionerResolver } from '@/core/subscriptions/provisione
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { ServiceAccessService } from '@/api/services/serviceAccess.service'
 import { EventEmitter2 } from '@nestjs/event-emitter'
+import { AccountType } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createExternalUserAccountRepositoryMock } from '../../mocks/subscription.repository.mock'
@@ -89,7 +90,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
 
             const newExpiry = userAccountRepositoryMock.update.mock.calls[0]![0]!.expiresAt!
             expect(newExpiry.getTime()).toBeGreaterThan(futureExpiry.getTime())
-            expect(result).toEqual(toSubscriptionResponseDto(updated))
+            expect(result).toEqual({ ...toSubscriptionResponseDto(updated), accountType: AccountType.NONE })
         })
 
         it('extends expiry from now when already expired', async () => {

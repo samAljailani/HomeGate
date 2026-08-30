@@ -1,6 +1,6 @@
 import { SubscriptionModel } from '@/types/models/subscription'
 import { ExternalUserAccountModel } from '@/types/models/externalUserAccount'
-import { SubscriptionStatus } from '@/types/enums'
+import { AccountType, SubscriptionStatus } from '@/types/enums'
 import { SubscriptionResponseDto } from '@/types/dtos/subscriptionsDto'
 
 export function createSubscriptionFixture(overrides: Partial<SubscriptionModel> = {}): SubscriptionModel {
@@ -62,6 +62,8 @@ export function toSubscriptionResponseDto(
         expiresAt: model.expiresAt,
         provisionedAt: model.provisionedAt,
         cancelledAt: model.cancelledAt,
+        accountType: AccountType.MANAGED,
+        derivedFromSubscriptionId: model.derivedFromSubscriptionId,
     }
 }
 

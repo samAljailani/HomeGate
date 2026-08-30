@@ -138,7 +138,7 @@ export class SubscriptionService {
                 await this.cascade.onActivated(activated)
             }
 
-            return this.mapSubscription(activated, result.account?.username ?? existingAccount?.username ?? null)
+            return this.mapSubscription(activated, result.account?.username ?? existingAccount?.username ?? null, service)
         } catch (error) {
             await this.markSubscriptionFailed(
                 userId,
@@ -603,7 +603,11 @@ export class SubscriptionService {
 
     // #region Mappers
 
-    private mapSubscription(model: SubscriptionModel, username: string | null): SubscriptionResponseDto {
+    private mapSubscription(
+        model: SubscriptionModel,
+        username: string | null,
+        service?: ServiceModel | null
+    ): SubscriptionResponseDto {
         return {
             id: model.id,
             userId: model.userId,
@@ -616,6 +620,9 @@ export class SubscriptionService {
             expiresAt: model.expiresAt,
             provisionedAt: model.provisionedAt,
             cancelledAt: model.cancelledAt,
+            derivedFromSubscriptionId: model.derivedFromSubscriptionId,
+            accountType: service?.accountType ?? AccountType.NONE,
+            ...(service ? { serviceName: service.name, serviceSlug: service.slug } : {}),
         }
     }
 
@@ -646,14 +653,55 @@ export class SubscriptionService {
             const account = accountMap.get(subscription.id)
 
             return {
-                ...this.mapSubscription(subscription, account?.username ?? null),
+                ...this.mapSubscription(subscription, account?.username ?? null, service),
                 ...(user ? { userUsername: user.username, userEmail: user.email } : {}),
-                ...(service ? { serviceName: service.name } : {}),
             }
         })
     }
 
     // #endregion Mappers
+
+    /**
+     * Re-grants access after an ALLOW policy is applied, but only when a REFERENCED service's
+     * account source is still active: the derived subscription mirrors the active parent. NONE
+     * subscriptions are not revived (the user can simply re-subscribe) and MANAGED is a no-op —
+     * cancelling it destroys the vendor account, so access must be re-established through a normal
+     * sign-up that provisions a fresh one.
+     */
+    async activateFromPolicy(userId: string, service: ServiceModel): Promise<void> {
+        if (service.accountType !== AccountType.REFERENCED) return
+        if (service.accountSourceServiceId === null) return
+
+        const source = await this.subscriptionRepository.find(userId, service.accountSourceServiceId)
+        if (!source || !this.isCurrentlyActive(source)) return
+
+        const existing = await this.subscriptionRepository.find(userId, service.id)
+        const mirror = {
+            userId,
+            serviceId: service.id,
+            status: SubscriptionStatus.active,
+            autoRenew: source.autoRenew,
+            expiresAt: source.expiresAt,
+            derivedFromSubscriptionId: source.id,
+        }
+
+        if (existing) {
+            await this.subscriptionRepository.update({
+                ...mirror,
+                cancelledAt: null,
+                lastError: null,
+                failedAt: null,
+            })
+        } else {
+            await this.subscriptionRepository.create({
+                ...mirror,
+                provisionedAt: new Date(),
+            })
+        }
+
+        this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId })
+        this.logger.log(`Access re-granted for user '${userId}' on service '${service.id}' via ALLOW policy`)
+    }
 
     isCurrentlyActive(subscription: SubscriptionModel): boolean {
         return (

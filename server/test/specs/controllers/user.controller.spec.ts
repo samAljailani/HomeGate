@@ -2,11 +2,13 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
 import { UserController } from '@/api/controllers/user.controller'
 import { UserService } from '@/api/services/user.service'
+import { SubscriptionService } from '@/api/services/subscriptions.service'
 import { createRequestMock } from '../../mocks/httpContext.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
-import { IServiceRepository, IUserServicePolicyRepository } from '@/data/repositories'
+import { IServiceRepository, ISubscriptionRepository, IUserServicePolicyRepository } from '@/data/repositories'
 import { EventEmitter2 } from '@nestjs/event-emitter'
+import { PolicyEffect } from '@/types/enums'
 
 function createUserServiceMock(): jest.Mocked<
     Pick<
@@ -34,17 +36,38 @@ function createUserServiceMock(): jest.Mocked<
 describe('UserController', () => {
     let controller: UserController
     let userServiceMock: ReturnType<typeof createUserServiceMock>
+    let policyRepositoryMock: jest.Mocked<IUserServicePolicyRepository>
+    let serviceRepositoryMock: jest.Mocked<IServiceRepository>
+    let subscriptionRepositoryMock: jest.Mocked<ISubscriptionRepository>
+    let subscriptionServiceMock: jest.Mocked<SubscriptionService>
+    let eventsMock: jest.Mocked<EventEmitter2>
 
     beforeEach(async () => {
         userServiceMock = createUserServiceMock()
+        policyRepositoryMock = {
+            find: jest.fn(),
+            findByUserId: jest.fn(),
+            upsert: jest.fn(),
+            delete: jest.fn(),
+        } as unknown as jest.Mocked<IUserServicePolicyRepository>
+        serviceRepositoryMock = { findById: jest.fn() } as unknown as jest.Mocked<IServiceRepository>
+        subscriptionRepositoryMock = { find: jest.fn() } as unknown as jest.Mocked<ISubscriptionRepository>
+        subscriptionServiceMock = {
+            delete: jest.fn(),
+            isCurrentlyActive: jest.fn(),
+            activateFromPolicy: jest.fn(),
+        } as unknown as jest.Mocked<SubscriptionService>
+        eventsMock = { emit: jest.fn() } as unknown as jest.Mocked<EventEmitter2>
 
         const module: TestingModule = await Test.createTestingModule({
             controllers: [UserController],
             providers: [
                 { provide: UserService, useValue: userServiceMock },
-                { provide: IUserServicePolicyRepository, useValue: { find: jest.fn(), findByUserId: jest.fn(), upsert: jest.fn(), delete: jest.fn() } },
-                { provide: IServiceRepository, useValue: { findById: jest.fn() } },
-                { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+                { provide: IUserServicePolicyRepository, useValue: policyRepositoryMock },
+                { provide: IServiceRepository, useValue: serviceRepositoryMock },
+                { provide: ISubscriptionRepository, useValue: subscriptionRepositoryMock },
+                { provide: SubscriptionService, useValue: subscriptionServiceMock },
+                { provide: EventEmitter2, useValue: eventsMock },
             ],
         }).compile()
 
@@ -285,6 +308,106 @@ describe('UserController', () => {
             userServiceMock.getUserByIdForAdmin.mockResolvedValue(null)
 
             await expect(controller.getUser({ id: userId })).rejects.toThrow(NotFoundException)
+        })
+    })
+
+    // #endregion
+
+    // #region setPolicy
+
+    describe('setPolicy', () => {
+        const userId = 'user-uuid-1'
+        const actorId = 'admin-actor-id'
+        const service = { id: 7, name: 'Jellyseerr', slug: 'jellyseerr' }
+        const policy = {
+            id: 'policy-1',
+            userId,
+            serviceId: 7,
+            serviceName: 'Jellyseerr',
+            serviceSlug: 'jellyseerr',
+            effect: PolicyEffect.DENY,
+            createdByUserId: actorId,
+            createdAt: new Date(),
+        }
+
+        beforeEach(() => {
+            serviceRepositoryMock.findById.mockResolvedValue(service as never)
+            policyRepositoryMock.upsert.mockResolvedValue(policy as never)
+            subscriptionRepositoryMock.find.mockResolvedValue(null)
+            subscriptionServiceMock.isCurrentlyActive.mockReturnValue(false)
+        })
+
+        function req() {
+            const r = createRequestMock()
+            r.session.userId = actorId
+            r.session.isAdmin = true
+            return r
+        }
+
+        it('calls setPolicy with the actor as createdByUserId', async () => {
+            const result = await controller.setPolicy({ id: userId }, { serviceId: 7, effect: PolicyEffect.DENY }, req())
+
+            expect(policyRepositoryMock.upsert).toHaveBeenCalledWith({
+                userId,
+                serviceId: 7,
+                effect: PolicyEffect.DENY,
+                createdByUserId: actorId,
+            })
+            expect(result.effect).toBe(PolicyEffect.DENY)
+        })
+
+        it('emits SERVICE_POLICY_CHANGED', async () => {
+            await controller.setPolicy({ id: userId }, { serviceId: 7, effect: PolicyEffect.DENY }, req())
+
+            expect(eventsMock.emit).toHaveBeenCalledWith('servicePolicy.changed', { userId })
+        })
+
+        it('cancels the subscription when an active one exists and the policy effect is DENY', async () => {
+            subscriptionRepositoryMock.find.mockResolvedValue({ id: 'sub-1' } as never)
+            subscriptionServiceMock.isCurrentlyActive.mockReturnValue(true)
+
+            await controller.setPolicy({ id: userId }, { serviceId: 7, effect: PolicyEffect.DENY }, req())
+
+            expect(subscriptionServiceMock.delete).toHaveBeenCalledWith('sub-1', actorId, true)
+        })
+
+        it('does not cancel a subscription when the policy effect is ALLOW', async () => {
+            subscriptionRepositoryMock.find.mockResolvedValue({ id: 'sub-1' } as never)
+            subscriptionServiceMock.isCurrentlyActive.mockReturnValue(true)
+
+            await controller.setPolicy({ id: userId }, { serviceId: 7, effect: PolicyEffect.ALLOW }, req())
+
+            expect(subscriptionServiceMock.delete).not.toHaveBeenCalled()
+        })
+
+        it('reactivates access when the policy effect is ALLOW', async () => {
+            await controller.setPolicy({ id: userId }, { serviceId: 7, effect: PolicyEffect.ALLOW }, req())
+
+            expect(subscriptionServiceMock.activateFromPolicy).toHaveBeenCalledWith(userId, service)
+        })
+
+        it('does not cancel when the subscription is not currently active', async () => {
+            subscriptionRepositoryMock.find.mockResolvedValue({ id: 'sub-1' } as never)
+
+            await controller.setPolicy({ id: userId }, { serviceId: 7, effect: PolicyEffect.DENY }, req())
+
+            expect(subscriptionServiceMock.delete).not.toHaveBeenCalled()
+        })
+
+        it('does not cancel when no subscription exists', async () => {
+            await controller.setPolicy({ id: userId }, { serviceId: 7, effect: PolicyEffect.DENY }, req())
+
+            expect(subscriptionServiceMock.delete).not.toHaveBeenCalled()
+        })
+
+        it('throws NotFoundException when the service does not exist', async () => {
+            serviceRepositoryMock.findById.mockResolvedValue(null)
+
+            await expect(
+                controller.setPolicy({ id: userId }, { serviceId: 7, effect: PolicyEffect.DENY }, req())
+            ).rejects.toThrow(NotFoundException)
+
+            expect(policyRepositoryMock.upsert).not.toHaveBeenCalled()
         })
     })
 

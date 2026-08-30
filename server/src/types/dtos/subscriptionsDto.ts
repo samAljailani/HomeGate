@@ -3,7 +3,7 @@ import { Transform, Type } from 'class-transformer'
 import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator'
 import { Match } from '@/types/validators/match.validator'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
-import { SubscriptionStatus } from '@/types/enums'
+import { AccountType, SubscriptionStatus } from '@/types/enums'
 import { EmptyStringToUndefined } from '../../../lib/utils'
 
 export { SubscriptionStatus as UserAccountStatus }
@@ -42,6 +42,16 @@ export class SubscriptionResponseDto {
     @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
     cancelledAt: Date | null
 
+    @ApiProperty({
+        enum: AccountType,
+        enumName: 'AccountType',
+        description: "The subscribed-to service's account type",
+    })
+    accountType: AccountType
+
+    @ApiProperty({ type: String, format: 'uuid', nullable: true, description: 'Source subscription that auto-created this one (REFERENCED services)' })
+    derivedFromSubscriptionId: string | null
+
     @ApiPropertyOptional({ type: String, description: 'The subscribing user\'s HomeGate username (admin listings only)' })
     userUsername?: string
 
@@ -50,6 +60,9 @@ export class SubscriptionResponseDto {
 
     @ApiPropertyOptional({ type: String, description: 'The subscribed-to service\'s display name (admin listings only)' })
     serviceName?: string
+
+    @ApiPropertyOptional({ type: String, description: 'The subscribed-to service\'s slug (admin listings only)' })
+    serviceSlug?: string
 }
 
 export class SubscriptionParamsDto {
