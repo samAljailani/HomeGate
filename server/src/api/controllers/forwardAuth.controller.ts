@@ -125,7 +125,7 @@ export class ForwardAuthController {
         if (!value) return null
 
         // Proxies may send multiple hosts, and the Host header may contain a port.
-        const host = value.split(',')[0].trim()
+        const host = value.split(',')[0]?.trim()
         if (!host) return null
 
         try {
