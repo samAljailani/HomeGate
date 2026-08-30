@@ -122,6 +122,8 @@ export class AuthController {
     private async handleOAuthRedirect(req: ExpressRequest, res: ExpressResponse) {
         const body = req.user as OAuthUserProfileDto
         const transaction = req.session.oauthTransaction
+        const pendingReturnUrl = this.safeReturnUrl(req.session.returnUrl)
+        delete req.session.returnUrl
 
         this.logger.debug(
             `oauth callback: session=${req.session.id}, hasTransaction=${transaction != null}${transaction ? `, inviteId=${transaction.inviteId}` : ''}, email=${body?.email}`
@@ -185,12 +187,25 @@ export class AuthController {
                 })
             })
 
-            return res.redirect(clientRoutes.home)
+            return res.redirect(pendingReturnUrl ?? clientRoutes.home)
         } catch (error) {
             this.logger.error('Session regeneration or save failed after OAuth login', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             return res.redirect(`${clientRoutes.signIn}?error=session_failed`)
+        }
+    }
+
+    /** Only http(s) absolute URLs are allowed as post-login targets; these are written by forward auth after the hostname resolved to a registered service. */
+    private safeReturnUrl(value: string | undefined): string | null {
+        if (!value) return null
+
+        try {
+            const target = new URL(value)
+            if (target.protocol !== 'https:' && target.protocol !== 'http:') return null
+            return target.toString()
+        } catch {
+            return null
         }
     }
 }

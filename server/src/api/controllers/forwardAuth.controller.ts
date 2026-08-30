@@ -4,7 +4,7 @@ import type { Request, Response } from 'express'
 import { Public } from '@/decorators'
 import { ForwardAuthService } from '@/api/services/forwardAuth.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
-import { routes } from '@/types/dtos/routes'
+import { routes, clientRoutes } from '@/types/dtos/routes'
 import { EnvRepository } from '@/data/repositories/env.repository'
 
 @ApiTags('Auth')
@@ -36,8 +36,22 @@ export class ForwardAuthController {
         const userId = req.session?.userId
         if (!userId) {
             if (this.isNavigationRequest(req)) {
-                const returnUrl = this.buildReturnUrl(req)
-                res.redirect(302, `${this.homeUrl}/signin?returnUrl=${encodeURIComponent(returnUrl)}`)
+                // Only persist a return URL when the requested host is one of our apps: otherwise
+                // the user is just landing on HomeGate itself, and redirecting back to it would be
+                // circular. The service lookup also stops an arbitrary forwarded host from becoming
+                // the post-login redirect target.
+                const service = await this.forwardAuth.resolveService(hostname)
+                const redirectUrl = new URL(this.homeUrl)
+                redirectUrl.pathname = clientRoutes.signIn
+
+                if (service) {
+                    const returnUrl = this.buildReturnUrl(req)
+                    req.session.returnUrl = returnUrl
+                    redirectUrl.searchParams.set('returnUrl', returnUrl)
+                    redirectUrl.searchParams.set('appName', service.name)
+                }
+
+                res.redirect(302, redirectUrl.toString())
             } else {
                 res.status(401).send()
             }
