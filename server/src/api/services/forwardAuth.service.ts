@@ -32,8 +32,11 @@ export class ForwardAuthService {
         for (const service of services) {
             if (!service.url) continue
             try {
-                const serviceHost = new URL(service.url).hostname
-                if (serviceHost === hostname) return service
+                const serviceHost = new URL(service.url).hostname.toLowerCase()
+
+                if (serviceHost === hostname.toLowerCase()) {
+                    return service
+                }
             } catch {
                 // malformed URL — skip
             }
