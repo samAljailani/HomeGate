@@ -36,7 +36,7 @@ services:
       - "traefik.http.services.homegate.loadbalancer.server.port=${PORT:-3003}"
 
       # HomeGate ForwardAuth
-      - "traefik.http.middlewares.homegate-auth.forwardauth.address=https://homegate.samlab.dev/api/auth/forward"
+      - "traefik.http.middlewares.homegate-auth.forwardauth.address=https://${APP_SUBDOMAIN}.${DOMAIN}/api/auth/forward"
       - "traefik.http.middlewares.homegate-auth.forwardauth.trustForwardHeader=true"
       - "traefik.http.middlewares.homegate-auth.forwardauth.preserveLocationHeader=true"
     networks:
