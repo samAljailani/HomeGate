@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { serviceService, type ServiceResponseDto } from '@/services/service.service'
+import { addToastMessage } from '@/lib/utils'
 
 export function useServicesPage() {
     const [services, setServices] = useState<ServiceResponseDto[]>([])
@@ -25,8 +26,19 @@ export function useServicesPage() {
         load()
     }, [load])
 
-    const patchService = useCallback((name: string, patch: Partial<ServiceResponseDto>) => {
-        setServices((prev) => prev.map((s) => s.name === name ? { ...s, ...patch } : s))
+    const patchService = useCallback((slug: string, patch: Partial<ServiceResponseDto>) => {
+        setServices((prev) => prev.map((s) => s.slug === slug ? { ...s, ...patch } : s))
+    }, [])
+
+    const removeService = useCallback(async (slug: string) => {
+        try {
+            await serviceService.deleteService(slug)
+            setServices((prev) => prev.filter((s) => s.slug !== slug))
+            addToastMessage('success', 'Service deleted')
+        } catch {
+            addToastMessage('error', 'Failed to delete service')
+            throw new Error('Failed to delete service')
+        }
     }, [])
 
     return {
@@ -35,5 +47,6 @@ export function useServicesPage() {
         error,
         refresh: load,
         patchService,
+        removeService,
     }
 }

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { LogController } from '@/api/controllers/log.controller'
 import { LogService } from '@/api/services/log.service'
 import { LogListRequestDto } from '@/types/dtos/logDto'
-import { LogLevel } from '@/types/enums'
+import { LogLevel, LogSortField, SortDirection } from '@/types/enums'
 import { LogModel } from '@/types/models/logs'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
 
@@ -130,6 +130,25 @@ describe('LogController', () => {
             await controller.list(query)
 
             expect(logServiceMock.list).toHaveBeenCalledWith({}, 10, 5)
+        })
+
+        it('passes orderBy and orderDirection when provided', async () => {
+            logServiceMock.list.mockResolvedValue(new PaginatedResponseDto([], 0, 0))
+            const query: LogListRequestDto = {
+                orderBy: LogSortField.Message,
+                orderDirection: SortDirection.Asc,
+            }
+
+            await controller.list(query)
+
+            expect(logServiceMock.list).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    orderBy: LogSortField.Message,
+                    orderDirection: SortDirection.Asc,
+                }),
+                undefined,
+                undefined
+            )
         })
 
         it('does not include undefined keys in the filter', async () => {

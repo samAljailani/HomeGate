@@ -41,6 +41,7 @@ export interface EnvData {
     session: {
         secret: string
         cookieName: string
+        cookieDomain?: string
     }
     logger: {
         targets: LogTarget[]

@@ -356,7 +356,7 @@ describe('InviteService', () => {
         })
 
         it('throws BadRequest when service does not exist in the database', async () => {
-            serviceRepositoryMock.findByName.mockResolvedValue(null)
+            serviceRepositoryMock.findBySlug.mockResolvedValue(null)
 
             await expect(
                 service.createToken(
@@ -367,7 +367,7 @@ describe('InviteService', () => {
         })
 
         it('creates an invite with resolved account service IDs', async () => {
-            serviceRepositoryMock.findByName.mockResolvedValue({ id: 5, name: 'jellyfin' } as never)
+            serviceRepositoryMock.findBySlug.mockResolvedValue({ id: 5, name: 'jellyfin' } as never)
             userServiceMock.getUserByEmail.mockResolvedValue(null)
             inviteRepositoryMock.findActivePendingByEmail.mockResolvedValue(null)
             const invite = createInviteFixture({ email: 'a@b.com' })

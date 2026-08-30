@@ -10,14 +10,16 @@ import {
     type SortingState,
     type VisibilityState,
 } from '@tanstack/react-table'
-import { Pencil } from '@/components/ui/icons'
+import { Pencil, Trash2 } from '@/components/ui/icons'
 import { Button } from '@/components/ui/button'
 import { usePreferences } from '@/context/preferences-context'
 import { preferences } from '@/constants/preferences'
 import { DataTableColumnToggle, DataTableSortableHead } from '@/components/ui/data-table'
 import { StatusBadge } from '@/components/ui/status-badge'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { ServicePatchRequestDto, ServiceResponseDto } from '@/services/service.service'
 import { ServiceEditDialog } from './ServiceEditDialog'
+import { ServiceCreateDialog } from './ServiceCreateDialog'
 import {
     Table,
     TableBody,
@@ -30,7 +32,9 @@ interface ServicesTableProps {
     services: ServiceResponseDto[]
     isLoading: boolean
     pendingName: string | null
-    onUpdate: (name: string, patch: ServicePatchRequestDto) => Promise<void>
+    onUpdate: (slug: string, patch: ServicePatchRequestDto) => Promise<void>
+    onCreated: () => void
+    onDelete: (slug: string) => Promise<void>
 }
 
 function ServiceThumbnail({ service }: { service: ServiceResponseDto }) {
@@ -45,10 +49,12 @@ function ServiceThumbnail({ service }: { service: ServiceResponseDto }) {
     return <img src={service.imageUrl} alt={service.name} className="h-8 w-28 rounded-md object-contain" />
 }
 
-export function ServicesTable({ services, isLoading, pendingName, onUpdate }: ServicesTableProps) {
+export function ServicesTable({ services, isLoading, pendingName, onUpdate, onCreated, onDelete }: ServicesTableProps) {
     const { getColumnVisibility, setColumnVisibility } = usePreferences()
     const [sorting, setSorting] = useState<SortingState>([])
     const [editingService, setEditingService] = useState<ServiceResponseDto | null>(null)
+    const [deletingService, setDeletingService] = useState<ServiceResponseDto | null>(null)
+    const [createOpen, setCreateOpen] = useState(false)
     const columnVisibility = getColumnVisibility(preferences.columns.adminServices)
 
     const onColumnVisibilityChange = useCallback(
@@ -59,7 +65,10 @@ export function ServicesTable({ services, isLoading, pendingName, onUpdate }: Se
         [columnVisibility, setColumnVisibility]
     )
 
-    const columns = useMemo<ColumnDef<ServiceResponseDto>[]>(() => [
+    const columns = useMemo<ColumnDef<ServiceResponseDto>[]>(() => {
+        const serviceNameById = new Map(services.map((s) => [s.id, s.name]))
+
+        return [
         {
             id: 'image',
             header: 'Image',
@@ -72,10 +81,46 @@ export function ServicesTable({ services, isLoading, pendingName, onUpdate }: Se
             header: 'Name',
         },
         {
+            id: 'slug',
+            accessorKey: 'slug',
+            header: 'Slug',
+        },
+        {
             id: 'url',
             accessorKey: 'url',
             header: 'URL',
             cell: ({ row }) => row.original.url ?? '—',
+        },
+        {
+            id: 'accountType',
+            accessorKey: 'accountType',
+            header: 'Account Type',
+            cell: ({ row }) => (
+                <StatusBadge tone={row.original.accountType === 'MANAGED' ? 'info' : 'neutral'}>
+                    {row.original.accountType}
+                </StatusBadge>
+            ),
+        },
+        {
+            id: 'integrationProvider',
+            accessorKey: 'integrationProvider',
+            header: 'Integration',
+            cell: ({ row }) => row.original.accountType === 'MANAGED' ? row.original.integrationProvider ?? '—' : '—',
+        },
+        {
+            id: 'accountSourceService',
+            accessorKey: 'accountSourceServiceId',
+            header: 'Account Source',
+            cell: ({ row }) => {
+                const sourceId = row.original.accountSourceServiceId
+                return sourceId != null ? serviceNameById.get(sourceId) ?? `#${sourceId}` : '—'
+            },
+        },
+        {
+            id: 'defaultAllowed',
+            accessorKey: 'defaultAllowed',
+            header: 'Default Allowed',
+            cell: ({ row }) => (row.original.defaultAllowed ? 'Yes' : 'No'),
         },
         {
             id: 'status',
@@ -93,18 +138,31 @@ export function ServicesTable({ services, isLoading, pendingName, onUpdate }: Se
             enableSorting: false,
             enableHiding: false,
             cell: ({ row }) => (
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    title="Edit"
-                    disabled={pendingName === row.original.name}
-                    onClick={() => setEditingService(row.original)}
-                >
-                    <Pencil className="size-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        title="Edit"
+                        disabled={pendingName === row.original.slug}
+                        onClick={() => setEditingService(row.original)}
+                    >
+                        <Pencil className="size-4" />
+                    </Button>
+                    {row.original.accountType !== 'MANAGED' && (
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            title="Delete"
+                            disabled={pendingName === row.original.slug}
+                            onClick={() => setDeletingService(row.original)}
+                        >
+                            <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                    )}
+                </div>
             ),
         },
-    ], [pendingName])
+    ]}, [pendingName, services])
 
     // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
@@ -121,16 +179,18 @@ export function ServicesTable({ services, isLoading, pendingName, onUpdate }: Se
         return <p className="py-8 text-center text-muted-foreground">Loading services…</p>
     }
 
-    if (services.length === 0) {
-        return <p className="py-8 text-center text-muted-foreground">No services found.</p>
-    }
-
     return (
         <div className="space-y-2">
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+                    Add Service
+                </Button>
                 <DataTableColumnToggle table={table} />
             </div>
 
+            {services.length === 0 ? (
+                <p className="py-8 text-center text-muted-foreground">No services found.</p>
+            ) : (
             <Table>
                 <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (
@@ -153,13 +213,31 @@ export function ServicesTable({ services, isLoading, pendingName, onUpdate }: Se
                     ))}
                 </TableBody>
             </Table>
+            )}
 
             <ServiceEditDialog
                 service={editingService}
                 open={editingService !== null}
                 setOpen={(open) => !open && setEditingService(null)}
-                isSaving={pendingName === editingService?.name}
+                isSaving={pendingName === editingService?.slug}
                 onSave={onUpdate}
+            />
+
+            <ServiceCreateDialog
+                open={createOpen}
+                setOpen={setCreateOpen}
+                services={services}
+                onCreated={onCreated}
+            />
+
+            <ConfirmDialog
+                open={deletingService !== null}
+                setOpen={(open) => !open && setDeletingService(null)}
+                title="Delete service?"
+                description={`This permanently deletes '${deletingService?.name}' and its access rules. ${deletingService?.accountType === 'REFERENCED' ? 'Its subscriptions are cascade-deleted as well. ' : ''}This cannot be undone.`}
+                confirmLabel="Delete Service"
+                variant="destructive"
+                onConfirm={() => onDelete(deletingService!.slug)}
             />
         </div>
     )

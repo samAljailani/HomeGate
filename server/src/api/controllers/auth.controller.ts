@@ -60,11 +60,14 @@ export class AuthController {
     @ApiQuery({ name: 'token', type: String, required: true, description: 'Raw invite token from the invite link' })
     async join(@Query('token') token: string, @Request() req: ExpressRequest, @Res() res: ExpressResponse) {
         if (!token) {
+            this.logger.debug('join: called without a token')
             return res.redirect(`${clientRoutes.signIn}?error=missing_token`)
         }
 
         try {
             const { inviteId, expiresAt } = await this.authService.beginSignUp(token)
+
+            this.logger.debug(`join: beginSignUp OK, inviteId=${inviteId}, window expires ${expiresAt.toISOString()}`)
 
             await new Promise<void>((resolve, reject) => {
                 req.session.regenerate((err) => {
@@ -80,8 +83,11 @@ export class AuthController {
                 })
             })
 
+            this.logger.debug(`join: oauthTransaction saved to session ${req.session.id}`)
+
             return res.redirect(clientRoutes.signIn)
-        } catch {
+        } catch (error) {
+            this.logger.warn(`join: failed — ${error instanceof Error ? error.message : String(error)}`)
             return res.redirect(`${clientRoutes.signIn}?error=invalid_invite`)
         }
     }
@@ -116,6 +122,12 @@ export class AuthController {
     private async handleOAuthRedirect(req: ExpressRequest, res: ExpressResponse) {
         const body = req.user as OAuthUserProfileDto
         const transaction = req.session.oauthTransaction
+        const pendingReturnUrl = this.safeReturnUrl(req.session.returnUrl)
+        delete req.session.returnUrl
+
+        this.logger.debug(
+            `oauth callback: session=${req.session.id}, hasTransaction=${transaction != null}${transaction ? `, inviteId=${transaction.inviteId}` : ''}, email=${body?.email}`
+        )
 
         if (transaction && new Date(transaction.expiresAt) < new Date()) {
             delete req.session.oauthTransaction
@@ -126,9 +138,11 @@ export class AuthController {
         let response
         try {
             if (transaction) {
+                this.logger.debug(`oauth callback: completing invite sign-up for invite ${transaction.inviteId}`)
                 response = await this.authService.completeSignUp(transaction.inviteToken, body)
                 delete req.session.oauthTransaction
             } else {
+                this.logger.debug('oauth callback: no transaction, treating as plain sign-in')
                 response = await this.authService.authorize(body)
             }
         } catch (error) {
@@ -173,12 +187,25 @@ export class AuthController {
                 })
             })
 
-            return res.redirect(clientRoutes.home)
+            return res.redirect(pendingReturnUrl ?? clientRoutes.home)
         } catch (error) {
             this.logger.error('Session regeneration or save failed after OAuth login', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             return res.redirect(`${clientRoutes.signIn}?error=session_failed`)
+        }
+    }
+
+    /** Only http(s) absolute URLs are allowed as post-login targets; these are written by forward auth after the hostname resolved to a registered service. */
+    private safeReturnUrl(value: string | undefined): string | null {
+        if (!value) return null
+
+        try {
+            const target = new URL(value)
+            if (target.protocol !== 'https:' && target.protocol !== 'http:') return null
+            return target.toString()
+        } catch {
+            return null
         }
     }
 }

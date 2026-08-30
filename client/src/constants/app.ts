@@ -3,14 +3,15 @@ export const config = Object.freeze({
     routes: {
         home: '/',
         signIn: '/signin',
-        account: '/account',
+        subscriptions: '/subscriptions',
         admin: '/admin',
         adminDashboard: '/admin/dashboard',
         invites: '/admin/invites',
         users: '/admin/users',
+        policies: '/admin/policies',
         services: '/admin/services',
         oauthProviders: '/admin/oauth-providers',
-        subscriptions: '/admin/subscriptions',
+        adminSubscriptions: '/admin/subscriptions',
         logs: '/admin/logs',
         scheduledTasks: '/admin/scheduled-tasks',
         sessions: '/admin/sessions'

@@ -6,19 +6,30 @@ import {
     Injectable,
     InternalServerErrorException,
     NotFoundException,
-    ServiceUnavailableException,
     forwardRef,
 } from '@nestjs/common'
 import { UserService } from './user.service'
-import { IServiceRepository, IUserAccountRepository } from '@/data/repositories'
-import { SubscriptionCreateRequestDto, SubscriptionPatchRequestDto, SubscriptionResponseDto } from '@/types/dtos/subscriptionsDto'
-import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
-import { ApplicationClientNames, FailedOperation, UserAccountStatus } from '@/types/enums'
+import { IExternalUserAccountRepository, IServiceRepository, ISubscriptionRepository } from '@/data/repositories'
+import {
+    SubscriptionCreateRequestDto,
+    SubscriptionPatchRequestDto,
+    SubscriptionResponseDto,
+} from '@/types/dtos/subscriptionsDto'
+import { AccountType, AppEvent, FailedOperation, SubscriptionStatus } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
-import { UserAccountModel } from '@/types/models/userAccount'
-import { IApplicationManager } from '@/core/clients/IApplicationManager'
-import { UserResponseDto } from '@/types/dtos/userDto'
+import { SubscriptionModel } from '@/types/models/subscription'
+import { ExternalUserAccountModel } from '@/types/models/externalUserAccount'
+import { ServiceModel } from '@/types/models/service'
+import { SubscriptionProvisionerResolver, LifecycleContext } from '@/core/subscriptions/provisioners'
+import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
+import { ServiceAccessService } from './serviceAccess.service'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 
+/**
+ * Account-type agnostic orchestrator. It deliberately does not depend on AccountIntegrationRegistry:
+ * anything integration specific belongs to a provisioner, so REFERENCED and NONE services can never
+ * trigger an integration lookup.
+ */
 @Injectable()
 export class SubscriptionService {
     constructor(
@@ -28,11 +39,23 @@ export class SubscriptionService {
         @Inject(IServiceRepository)
         private readonly serviceRepository: IServiceRepository,
 
-        @Inject(IUserAccountRepository)
-        private readonly userAccountRepository: IUserAccountRepository,
+        @Inject(ISubscriptionRepository)
+        private readonly subscriptionRepository: ISubscriptionRepository,
 
-        @Inject(ApplicationClientRegistry)
-        private readonly applicationClientRegistry: ApplicationClientRegistry,
+        @Inject(IExternalUserAccountRepository)
+        private readonly externalAccountRepository: IExternalUserAccountRepository,
+
+        @Inject(SubscriptionProvisionerResolver)
+        private readonly provisioners: SubscriptionProvisionerResolver,
+
+        @Inject(SubscriptionCascadeService)
+        private readonly cascade: SubscriptionCascadeService,
+
+        @Inject(ServiceAccessService)
+        private readonly accessService: ServiceAccessService,
+
+        @Inject(EventEmitter2)
+        private readonly events: EventEmitter2,
 
         @Inject(LoggingProvider)
         private readonly logger: LoggingProvider
@@ -53,163 +76,69 @@ export class SubscriptionService {
             throw new BadRequestException('Service not available')
         }
 
-        const existingUserServiceAccount = await this.userAccountRepository.find(userId, request.serviceId)
+        await this.accessService.assertCanSubscribe(userId, service)
 
-        if (existingUserServiceAccount && !this.isResubscribeAllowed(existingUserServiceAccount)) {
-            if (existingUserServiceAccount.status === UserAccountStatus.disabled) {
+        const existing = await this.subscriptionRepository.find(userId, request.serviceId)
+
+        if (existing && !this.isResubscribeAllowed(existing)) {
+            if (existing.status === SubscriptionStatus.disabled) {
                 throw new ConflictException('User is not allowed to subscribe')
             }
 
             throw new ConflictException('User already subscribed to the service')
         }
 
-        const client = await this.getServiceClient(service.name)
+        const existingAccount = existing
+            ? await this.externalAccountRepository.findBySubscriptionId(existing.id)
+            : null
 
-        if (client.requiredInputs.email && request.email?.toLowerCase() !== user.email.toLowerCase()) {
-            throw new BadRequestException("Email address must match the user's HomeGate account email address")
-        }
-
-        // When resubscribing from a previous record, check if the old external account still exists.
-        // If it does, re-enable it and reactivate the local record rather than creating a new one.
-        if (existingUserServiceAccount?.userServiceAccountId) {
-            const previousAccountResult = await client.getUser({
-                userServiceAccountId: existingUserServiceAccount.userServiceAccountId,
-                username: existingUserServiceAccount.username,
-                email: undefined,
-            })
-
-            if (previousAccountResult.ok && previousAccountResult.user) {
-                const enabled = await client.enableUser({
-                    userServiceAccountId: existingUserServiceAccount.userServiceAccountId,
-                    username: existingUserServiceAccount.username,
-                    email: user.email,
-                })
-
-                if (!enabled) {
-                    throw new ServiceUnavailableException('Failed to re-enable existing service account')
-                }
-
-                const reactivatedAccount = await this.userAccountRepository.update({
-                    userId,
-                    serviceId: request.serviceId,
-                    username: previousAccountResult.user.username,
-                    userServiceAccountId: previousAccountResult.user.id,
-                    status: UserAccountStatus.active,
-                    autoRenew: request.autoRenew,
-                    expiresAt: this.getDefaultExpirationDate(),
-                    lastError: null,
-                    failedAt: null,
-                    cancelledAt: null,
-                })
-
-                if (!reactivatedAccount) {
-                    throw new InternalServerErrorException('Failed to reactivate subscription')
-                }
-
-                this.logger.log(`User '${userId}' reactivated existing account on service '${service.id}'`)
-
-                return this.mapSubscription(reactivatedAccount)
-            }
-
-            // External account is gone — fall through to create a new one.
-        }
-
-        try {
-            const existingServiceUserResult = await client.getUser({
-                username: request.serviceUsername,
-                email: request.email,
-                userServiceAccountId: undefined,
-            })
-
-            if (existingServiceUserResult.ok || existingServiceUserResult.user) {
-                throw new ConflictException('Service account already exists')
-            }
-        } catch (error) {
-            if (error instanceof ConflictException) {
-                throw error
-            }
-
-            this.logger.error(`Failed to check service account availability for service '${service.name}'`, {
-                stackTrace: error instanceof Error ? error.stack : String(error),
-            })
-
-            throw new ServiceUnavailableException('Failed to verify service account availability')
-        }
-
-        const expiresAt = this.getDefaultExpirationDate()
-        let userAccount = existingUserServiceAccount
-
-        // Create/update local provisioning record before external side effects.
-        // External service calls are not atomic with the database, so this gives us
-        // a record to mark as active or failed.
-        if (!userAccount) {
-            userAccount = await this.userAccountRepository.create({
-                userId,
-                serviceId: request.serviceId,
-                username: request.serviceUsername,
-                userServiceAccountId: null,
-                status: UserAccountStatus.provisioning,
-                autoRenew: request.autoRenew,
-                expiresAt,
-            })
-        } else {
-            const updatedUserAccount = await this.userAccountRepository.update({
-                userId,
-                serviceId: request.serviceId,
-                username: request.serviceUsername,
-                userServiceAccountId: null,
-                status: UserAccountStatus.provisioning,
-                autoRenew: request.autoRenew,
-                expiresAt,
-                lastError: null,
-                failedAt: null,
-                cancelledAt: null,
-            })
-
-            if (!updatedUserAccount) {
-                throw new InternalServerErrorException('Failed to update subscription record')
-            }
-
-            userAccount = updatedUserAccount
-        }
-
-        try {
-            const createdServiceUserResult = await client.createUser({
+        const provisioner = this.provisioners.resolve(service)
+        const context = {
+            user: { userId, email: user.email },
+            service,
+            request: {
                 username: request.serviceUsername,
                 password: request.servicePassword,
                 email: request.email,
-                displayName: request.serviceUsername,
-            })
+            },
+            existingSubscription: existing,
+            existingAccount,
+        }
 
-            if (!createdServiceUserResult.ok || !createdServiceUserResult.user) {
-                // The external service may have created the account despite a null/invalid response.
-                // If so, a subsequent subscribe attempt will hit a ConflictException from client.getUser().
-                // A reconciliation path (detect existing + link account) should be added to handle this.
-                this.logger.error(
-                    `Service client returned an invalid response after createUser for service '${service.name}'. ` +
-                        `An orphaned external account may exist for username '${request.serviceUsername}'.`
-                )
-                throw new InternalServerErrorException('The service client did not return a valid response')
+        await provisioner.validate(context)
+
+        const expiresAt = this.getDefaultExpirationDate()
+        const subscription = await this.upsertProvisioning(existing, userId, request.serviceId, request.autoRenew, expiresAt)
+
+        try {
+            const result = await provisioner.provision(context)
+
+            if (result.account) {
+                await this.upsertExternalAccount(subscription, result.account)
             }
 
-            const activeUserAccount = await this.userAccountRepository.update({
+            const activated = await this.subscriptionRepository.update({
                 userId,
                 serviceId: request.serviceId,
-                userServiceAccountId: createdServiceUserResult.user.id,
-                username: createdServiceUserResult.user.username,
-                status: UserAccountStatus.active,
+                status: SubscriptionStatus.active,
                 provisionedAt: new Date(),
                 lastError: null,
                 failedAt: null,
+                failedOperation: null,
             })
 
-            if (!activeUserAccount) {
+            if (!activated) {
                 throw new InternalServerErrorException('Failed to activate subscription')
             }
 
-            this.logger.log(`User '${userId}' successfully subscribed to service '${service.id}'`)
+            this.logger.log(`User '${userId}' subscribed to service '${service.id}' (${service.accountType})`)
+            this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId })
 
-            return this.mapSubscription(activeUserAccount)
+            if (service.accountType === AccountType.MANAGED) {
+                await this.cascade.onActivated(activated)
+            }
+
+            return this.mapSubscription(activated, result.account?.username ?? existingAccount?.username ?? null, service)
         } catch (error) {
             await this.markSubscriptionFailed(
                 userId,
@@ -222,88 +151,148 @@ export class SubscriptionService {
         }
     }
 
-    async delete(subscriptionId: string, currentUserId: string, deleteImmediately?: boolean): Promise<boolean> {
-        const existingUserServiceAccount = await this.getRawById(subscriptionId)
+    private async upsertProvisioning(
+        existing: SubscriptionModel | null,
+        userId: string,
+        serviceId: number,
+        autoRenew: boolean | undefined,
+        expiresAt: Date
+    ): Promise<SubscriptionModel> {
+        if (!existing) {
+            const created = await this.subscriptionRepository.create({
+                userId,
+                serviceId,
+                status: SubscriptionStatus.provisioning,
+                ...(autoRenew !== undefined && { autoRenew }),
+                expiresAt,
+            })
 
-        const user = await this.userService.getUserById({ userId: existingUserServiceAccount.userId })
-        const currentUser = await this.userService.getUserById({ userId: currentUserId })
+            if (!created) {
+                throw new InternalServerErrorException('Failed to create subscription record')
+            }
+
+            return created
+        }
+
+        const updated = await this.subscriptionRepository.update({
+            userId,
+            serviceId,
+            status: SubscriptionStatus.provisioning,
+            ...(autoRenew !== undefined && { autoRenew }),
+            expiresAt,
+            lastError: null,
+            failedAt: null,
+            cancelledAt: null,
+        })
+
+        if (!updated) {
+            throw new InternalServerErrorException('Failed to update subscription record')
+        }
+
+        return updated
+    }
+
+    private async upsertExternalAccount(
+        subscription: SubscriptionModel,
+        account: { externalAccountId: string | null; username: string | null; email: string | null }
+    ): Promise<void> {
+        const existing = await this.externalAccountRepository.findBySubscriptionId(subscription.id)
+
+        if (existing) {
+            await this.externalAccountRepository.update({ subscriptionId: subscription.id, ...account })
+            return
+        }
+
+        await this.externalAccountRepository.create({
+            subscriptionId: subscription.id,
+            userId: subscription.userId,
+            serviceId: subscription.serviceId,
+            ...account,
+        })
+    }
+
+    async delete(subscriptionId: string, currentUserId: string, deleteImmediately?: boolean): Promise<boolean> {
+        const subscription = await this.getRawById(subscriptionId)
+
+        const [user, currentUser] = await Promise.all([
+            this.userService.getUserById({ userId: subscription.userId }),
+            this.userService.getUserById({ userId: currentUserId }),
+        ])
 
         if (!user || !currentUser) {
             throw new BadRequestException(`User does not exist, userId: ${currentUserId}`)
         }
 
-        if (!currentUser.isAdmin && currentUserId !== existingUserServiceAccount.userId) {
-            throw new BadRequestException(`A non-admin user cannot delete a subscription for another user.`)
+        if (!currentUser.isAdmin && currentUserId !== subscription.userId) {
+            throw new BadRequestException('A non-admin user cannot delete a subscription for another user.')
         }
 
-        const service = await this.serviceRepository.findById(existingUserServiceAccount.serviceId)
+        const service = await this.serviceRepository.findById(subscription.serviceId)
 
         if (!service) {
             throw new BadRequestException('Service does not exist')
         }
 
-        if (!this.isCurrentlyActive(existingUserServiceAccount)) {
+        if (!this.isCurrentlyActive(subscription)) {
             throw new ConflictException('User is not subscribed to the service')
         }
 
         try {
-            if (deleteImmediately === true) {
-                const client = await this.getServiceClient(service.name)
+            if (deleteImmediately !== true) {
+                if (subscription.autoRenew) {
+                    const updated = await this.subscriptionRepository.update({
+                        userId: subscription.userId,
+                        serviceId: subscription.serviceId,
+                        autoRenew: false,
+                    })
 
-                await this.userAccountRepository.update({
-                    userId: existingUserServiceAccount.userId,
-                    serviceId: existingUserServiceAccount.serviceId,
-                    status: UserAccountStatus.cancelling,
-                })
+                    if (!updated) {
+                        throw new InternalServerErrorException(
+                            `Failed to cancel auto-renew for user '${user.id}' and service '${service.id}'`
+                        )
+                    }
 
-                const userServiceAccountDeleted = await client.deleteUser({
-                    userServiceAccountId: existingUserServiceAccount.userServiceAccountId ?? undefined,
-                    username: existingUserServiceAccount.username,
-                    email: user.email,
-                })
-
-                if (!userServiceAccountDeleted) {
-                    throw new ServiceUnavailableException(
-                        `Failed to delete user service account for user '${user.id}' and service '${service.id}'`
+                    this.logger.log(
+                        `User '${user.id}' cancelled auto-renew for service '${service.id}'. ` +
+                            `Access remains active until ${updated.expiresAt?.toISOString()}`
                     )
+
+                    return true
                 }
 
-                await this.userAccountRepository.update({
-                    userId: existingUserServiceAccount.userId,
-                    serviceId: existingUserServiceAccount.serviceId,
-                    status: UserAccountStatus.cancelled,
-                    cancelledAt: new Date(),
-                    lastError: null,
-                })
-
-                this.logger.log(`User '${user.id}' immediately cancelled subscription for service '${service.id}'`)
+                this.logger.log(`User '${user.id}' already had auto-renew disabled for service '${service.id}'`)
 
                 return true
             }
 
-            if (existingUserServiceAccount.autoRenew) {
-                const updatedUserServiceAccount = await this.userAccountRepository.update({
-                    userId: existingUserServiceAccount.userId,
-                    serviceId: existingUserServiceAccount.serviceId,
-                    autoRenew: false,
-                })
+            await this.subscriptionRepository.update({
+                userId: subscription.userId,
+                serviceId: subscription.serviceId,
+                status: SubscriptionStatus.cancelling,
+            })
 
-                if (!updatedUserServiceAccount) {
-                    throw new InternalServerErrorException(
-                        `Failed to cancel auto-renew for user '${user.id}' and service '${service.id}'`
-                    )
-                }
+            const context = await this.buildLifecycleContext(subscription, service, user.email)
+            await this.provisioners.resolve(service).deprovision(context)
 
-                this.logger.log(
-                    `User '${user.id}' cancelled auto-renew for service '${
-                        service.id
-                    }'. Access remains active until ${updatedUserServiceAccount.expiresAt?.toISOString()}`
-                )
+            const cancelled = await this.subscriptionRepository.update({
+                userId: subscription.userId,
+                serviceId: subscription.serviceId,
+                status: SubscriptionStatus.cancelled,
+                cancelledAt: new Date(),
+                lastError: null,
+            })
 
-                return true
+            if (context.account) {
+                await this.externalAccountRepository.delete(subscription.id)
             }
 
-            this.logger.log(`User '${user.id}' already had auto-renew disabled for service '${service.id}'`)
+            // Cancelling a referenced subscription must never affect its account source.
+            if (cancelled) {
+                await this.cascade.onDeactivated(cancelled, SubscriptionStatus.cancelled)
+            }
+
+            this.logger.log(`User '${user.id}' immediately cancelled subscription for service '${service.id}'`)
+            this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId: user.id })
 
             return true
         } catch (error) {
@@ -312,75 +301,36 @@ export class SubscriptionService {
             })
 
             await this.markSubscriptionFailed(
-                existingUserServiceAccount.userId,
-                existingUserServiceAccount.serviceId,
+                subscription.userId,
+                subscription.serviceId,
                 this.toSafeErrorMessage(error),
                 FailedOperation.cancellation
             )
 
-            // TODO: previously rethrew here, but the boolean return type can't ever be false
-            // if every failure is thrown instead. Revisit whether callers need to distinguish
-            // error types (e.g. bad request vs. service unavailable) rather than a plain boolean.
             return false
         }
     }
 
-    async disableAllForUser(userId: string): Promise<void> {
-        const accounts = await this.userAccountRepository.findMany({ userId })
-        const accountsToDisable = accounts.filter((a) => a.status === UserAccountStatus.active)
-
-        if (accountsToDisable.length === 0) return
-
-        const user = await this.userService.getUserById({ userId })
-        if (!user) return
-
-        const cachedClients = new Map<number, IApplicationManager>()
-        const cachedUsers = new Map([[userId, user]])
-
-        for (const account of accountsToDisable) {
-            try {
-                await this.disableUserAccount(account, cachedClients, cachedUsers)
-            } catch {
-                this.logger.warn(
-                    `Failed to disable external account for user ${userId}, serviceId ${account.serviceId}`
-                )
-            }
-
-            await this.userAccountRepository.update({
-                userId: account.userId,
-                serviceId: account.serviceId,
-                status: UserAccountStatus.disabled,
-                autoRenew: false,
-            })
-        }
-
-        this.logger.log(`Disabled ${accountsToDisable.length} subscription(s) for user ${userId}`)
-    }
-
     async getById(subscriptionId: string): Promise<SubscriptionResponseDto> {
-        const account = await this.userAccountRepository.findById(subscriptionId)
+        const subscription = await this.getRawById(subscriptionId)
+        const [details] = await this.hydrateSubscriptionDetails([subscription])
 
-        if (!account) {
-            throw new NotFoundException('Subscription not found')
-        }
-
-        const [details] = await this.hydrateSubscriptionDetails([account])
         return details!
     }
 
-    private async getRawById(subscriptionId: string): Promise<UserAccountModel> {
-        const account = await this.userAccountRepository.findById(subscriptionId)
+    private async getRawById(subscriptionId: string): Promise<SubscriptionModel> {
+        const subscription = await this.subscriptionRepository.findById(subscriptionId)
 
-        if (!account) {
+        if (!subscription) {
             throw new NotFoundException('Subscription not found')
         }
 
-        return account
+        return subscription
     }
 
     /**
      * Applies a partial state update (policy object) to a subscription.
-     * - `enabled` transitions the account between active and disabled (including the external service account).
+     * - `enabled` transitions between active and disabled, including the external account when there is one.
      * - `autoRenew` toggles automatic renewal.
      */
     async update(subscriptionId: string, patch: SubscriptionPatchRequestDto): Promise<SubscriptionResponseDto> {
@@ -388,17 +338,17 @@ export class SubscriptionService {
             throw new BadRequestException('No fields provided to update')
         }
 
-        const account = await this.getRawById(subscriptionId)
+        const subscription = await this.getRawById(subscriptionId)
 
         if (patch.enabled !== undefined) {
-            const status = patch.enabled ? UserAccountStatus.active : UserAccountStatus.disabled
-            await this.updateUserDisabledStatus(account.userId, account.serviceId, status)
+            const status = patch.enabled ? SubscriptionStatus.active : SubscriptionStatus.disabled
+            await this.setDisabledStatus(subscription.userId, subscription.serviceId, status)
         }
 
         if (patch.autoRenew !== undefined) {
-            const updated = await this.userAccountRepository.update({
-                userId: account.userId,
-                serviceId: account.serviceId,
+            const updated = await this.subscriptionRepository.update({
+                userId: subscription.userId,
+                serviceId: subscription.serviceId,
                 autoRenew: patch.autoRenew,
             })
 
@@ -412,18 +362,21 @@ export class SubscriptionService {
         return this.getById(subscriptionId)
     }
 
-    /**
-     * Toggles auto-renew for the subscription owner (self-service). Admins use `update`.
-     */
-    async setAutoRenew(subscriptionId: string, currentUserId: string, autoRenew: boolean): Promise<SubscriptionResponseDto> {
-        const account = await this.getRawById(subscriptionId)
-        if (account.userId !== currentUserId) {
+    /** Toggles auto-renew for the subscription owner (self-service). Admins use `update`. */
+    async setAutoRenew(
+        subscriptionId: string,
+        currentUserId: string,
+        autoRenew: boolean
+    ): Promise<SubscriptionResponseDto> {
+        const subscription = await this.getRawById(subscriptionId)
+
+        if (subscription.userId !== currentUserId) {
             throw new ForbiddenException('You can only modify your own subscription')
         }
 
-        const updated = await this.userAccountRepository.update({
-            userId: account.userId,
-            serviceId: account.serviceId,
+        const updated = await this.subscriptionRepository.update({
+            userId: subscription.userId,
+            serviceId: subscription.serviceId,
             autoRenew,
         })
 
@@ -436,52 +389,54 @@ export class SubscriptionService {
         return this.getById(subscriptionId)
     }
 
-    /**
-     * Resets the external service account password for the subscription owner.
-     * Uses the service's admin API key, so no current password is required.
-     */
-    async resetAccountPassword(subscriptionId: string, currentUserId: string, newPassword: string): Promise<boolean> {
-        const account = await this.getRawById(subscriptionId)
-        if (account.userId !== currentUserId) {
+    /** Resets the external account password. Rejected for account types that own no account. */
+    async resetAccountPassword(
+        subscriptionId: string,
+        currentUserId: string,
+        newPassword: string
+    ): Promise<boolean> {
+        const subscription = await this.getRawById(subscriptionId)
+
+        if (subscription.userId !== currentUserId) {
             throw new ForbiddenException('You can only reset a password on your own subscription')
         }
 
-        if (!account.userServiceAccountId) {
-            throw new BadRequestException('Service account is not provisioned yet')
-        }
+        const service = await this.serviceRepository.findById(subscription.serviceId)
 
-        const service = await this.serviceRepository.findById(account.serviceId)
         if (!service) {
             throw new BadRequestException('Service does not exist')
         }
 
-        const client = await this.getServiceClient(service.name)
-        const ok = await client.resetPassword(
-            {
-                userServiceAccountId: account.userServiceAccountId,
-                username: account.username,
-                email: undefined,
-            },
-            newPassword
-        )
-
-        if (!ok) {
-            throw new ServiceUnavailableException('Failed to reset the service account password')
+        if (service.accountType !== AccountType.MANAGED) {
+            throw new BadRequestException('This subscription has no password to reset')
         }
 
+        const user = await this.userService.getUserById({ userId: subscription.userId })
+
+        if (!user) {
+            throw new BadRequestException('User does not exist')
+        }
+
+        const context = await this.buildLifecycleContext(subscription, service, user.email)
+        await this.provisioners.resolve(service).resetPassword(context, newPassword)
+
         this.logger.log(`User '${currentUserId}' reset password for subscription '${subscriptionId}'`)
+
         return true
     }
 
     async renew(subscriptionId: string): Promise<SubscriptionResponseDto> {
-        const account = await this.getRawById(subscriptionId)
+        const subscription = await this.getRawById(subscriptionId)
 
-        const baseDate = account.expiresAt && account.expiresAt.getTime() > Date.now() ? account.expiresAt : new Date()
+        const baseDate =
+            subscription.expiresAt && subscription.expiresAt.getTime() > Date.now()
+                ? subscription.expiresAt
+                : new Date()
         const newExpiresAt = this.getDefaultExpirationDate(baseDate)
 
-        const updated = await this.userAccountRepository.update({
-            userId: account.userId,
-            serviceId: account.serviceId,
+        const updated = await this.subscriptionRepository.update({
+            userId: subscription.userId,
+            serviceId: subscription.serviceId,
             expiresAt: newExpiresAt,
             lastError: null,
         })
@@ -490,173 +445,33 @@ export class SubscriptionService {
             throw new BadRequestException('Failed to renew subscription')
         }
 
+        await this.cascade.onExpiryChanged(updated)
+
         this.logger.log(
-            `Admin renewed subscription '${subscriptionId}' for user '${account.userId}' on service '${account.serviceId}'. New expiry: ${newExpiresAt.toISOString()}`
+            `Admin renewed subscription '${subscriptionId}' for user '${subscription.userId}' on service ` +
+                `'${subscription.serviceId}'. New expiry: ${newExpiresAt.toISOString()}`
         )
 
-        return this.mapSubscription(updated)
+        const [details] = await this.hydrateSubscriptionDetails([updated])
+
+        return details!
     }
 
     async listAll(take?: number, skip?: number): Promise<SubscriptionResponseDto[]> {
-        const accounts = await this.userAccountRepository.findMany({}, take, skip)
-        return this.hydrateSubscriptionDetails(accounts)
+        const subscriptions = await this.subscriptionRepository.findMany({}, take, skip)
+
+        return this.hydrateSubscriptionDetails(subscriptions)
     }
 
     async listByUser(userId: string, take?: number, skip?: number): Promise<SubscriptionResponseDto[]> {
-        const accounts = await this.userAccountRepository.findMany({ userId }, take, skip)
-        return this.hydrateSubscriptionDetails(accounts)
+        const subscriptions = await this.subscriptionRepository.findMany({ userId }, take, skip)
+
+        return this.hydrateSubscriptionDetails(subscriptions)
     }
 
-    private async getServiceClient(serviceName: string) {
-        const enabledServices = await this.applicationClientRegistry.getEnabled()
-
-        const client = enabledServices.find((x) => x.name === (serviceName as ApplicationClientNames))
-
-        if (!client) {
-            throw new BadRequestException('Service client not available')
-        }
-
-        return client
-    }
-
-    private async markSubscriptionFailed(
-        userId: string,
-        serviceId: number,
-        lastError: string,
-        failedOperation: FailedOperation
-    ): Promise<void> {
-        await this.userAccountRepository.update({
-            userId,
-            serviceId,
-            status: UserAccountStatus.failed,
-            failedAt: new Date(),
-            failedOperation,
-            lastError,
-        })
-    }
-
-    // #region Mappers
-
-    private mapSubscription(model: UserAccountModel): SubscriptionResponseDto {
-        return {
-            id: model.id,
-            userId: model.userId,
-            serviceId: model.serviceId,
-            username: model.username,
-            status: model.status,
-            autoRenew: model.autoRenew,
-            createdAt: model.createdAt,
-            updatedAt: model.updatedAt,
-            expiresAt: model.expiresAt,
-            provisionedAt: model.provisionedAt,
-            cancelledAt: model.cancelledAt,
-        }
-    }
-
-    /** Batch-resolves the owning user's username/email and the service's display name for admin listings. */
-    private async hydrateSubscriptionDetails(accounts: UserAccountModel[]): Promise<SubscriptionResponseDto[]> {
-        const userIds = [...new Set(accounts.map((a) => a.userId))]
-        const serviceIds = [...new Set(accounts.map((a) => a.serviceId))]
-
-        const [users, services] = await Promise.all([
-            Promise.all(userIds.map((id) => this.userService.getUserById({ userId: id }))),
-            Promise.all(serviceIds.map((id) => this.serviceRepository.findById(id))),
-        ])
-
-        const userMap = new Map(users.filter((u) => u != null).map((u) => [u.id, u]))
-        const serviceMap = new Map(services.filter((s) => s != null).map((s) => [s.id, s]))
-
-        return accounts.map((account) => {
-            const user = userMap.get(account.userId)
-            const service = serviceMap.get(account.serviceId)
-            return {
-                ...this.mapSubscription(account),
-                ...(user ? { userUsername: user.username, userEmail: user.email } : {}),
-                ...(service ? { serviceName: service.name } : {}),
-            }
-        })
-    }
-
-    // #endregion Mappers
-
-    private isCurrentlyActive(userAccount: UserAccountModel): boolean {
-        return (
-            userAccount.status === UserAccountStatus.active &&
-            !!userAccount.expiresAt &&
-            userAccount.expiresAt.getTime() > Date.now()
-        )
-    }
-
-    private getDefaultExpirationDate(startTime?: Date): Date {
-        const expiresAt = startTime ? new Date(startTime.getTime()) : new Date()
-        expiresAt.setDate(expiresAt.getDate() + 30)
-        return expiresAt
-    }
-
-    private toSafeErrorMessage(error: unknown): string {
-        if (error instanceof Error) {
-            return error.message
-        }
-
-        return 'Unknown subscription error'
-    }
-
-    private isResubscribeAllowed(userAccount: UserAccountModel | null): boolean {
-        if (userAccount === null) return false
-        if (userAccount.status === UserAccountStatus.active) return false
-        if (userAccount.status === UserAccountStatus.failed) {
-            return userAccount.failedOperation === FailedOperation.provisioning
-        }
-        return [UserAccountStatus.cancelled, UserAccountStatus.expired].includes(userAccount.status)
-    }
-
-    private async disableUserAccount(
-        userAccount: UserAccountModel,
-        cachedClients: Map<number, IApplicationManager>,
-        cachedUsers: Map<string, UserResponseDto>
-    ): Promise<void> {
-        let client = cachedClients.get(userAccount.serviceId)
-
-        if (!client) {
-            const service = await this.serviceRepository.findById(userAccount.serviceId)
-
-            if (!service) {
-                throw new BadRequestException('Service does not exist')
-            }
-
-            client = await this.getServiceClient(service.name)
-            cachedClients.set(service.id, client)
-        }
-
-        let user = cachedUsers.get(userAccount.userId)
-
-        if (!user) {
-            user = (await this.userService.getUserById({ userId: userAccount.userId })) ?? undefined
-
-            if (!user) {
-                throw new BadRequestException('User does not exist')
-            }
-
-            cachedUsers.set(user.id, user)
-        }
-
-        const disabled = await client.disableUser({
-            userServiceAccountId: userAccount.userServiceAccountId ?? undefined,
-            username: userAccount.username,
-            email: user.email,
-        })
-
-        if (!disabled) {
-            throw new InternalServerErrorException('Failed to disable external service account')
-        }
-    }
-
-    private async updateUserDisabledStatus(
-        userId: string,
-        serviceId: number,
-        status: UserAccountStatus
-    ): Promise<boolean> {
-        const isDisableOperation = status === UserAccountStatus.disabled
+    /** Transitions a subscription between active and disabled, including the external account. */
+    async setDisabledStatus(userId: string, serviceId: number, status: SubscriptionStatus): Promise<boolean> {
+        const isDisableOperation = status === SubscriptionStatus.disabled
 
         const user = await this.userService.getUserById({ userId })
 
@@ -670,46 +485,37 @@ export class SubscriptionService {
             throw new BadRequestException('Service does not exist')
         }
 
-        const existingUserServiceAccount = await this.userAccountRepository.find(userId, serviceId)
+        const subscription = await this.subscriptionRepository.find(userId, serviceId)
 
-        if (!existingUserServiceAccount) {
+        if (!subscription) {
             throw new ConflictException('User is not subscribed to the service')
         }
 
-        if (isDisableOperation && !this.isCurrentlyActive(existingUserServiceAccount)) {
+        if (isDisableOperation && !this.isCurrentlyActive(subscription)) {
             throw new ConflictException('User account is not currently active')
         }
 
-        if (!isDisableOperation && existingUserServiceAccount.status !== UserAccountStatus.disabled) {
+        if (!isDisableOperation && subscription.status !== SubscriptionStatus.disabled) {
             throw new ConflictException('User account is not currently disabled')
         }
 
-        const transitionStatus = isDisableOperation ? UserAccountStatus.disabling : UserAccountStatus.enabling
+        const provisioner = this.provisioners.resolve(service)
+        const context = await this.buildLifecycleContext(subscription, service, user.email)
         const operationLabel = isDisableOperation ? 'disable' : 'enable'
 
         try {
-            const client = await this.getServiceClient(service.name)
-
-            await this.userAccountRepository.update({
+            await this.subscriptionRepository.update({
                 userId,
                 serviceId,
-                status: transitionStatus,
+                status: isDisableOperation ? SubscriptionStatus.disabling : SubscriptionStatus.enabling,
             })
 
             if (isDisableOperation) {
-                // Reuse disableUserAccount with pre-populated caches to avoid redundant fetches.
-                const cachedClients: Map<number, IApplicationManager> = new Map([[service.id, client]])
-                const cachedUsers: Map<string, UserResponseDto> = new Map([[user.id, user]])
-                await this.disableUserAccount(existingUserServiceAccount, cachedClients, cachedUsers)
+                await provisioner.disable(context)
             } else {
-                const externalUserResult = await client.getUser({
-                    userServiceAccountId: existingUserServiceAccount.userServiceAccountId ?? undefined,
-                    username: existingUserServiceAccount.username,
-                    email: user.email,
-                })
-
-                if (!externalUserResult.ok || !externalUserResult.user) {
-                    await this.userAccountRepository.delete(userId, serviceId)
+                // A vanished external account means the local record is stale and should go.
+                if ((await provisioner.getExternalAccountStatus(context)) === 'missing' && context.account !== null) {
+                    await this.subscriptionRepository.delete(userId, serviceId)
 
                     this.logger.warn(
                         `External account for user '${user.id}' on service '${service.id}' no longer exists. ` +
@@ -719,35 +525,32 @@ export class SubscriptionService {
                     return true
                 }
 
-                if (!externalUserResult.user.isActive) {
-                    const enabled = await client.enableUser({
-                        userServiceAccountId: existingUserServiceAccount.userServiceAccountId ?? undefined,
-                        username: existingUserServiceAccount.username,
-                        email: user.email,
-                    })
-
-                    if (!enabled) {
-                        throw new InternalServerErrorException('Failed to enable external service account')
-                    }
-                }
+                await provisioner.enable(context)
             }
 
-            await this.userAccountRepository.update({
+            const updated = await this.subscriptionRepository.update({
                 userId,
                 serviceId,
                 status,
                 lastError: null,
             })
 
+            if (updated) {
+                if (isDisableOperation) {
+                    await this.cascade.onDeactivated(updated, SubscriptionStatus.disabled)
+                } else {
+                    await this.cascade.onReactivated(updated)
+                }
+            }
+
             this.logger.log(`User '${user.id}' subscription for service '${service.id}' was ${operationLabel}d`)
+            this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId })
 
             return true
         } catch (error) {
             this.logger.error(
                 `Failed to ${operationLabel} subscription for user '${user.id}' and service '${service.id}'`,
-                {
-                    stackTrace: error instanceof Error ? error.stack : String(error),
-                }
+                { stackTrace: error instanceof Error ? error.stack : String(error) }
             )
 
             await this.markSubscriptionFailed(
@@ -760,487 +563,176 @@ export class SubscriptionService {
             throw error
         }
     }
-    // #region subscription processing
 
-    /**
-     * Pass 1: for each account on the external service, enforce local state.
-     * - No local record → disable external (orphan)
-     * - Local active, external disabled → enable external (drift)
-     * - Local not active, external active → disable external (drift)
-     */
-    private async syncExternalToLocal(
-        client: IApplicationManager,
-        clientUsers: Awaited<ReturnType<IApplicationManager['getAllUsers']>> & {},
-        localAccounts: UserAccountModel[]
+    async buildLifecycleContext(
+        subscription: SubscriptionModel,
+        service: ServiceModel,
+        email: string,
+        account?: ExternalUserAccountModel | null
+    ): Promise<LifecycleContext> {
+        const resolved =
+            account !== undefined
+                ? account
+                : service.accountType === AccountType.MANAGED
+                ? await this.externalAccountRepository.findBySubscriptionId(subscription.id)
+                : null
+
+        return {
+            user: { userId: subscription.userId, email },
+            service,
+            subscription,
+            account: resolved ?? null,
+        }
+    }
+
+    async markSubscriptionFailed(
+        userId: string,
+        serviceId: number,
+        lastError: string,
+        failedOperation: FailedOperation
     ): Promise<void> {
-        const localByExternalId = new Map(
-            localAccounts.filter((a) => a.userServiceAccountId !== null).map((a) => [a.userServiceAccountId!, a])
+        await this.subscriptionRepository.update({
+            userId,
+            serviceId,
+            status: SubscriptionStatus.failed,
+            failedAt: new Date(),
+            failedOperation,
+            lastError,
+        })
+    }
+
+    // #region Mappers
+
+    private mapSubscription(
+        model: SubscriptionModel,
+        username: string | null,
+        service?: ServiceModel | null
+    ): SubscriptionResponseDto {
+        return {
+            id: model.id,
+            userId: model.userId,
+            serviceId: model.serviceId,
+            username,
+            status: model.status,
+            autoRenew: model.autoRenew,
+            createdAt: model.createdAt,
+            updatedAt: model.updatedAt,
+            expiresAt: model.expiresAt,
+            provisionedAt: model.provisionedAt,
+            cancelledAt: model.cancelledAt,
+            derivedFromSubscriptionId: model.derivedFromSubscriptionId,
+            accountType: service?.accountType ?? AccountType.NONE,
+            ...(service ? { serviceName: service.name, serviceSlug: service.slug } : {}),
+        }
+    }
+
+    /** Batch-resolves owner, service and external account details for listings. */
+    private async hydrateSubscriptionDetails(
+        subscriptions: SubscriptionModel[]
+    ): Promise<SubscriptionResponseDto[]> {
+        const userIds = [...new Set(subscriptions.map((s) => s.userId))]
+        const serviceIds = [...new Set(subscriptions.map((s) => s.serviceId))]
+
+        const [users, services, accounts] = await Promise.all([
+            Promise.all(userIds.map((id) => this.userService.getUserById({ userId: id }))),
+            Promise.all(serviceIds.map((id) => this.serviceRepository.findById(id))),
+            Promise.all(
+                subscriptions.map((s) => this.externalAccountRepository.findBySubscriptionId(s.id))
+            ),
+        ])
+
+        const userMap = new Map(users.filter((u) => u != null).map((u) => [u.id, u]))
+        const serviceMap = new Map(services.filter((s) => s != null).map((s) => [s.id, s]))
+        const accountMap = new Map(
+            accounts.filter((a) => a != null).map((a) => [a.subscriptionId, a])
         )
 
-        for (const clientUser of clientUsers) {
-            const localAccount = localByExternalId.get(clientUser.id)
+        return subscriptions.map((subscription) => {
+            const user = userMap.get(subscription.userId)
+            const service = serviceMap.get(subscription.serviceId)
+            const account = accountMap.get(subscription.id)
 
-            if (!localAccount) {
-                if (clientUser.isAdmin) {
-                    continue
-                }
-
-                await client.disableUser({
-                    userServiceAccountId: clientUser.id,
-                    username: clientUser.username,
-                    email: undefined,
-                })
-
-                this.logger.warn(
-                    `Orphaned account on service '${client.name}': disabled external user ` +
-                        `'${clientUser.username}' (id: '${clientUser.id}') — no local record found`
-                )
-                continue
+            return {
+                ...this.mapSubscription(subscription, account?.username ?? null, service),
+                ...(user ? { userUsername: user.username, userEmail: user.email } : {}),
             }
-
-            const localIsActive = localAccount.status === UserAccountStatus.active
-
-            if (localIsActive && !clientUser.isActive) {
-                await client.enableUser({
-                    userServiceAccountId: clientUser.id,
-                    username: clientUser.username,
-                    email: undefined,
-                })
-
-                this.logger.warn(
-                    `Drift detected on service '${client.name}': re-enabled external user ` +
-                        `'${clientUser.username}' — local record is active but external account was disabled`
-                )
-                continue
-            }
-
-            if (!localIsActive && clientUser.isActive) {
-                await client.disableUser({
-                    userServiceAccountId: clientUser.id,
-                    username: clientUser.username,
-                    email: undefined,
-                })
-
-                this.logger.warn(
-                    `Drift detected on service '${client.name}': disabled external user ` +
-                        `'${clientUser.username}' — local status is '${localAccount.status}' but external account was active`
-                )
-            }
-        }
-    }
-
-    /**
-     * Pass 2: for each active local account, verify the external account still exists.
-     * - Active local record with no matching external account → mark local as failed.
-     */
-    private async syncLocalToExternal(
-        client: IApplicationManager,
-        clientUsers: Awaited<ReturnType<IApplicationManager['getAllUsers']>> & {},
-        localAccounts: UserAccountModel[]
-    ): Promise<void> {
-        const clientUserById = new Map(clientUsers.map((u) => [u.id, u]))
-
-        for (const localAccount of localAccounts) {
-            if (localAccount.status !== UserAccountStatus.active) {
-                continue
-            }
-
-            if (!localAccount.userServiceAccountId) {
-                continue
-            }
-
-            if (!clientUserById.has(localAccount.userServiceAccountId)) {
-                await this.markSubscriptionFailed(
-                    localAccount.userId,
-                    localAccount.serviceId,
-                    `External account not found on service '${client.name}' during sync`,
-                    FailedOperation.sync
-                )
-
-                this.logger.warn(
-                    `Active local record for user '${localAccount.userId}' on service '${client.name}' ` +
-                        `has no matching external account — marked as failed`
-                )
-            }
-        }
-    }
-
-    /**
-     * Retries a previously failed subscription operation on behalf of an admin.
-     * Only accounts in the `failed` state are eligible; failed provisioning must
-     * be retried via `subscribe()` instead.
-     *
-     * Behaviour by `failedOperation`:
-     * - `cancellation` → deletes the external account (if it still exists) and marks local as cancelled
-     * - `expiration`   → disables the external account (if still active) and marks local as expired
-     * - `sync`         → checks whether the external account still exists:
-     *                    gone → marks local as cancelled; present → restores local to active
-     *
-     * @throws BadRequestException  if the caller is not an admin, or if the failed operation
-     *                              is provisioning (use `subscribe()` instead)
-     * @throws ConflictException    if the account is not in a failed state
-     */
-    async retryFailedOperation(userId: string, serviceId: number, currentUserId: string): Promise<boolean> {
-        const currentUser = await this.userService.getUserById({ userId: currentUserId })
-
-        if (!currentUser?.isAdmin) {
-            throw new BadRequestException('Unauthorized: admin access required to retry a failed operation')
-        }
-
-        const existingAccount = await this.userAccountRepository.find(userId, serviceId)
-
-        if (!existingAccount || existingAccount.status !== UserAccountStatus.failed) {
-            throw new ConflictException('Account is not in a failed state')
-        }
-
-        if (!existingAccount.failedOperation || existingAccount.failedOperation === FailedOperation.provisioning) {
-            throw new BadRequestException('Use subscribe() to retry failed provisioning')
-        }
-
-        const user = await this.userService.getUserById({ userId })
-
-        if (!user) {
-            throw new BadRequestException('User does not exist')
-        }
-
-        const service = await this.serviceRepository.findById(serviceId)
-
-        if (!service) {
-            throw new BadRequestException('Service does not exist')
-        }
-
-        const client = await this.getServiceClient(service.name)
-        const { failedOperation } = existingAccount
-
-        try {
-            const externalUserResult = await client.getUser({
-                userServiceAccountId: existingAccount.userServiceAccountId ?? undefined,
-                username: existingAccount.username,
-                email: user.email,
-            })
-
-            const externalIsGone = !externalUserResult.ok || !externalUserResult.user
-            const externalIsInactive = !externalIsGone && !externalUserResult.user!.isActive
-
-            if (failedOperation === FailedOperation.cancellation) {
-                if (!externalIsGone) {
-                    const deleted = await client.deleteUser({
-                        userServiceAccountId: existingAccount.userServiceAccountId ?? undefined,
-                        username: existingAccount.username,
-                        email: user.email,
-                    })
-
-                    if (!deleted) {
-                        throw new ServiceUnavailableException('Failed to delete external service account')
-                    }
-                }
-
-                await this.userAccountRepository.update({
-                    userId,
-                    serviceId,
-                    status: UserAccountStatus.cancelled,
-                    cancelledAt: new Date(),
-                    lastError: null,
-                    failedAt: null,
-                    failedOperation: null,
-                })
-
-                this.logger.log(
-                    `Retry cancellation succeeded for user '${user.id}' on service '${service.id}'` +
-                        (externalIsGone ? ' (external account was already deleted)' : '')
-                )
-                return true
-            }
-
-            if (failedOperation === FailedOperation.expiration) {
-                if (!externalIsGone && !externalIsInactive) {
-                    const disabled = await client.disableUser({
-                        userServiceAccountId: existingAccount.userServiceAccountId ?? undefined,
-                        username: existingAccount.username,
-                        email: user.email,
-                    })
-
-                    if (!disabled) {
-                        throw new ServiceUnavailableException('Failed to disable external service account')
-                    }
-                }
-
-                await this.userAccountRepository.update({
-                    userId,
-                    serviceId,
-                    status: UserAccountStatus.expired,
-                    lastError: null,
-                    failedAt: null,
-                    failedOperation: null,
-                })
-
-                this.logger.log(
-                    `Retry expiration succeeded for user '${user.id}' on service '${service.id}'` +
-                        (externalIsGone || externalIsInactive
-                            ? ' (external account was already disabled or deleted)'
-                            : '')
-                )
-                return true
-            }
-
-            // FailedOperation.sync — external account was not found during sync
-            if (externalIsGone) {
-                await this.userAccountRepository.update({
-                    userId,
-                    serviceId,
-                    status: UserAccountStatus.cancelled,
-                    cancelledAt: new Date(),
-                    lastError: null,
-                    failedAt: null,
-                    failedOperation: null,
-                })
-
-                this.logger.log(
-                    `Retry sync for user '${user.id}' on service '${service.id}': external account confirmed gone, marked as cancelled`
-                )
-            } else {
-                await this.userAccountRepository.update({
-                    userId,
-                    serviceId,
-                    status: UserAccountStatus.active,
-                    lastError: null,
-                    failedAt: null,
-                    failedOperation: null,
-                })
-
-                this.logger.log(
-                    `Retry sync for user '${user.id}' on service '${service.id}': external account found, restored to active`
-                )
-            }
-
-            return true
-        } catch (error) {
-            this.logger.error(
-                `Failed to retry operation '${failedOperation}' for user '${user.id}' on service '${service.id}'`,
-                {
-                    stackTrace: error instanceof Error ? error.stack : String(error),
-                }
-            )
-            throw error
-        }
-    }
-
-    // #endregion subscription processing
-
-    // #region Scheduled Tasks
-
-    /**
-     * Reconciles all external service accounts against local records.
-     * The local database is the source of truth. Two passes are performed per client:
-     *
-     * Pass 1 — External → Local:
-     *   For every account that exists on the external service, find the matching
-     *   local record by userServiceAccountId. If no record exists the account
-     *   is orphaned and will be disabled. If the active state differs between
-     *   the local record and the external service, the external service is corrected.
-     *
-     * Pass 2 — Local → External:
-     *   For every active local record, verify the external account still exists.
-     *   If it has been deleted externally (bypassing this application), the local record is
-     *   marked as failed so it surfaces for investigation and retry.
-     */
-    public async syncClientAccounts(): Promise<boolean> {
-        let success = true
-        const clients = await this.applicationClientRegistry.getEnabled()
-
-        // Fetch all services and all local accounts once before the loop.
-        const allServices = await this.serviceRepository.findMany({})
-        const allLocalAccounts = await this.userAccountRepository.findMany({})
-        const serviceByName = new Map(allServices.map((s) => [s.name, s]))
-
-        for (const client of clients) {
-            try {
-                const service = serviceByName.get(client.name)
-
-                if (!service) {
-                    this.logger.warn(
-                        `Skipping account sync for client '${client.name}': no matching service record found`
-                    )
-                    continue
-                }
-
-                const clientUsers = await client.getAllUsers()
-
-                if (!clientUsers) {
-                    this.logger.warn(`Skipping account sync for client '${client.name}': getAllUsers() returned null`)
-                    continue
-                }
-
-                const localAccounts = allLocalAccounts.filter((a) => a.serviceId === service.id)
-
-                await this.syncExternalToLocal(client, clientUsers, localAccounts)
-                await this.syncLocalToExternal(client, clientUsers, localAccounts)
-            } catch (error) {
-                // Log and continue — a failure on one client should not prevent syncing the others.
-                this.logger.error(`Failed to sync accounts for client '${client.name}'`, {
-                    stackTrace: error instanceof Error ? error.stack : String(error),
-                })
-                success = false
-            }
-        }
-
-        return success
-    }
-
-    /**
-     * Processes all active subscriptions and enforces expiration policy.
-     *
-     * For each active subscription:
-     * - No expiration date → disable the external account and mark as disabled
-     * - Not yet expired → skip
-     * - Expired with auto-renew → extend expiry by 30 days
-     * - Expired without auto-renew → disable the external account and mark as expired
-     *
-     * Failures per subscription are caught individually so one error does not
-     * prevent the remaining subscriptions from being processed.
-     */
-    public async processSubscriptions(): Promise<boolean> {
-        const subscriptions = await this.userAccountRepository.findMany({
-            statuses: [UserAccountStatus.active],
         })
-
-        const cachedClients: Map<number, IApplicationManager> = new Map()
-        const cachedUsers: Map<string, UserResponseDto> = new Map()
-        const now = Date.now()
-        let success = true
-
-        for (const sub of subscriptions) {
-            try {
-                if (!sub.expiresAt) {
-                    await this.disableUserAccount(sub, cachedClients, cachedUsers)
-
-                    await this.userAccountRepository.update({
-                        userId: sub.userId,
-                        serviceId: sub.serviceId,
-                        status: UserAccountStatus.disabled,
-                        lastError: 'Active subscription had no expiration date',
-                        failedAt: null,
-                    })
-
-                    this.logger.warn(
-                        `Disabled subscription for user '${sub.userId}' on service '${sub.serviceId}': no expiration date was set`
-                    )
-
-                    continue
-                }
-
-                if (sub.expiresAt.getTime() > now) {
-                    continue
-                }
-
-                if (sub.autoRenew) {
-                    const renewedExpiresAt = this.getDefaultExpirationDate(sub.expiresAt)
-
-                    await this.userAccountRepository.update({
-                        userId: sub.userId,
-                        serviceId: sub.serviceId,
-                        expiresAt: renewedExpiresAt,
-                        lastError: null,
-                        failedAt: null,
-                    })
-
-                    this.logger.log(
-                        `Auto-renewed subscription for user '${sub.userId}' on service '${sub.serviceId}'. New expiry: ${renewedExpiresAt.toISOString()}`
-                    )
-
-                    continue
-                }
-
-                await this.disableUserAccount(sub, cachedClients, cachedUsers)
-
-                await this.userAccountRepository.update({
-                    userId: sub.userId,
-                    serviceId: sub.serviceId,
-                    status: UserAccountStatus.expired,
-                    lastError: null,
-                    failedAt: null,
-                })
-
-                this.logger.log(`Expired subscription for user '${sub.userId}' on service '${sub.serviceId}'`)
-            } catch (error) {
-                this.logger.error(
-                    `Failed to clean up subscription for user '${sub.userId}' and service '${sub.serviceId}'`,
-                    {
-                        stackTrace: error instanceof Error ? error.stack : String(error),
-                    }
-                )
-
-                await this.userAccountRepository.update({
-                    userId: sub.userId,
-                    serviceId: sub.serviceId,
-                    status: UserAccountStatus.failed,
-                    lastError: this.toSafeErrorMessage(error),
-                    failedAt: new Date(),
-                    failedOperation: FailedOperation.expiration,
-                })
-                success = false
-            }
-        }
-
-        return success
     }
+
+    // #endregion Mappers
 
     /**
-     * Deletes stale local records for non-active accounts whose external counterpart
-     * no longer exists (e.g. cleaned up by the external application).
-     * Intended to be scheduled at a lower frequency than syncClientAccounts.
+     * Re-grants access after an ALLOW policy is applied, but only when a REFERENCED service's
+     * account source is still active: the derived subscription mirrors the active parent. NONE
+     * subscriptions are not revived (the user can simply re-subscribe) and MANAGED is a no-op —
+     * cancelling it destroys the vendor account, so access must be re-established through a normal
+     * sign-up that provisions a fresh one.
      */
-    public async cleanupStaleLocalAccounts(): Promise<boolean> {
-        let success = true
-        const clients = await this.applicationClientRegistry.getEnabled()
-        const allServices = await this.serviceRepository.findMany({})
-        const allLocalAccounts = await this.userAccountRepository.findMany({})
-        const serviceByName = new Map(allServices.map((s) => [s.name, s]))
+    async activateFromPolicy(userId: string, service: ServiceModel): Promise<void> {
+        if (service.accountType !== AccountType.REFERENCED) return
+        if (service.accountSourceServiceId === null) return
 
-        for (const client of clients) {
-            try {
-                const service = serviceByName.get(client.name)
+        const source = await this.subscriptionRepository.find(userId, service.accountSourceServiceId)
+        if (!source || !this.isCurrentlyActive(source)) return
 
-                if (!service) {
-                    continue
-                }
-
-                const clientUsers = await client.getAllUsers()
-
-                if (!clientUsers) {
-                    continue
-                }
-
-                const clientUserById = new Map(clientUsers.map((u) => [u.id, u]))
-                const localAccounts = allLocalAccounts.filter((a) => a.serviceId === service.id)
-
-                for (const localAccount of localAccounts) {
-                    if (localAccount.status === UserAccountStatus.active) {
-                        continue
-                    }
-
-                    if (!localAccount.userServiceAccountId) {
-                        continue
-                    }
-
-                    if (!clientUserById.has(localAccount.userServiceAccountId)) {
-                        await this.userAccountRepository.delete(localAccount.userId, localAccount.serviceId)
-
-                        this.logger.log(
-                            `Deleted stale local record for user '${localAccount.userId}' on service '${localAccount.serviceId}': ` +
-                                `external account (id: '${localAccount.userServiceAccountId}') no longer exists`
-                        )
-                    }
-                }
-            } catch (error) {
-                this.logger.error(`Failed to clean up stale records for client '${client.name}'`, {
-                    stackTrace: error instanceof Error ? error.stack : String(error),
-                })
-                success = false
-            }
+        const existing = await this.subscriptionRepository.find(userId, service.id)
+        const mirror = {
+            userId,
+            serviceId: service.id,
+            status: SubscriptionStatus.active,
+            autoRenew: source.autoRenew,
+            expiresAt: source.expiresAt,
+            derivedFromSubscriptionId: source.id,
         }
 
-        return success
+        if (existing) {
+            await this.subscriptionRepository.update({
+                ...mirror,
+                cancelledAt: null,
+                lastError: null,
+                failedAt: null,
+            })
+        } else {
+            await this.subscriptionRepository.create({
+                ...mirror,
+                provisionedAt: new Date(),
+            })
+        }
+
+        this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId })
+        this.logger.log(`Access re-granted for user '${userId}' on service '${service.id}' via ALLOW policy`)
     }
-    //#endregion Scheduled Tasks
+
+    isCurrentlyActive(subscription: SubscriptionModel): boolean {
+        return (
+            subscription.status === SubscriptionStatus.active &&
+            !!subscription.expiresAt &&
+            subscription.expiresAt.getTime() > Date.now()
+        )
+    }
+
+    getDefaultExpirationDate(startTime?: Date): Date {
+        const expiresAt = startTime ? new Date(startTime.getTime()) : new Date()
+        expiresAt.setDate(expiresAt.getDate() + 30)
+
+        return expiresAt
+    }
+
+    toSafeErrorMessage(error: unknown): string {
+        if (error instanceof Error) {
+            return error.message
+        }
+
+        return 'Unknown subscription error'
+    }
+
+    private isResubscribeAllowed(subscription: SubscriptionModel | null): boolean {
+        if (subscription === null) return false
+        if (subscription.status === SubscriptionStatus.active) return false
+        if (subscription.status === SubscriptionStatus.failed) {
+            return subscription.failedOperation === FailedOperation.provisioning
+        }
+
+        return [SubscriptionStatus.cancelled, SubscriptionStatus.expired].includes(subscription.status)
+    }
 }

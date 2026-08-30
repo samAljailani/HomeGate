@@ -6,6 +6,8 @@ import type { PaginationRequestDto } from '@/lib/apiPath'
 export type ServiceResponseDto = components['schemas']['ServiceResponseDto']
 export type ServicePatchRequestDto =
     components['schemas']['ServicePatchRequestDto']
+export type ServicePutRequestDto =
+    components['schemas']['ServicePutRequestDto']
 
 /**
  * All streaming-service-related API calls live here. Components/hooks call these methods
@@ -27,15 +29,31 @@ class ServiceService {
     }
 
     async updateService(
-        name: string,
+        slug: string,
         body: ServicePatchRequestDto
     ): Promise<ServiceResponseDto> {
-        const { data, error } = await apiClient.PATCH('/api/services/{name}', {
-            params: { path: { name } },
+        const { data, error } = await apiClient.PATCH('/api/services/{slug}', {
+            params: { path: { slug } },
             body,
         })
         if (error) throw error
         return data
+    }
+
+    async createService(
+        body: ServicePutRequestDto
+    ): Promise<ServiceResponseDto> {
+        const { data, error } = await apiClient.PUT('/api/services', { body })
+        if (error) throw error
+        return data
+    }
+
+    async deleteService(slug: string): Promise<ServiceResponseDto> {
+        const { data, error } = await apiClient.DELETE('/api/services/{slug}', {
+            params: { path: { slug } },
+        })
+        if (error) throw error
+        return data!
     }
 }
 

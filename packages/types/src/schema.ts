@@ -119,6 +119,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/forward": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Traefik ForwardAuth — validates session and service entitlement */
+        get: operations["ForwardAuthController_forward"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/csrf": {
         parameters: {
             query?: never;
@@ -310,6 +327,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Proxy the current user's avatar image */
+        get: operations["UserController_getAvatar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{id}": {
         parameters: {
             query?: never;
@@ -329,24 +363,25 @@ export interface paths {
         patch: operations["UserController_updateUser"];
         trace?: never;
     };
-    "/api/services": {
+    "/api/users/{id}/service-policies": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List all services (admin only) */
-        get: operations["ServiceController_list"];
+        /** List a user's service access policies */
+        get: operations["UserController_listPolicies"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Set a service access policy for a user (upsert) */
+        patch: operations["UserController_setPolicy"];
         trace?: never;
     };
-    "/api/services/{name}": {
+    "/api/users/{id}/service-policies/{serviceId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -356,14 +391,50 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
+        /** Remove a service access policy, reverting to the service default */
+        delete: operations["UserController_deletePolicy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all services (admin only) */
+        get: operations["ServiceController_list"];
+        /** Create a service (admin only). Only REFERENCED and NONE account types are accepted. */
+        put: operations["ServiceController_create"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Update service state — enabled, imageUrl (admin only) */
+        patch?: never;
+        trace?: never;
+    };
+    "/api/services/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a service (admin only). MANAGED services cannot be deleted. */
+        delete: operations["ServiceController_remove"];
+        options?: never;
+        head?: never;
+        /** Update a service — slug, enabled, url, imageUrl (admin only) */
         patch: operations["ServiceController_update"];
         trace?: never;
     };
-    "/api/services/{name}/accounts": {
+    "/api/services/{slug}/accounts": {
         parameters: {
             query?: never;
             header?: never;
@@ -640,7 +711,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["ClientRouteController_account"];
+        get: operations["ClientRouteController_legacyAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_subscriptions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -657,6 +744,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["ClientRouteController_adminUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminPolicies"];
         put?: never;
         post?: never;
         delete?: never;
@@ -828,13 +931,19 @@ export interface components {
             confirmServicePassword: string;
             autoRenew: boolean;
         };
+        /**
+         * @description The subscribed-to service's account type
+         * @enum {string}
+         */
+        AccountType: "MANAGED" | "REFERENCED" | "NONE";
         SubscriptionResponseDto: {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
             userId: string;
             serviceId: number;
-            username: string;
+            /** @description External account username; null when the service has no account */
+            username: string | null;
             /** @enum {string} */
             status: "provisioning" | "active" | "failed" | "cancelling" | "cancelled" | "expired" | "disabling" | "disabled" | "enabling";
             autoRenew: boolean;
@@ -848,12 +957,21 @@ export interface components {
             provisionedAt?: string | null;
             /** Format: date-time */
             cancelledAt?: string | null;
+            /** @description The subscribed-to service's account type */
+            accountType: components["schemas"]["AccountType"];
+            /**
+             * Format: uuid
+             * @description Source subscription that auto-created this one (REFERENCED services)
+             */
+            derivedFromSubscriptionId: string | null;
             /** @description The subscribing user's HomeGate username (admin listings only) */
             userUsername?: string;
             /** @description The subscribing user's email (admin listings only) */
             userEmail?: string;
             /** @description The subscribed-to service's display name (admin listings only) */
             serviceName?: string;
+            /** @description The subscribed-to service's slug (admin listings only) */
+            serviceSlug?: string;
         };
         SubscriptionPatchRequestDto: {
             enabled?: boolean;
@@ -948,16 +1066,78 @@ export interface components {
             /** @description Permanently delete the account. Ignored for non-admin callers. */
             hard?: boolean;
         };
+        /** @enum {string} */
+        PolicyEffect: "ALLOW" | "DENY";
+        UserServicePolicyResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            serviceId: number;
+            serviceName: string;
+            serviceSlug: string;
+            effect: components["schemas"]["PolicyEffect"];
+            /** Format: uuid */
+            createdByUserId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        UserServicePolicySetRequestDto: {
+            /** @description Target service ID */
+            serviceId: number;
+            effect: components["schemas"]["PolicyEffect"];
+        };
+        /** @enum {string} */
+        IntegrationProvider: "jellyfin" | "immich";
+        ServiceRequiredInputsDto: {
+            username: boolean;
+            password: boolean;
+            email: boolean;
+            displayName: boolean;
+        };
         ServiceResponseDto: {
             id: number;
             name: string;
+            slug: string;
             enabled: boolean;
+            accountType: components["schemas"]["AccountType"];
+            integrationProvider: components["schemas"]["IntegrationProvider"] | null;
+            /** @description Service supplying the account for a REFERENCED service */
+            accountSourceServiceId: number | null;
+            /** @description Whether all users may subscribe unless overridden */
+            defaultAllowed: boolean;
             url?: string | null;
+            imageUrl?: string | null;
+            /** @description Credentials the signup form must collect; absent when nothing is provisioned */
+            requiredInputs?: components["schemas"]["ServiceRequiredInputsDto"];
+            /** @description Whether the requesting user is allowed to subscribe; present on list responses */
+            allowed?: boolean;
+        };
+        /**
+         * @description MANAGED is rejected: it requires a built-in integration provider
+         * @enum {string}
+         */
+        CreatableAccountType: "REFERENCED" | "NONE";
+        ServicePutRequestDto: {
+            /** @description URL-safe identifier, e.g. "jellyseerr" */
+            slug: string;
+            name: string;
+            /** @description MANAGED is rejected: it requires a built-in integration provider */
+            accountType: components["schemas"]["CreatableAccountType"];
+            /** @description Required for REFERENCED; must name a MANAGED service */
+            accountSourceServiceId?: number | null;
+            enabled?: boolean;
+            defaultAllowed?: boolean;
+            /** @description The service's public base URL */
+            url: string;
             imageUrl?: string | null;
         };
         ServicePatchRequestDto: {
-            enabled?: boolean;
-            url?: string | null;
+            /** @description URL-safe identifier, e.g. "jellyseerr" */
+            slug: string;
+            enabled: boolean;
+            /** @description The service's public base URL */
+            url: string;
             imageUrl?: string | null;
         };
         ExternalAccountResponseDto: {
@@ -1194,6 +1374,23 @@ export interface operations {
         requestBody?: never;
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ForwardAuthController_forward: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1700,6 +1897,23 @@ export interface operations {
             };
         };
     };
+    UserController_getAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     UserController_getUser: {
         parameters: {
             query?: never;
@@ -1780,6 +1994,73 @@ export interface operations {
             };
         };
     };
+    UserController_listPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserServicePolicyResponseDto"][];
+                };
+            };
+        };
+    };
+    UserController_setPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserServicePolicySetRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserServicePolicyResponseDto"];
+                };
+            };
+        };
+    };
+    UserController_deletePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: number;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Policy removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ServiceController_list: {
         parameters: {
             query?: {
@@ -1806,12 +2087,77 @@ export interface operations {
             };
         };
     };
+    ServiceController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServicePutRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceResponseDto"];
+                };
+            };
+        };
+    };
+    ServiceController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceResponseDto"];
+                };
+            };
+            /** @description MANAGED services cannot be deleted through the API */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Service not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Service is referenced by subscriptions, accounts or other services */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ServiceController_update: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                name: string;
+                slug: string;
             };
             cookie?: never;
         };
@@ -1836,7 +2182,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                name: string;
+                slug: string;
             };
             cookie?: never;
         };
@@ -1906,6 +2252,8 @@ export interface operations {
     LogController_list: {
         parameters: {
             query?: {
+                orderDirection?: "asc" | "desc";
+                orderBy?: "createdAt" | "logLevel" | "context" | "message" | "userId";
                 skip?: number;
                 take?: number;
                 search?: string;
@@ -2200,7 +2548,24 @@ export interface operations {
             };
         };
     };
-    ClientRouteController_account: {
+    ClientRouteController_legacyAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_subscriptions: {
         parameters: {
             query?: never;
             header?: never;
@@ -2218,6 +2583,23 @@ export interface operations {
         };
     };
     ClientRouteController_adminUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminPolicies: {
         parameters: {
             query?: never;
             header?: never;

@@ -200,6 +200,27 @@ describe('AuthController', () => {
 
                 expect(expressResponseMock.redirect).toHaveBeenCalledWith(clientRoutes.home)
             })
+
+            it('redirects to the stored return url (from forward auth) instead of home', async () => {
+                expressRequestMock.user = createOAuthUserProfileFixture()
+                expressRequestMock.session.returnUrl = 'https://jellyfin.example.com/web/'
+                authServiceMock.authorize.mockResolvedValue(createOAuthAuthResultFixture())
+
+                await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
+
+                expect(expressRequestMock.session.returnUrl).toBeUndefined()
+                expect(expressResponseMock.redirect).toHaveBeenCalledWith('https://jellyfin.example.com/web/')
+            })
+
+            it('falls back to home when the stored return url is not an http(s) URL', async () => {
+                expressRequestMock.user = createOAuthUserProfileFixture()
+                expressRequestMock.session.returnUrl = 'javascript:alert(1)'
+                authServiceMock.authorize.mockResolvedValue(createOAuthAuthResultFixture())
+
+                await controller.googleAuthRedirect(expressRequestMock, expressResponseMock)
+
+                expect(expressResponseMock.redirect).toHaveBeenCalledWith(clientRoutes.home)
+            })
         })
     })
 

@@ -1,11 +1,17 @@
-import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Query } from '@nestjs/common'
-import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Put, Query, Request } from '@nestjs/common'
+import { ApiBadRequestResponse, ApiBody, ApiConflictResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
+import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
 import { ServiceManagementService } from '@/api/services/serviceManagement.service'
-import { ExternalAccountResponseDto, ServiceParamsDto, ServicePatchRequestDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
+import {
+    ExternalAccountResponseDto,
+    ServiceParamsDto,
+    ServicePatchRequestDto,
+    ServicePutRequestDto,
+    ServiceResponseDto,
+} from '@/types/dtos/serviceDto'
 import { PaginationRequestDto, PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
-import { ApplicationClientNames } from '@/types/enums'
 
 @ApiTags('Services')
 @Controller(routes.services.basePath)
@@ -20,48 +26,53 @@ export class ServiceController {
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
     @ApiPaginatedResponse(ServiceResponseDto)
-    async list(@Query() pagination: PaginationRequestDto): Promise<PaginatedResponseDto<ServiceResponseDto>> {
-        return this.serviceManagementService.list(pagination.take, pagination.skip)
+    async list(@Query() pagination: PaginationRequestDto, @Request() req: ExpressRequest): Promise<PaginatedResponseDto<ServiceResponseDto>> {
+        return this.serviceManagementService.list(req.session.userId!, pagination.take, pagination.skip)
+    }
+
+    @Put(routes.services.subPath.create)
+    @AdminRoute()
+    @ApiOperation({
+        summary: 'Create a service (admin only). Only REFERENCED and NONE account types are accepted.',
+    })
+    @ApiBody({ type: ServicePutRequestDto })
+    @ApiOkResponse({ type: ServiceResponseDto })
+    async create(@Body() request: ServicePutRequestDto): Promise<ServiceResponseDto> {
+        return this.serviceManagementService.create(request)
     }
 
     @Patch(routes.services.subPath.update)
     @AdminRoute()
-    @ApiOperation({ summary: 'Update service state — enabled, imageUrl (admin only)' })
-    @ApiParam({ name: 'name', type: String })
+    @ApiOperation({
+        summary: 'Update a service — slug, enabled, url, imageUrl (admin only)',
+    })
+    @ApiParam({ name: 'slug', type: String })
     @ApiBody({ type: ServicePatchRequestDto })
     @ApiOkResponse({ type: ServiceResponseDto })
     async update(@Param() params: ServiceParamsDto, @Body() request: ServicePatchRequestDto): Promise<ServiceResponseDto> {
-        if (request.enabled === undefined && request.url === undefined && request.imageUrl === undefined) {
-            throw new BadRequestException('No fields provided to update')
-        }
+        return this.serviceManagementService.update(params.slug, request)
+    }
 
-        const name = params.name as ApplicationClientNames
-        let service: ServiceResponseDto | undefined
-
-        if (request.enabled !== undefined) {
-            service = request.enabled
-                ? await this.serviceManagementService.enable(name)
-                : await this.serviceManagementService.disable(name)
-        }
-
-        if (request.url !== undefined) {
-            service = await this.serviceManagementService.updateUrl(name, request.url)
-        }
-
-        if (request.imageUrl !== undefined) {
-            service = await this.serviceManagementService.updateImageUrl(name, request.imageUrl)
-        }
-
-        return service!
+    @Delete(routes.services.subPath.delete)
+    @AdminRoute()
+    @ApiOperation({
+        summary: 'Delete a service (admin only). MANAGED services cannot be deleted.',
+    })
+    @ApiParam({ name: 'slug', type: String })
+    @ApiOkResponse({ type: ServiceResponseDto })
+    @ApiBadRequestResponse({ description: 'MANAGED services cannot be deleted through the API' })
+    @ApiNotFoundResponse({ description: 'Service not found' })
+    @ApiConflictResponse({ description: 'Service is referenced by subscriptions, accounts or other services' })
+    async remove(@Param() params: ServiceParamsDto): Promise<ServiceResponseDto> {
+        return this.serviceManagementService.delete(params.slug)
     }
 
     @Get(routes.services.subPath.accounts)
     @AdminRoute()
     @ApiOperation({ summary: 'List external accounts for an integrated service (admin only)' })
-    @ApiParam({ name: 'name', type: String })
+    @ApiParam({ name: 'slug', type: String })
     @ApiOkResponse({ type: [ExternalAccountResponseDto] })
     async listAccounts(@Param() params: ServiceParamsDto): Promise<ExternalAccountResponseDto[]> {
-        const name = params.name as ApplicationClientNames
-        return this.serviceManagementService.listExternalAccounts(name)
+        return this.serviceManagementService.listExternalAccounts(params.slug)
     }
 }

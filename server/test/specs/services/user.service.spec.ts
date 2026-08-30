@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { BadRequestException } from '@nestjs/common'
 import { UserService } from '@/api/services/user.service'
-import { SubscriptionService } from '@/api/services/subscriptions.service'
+import { SubscriptionLifecycleService } from '@/api/services/subscriptionLifecycle.service'
 import { IUserRepository } from '@/data/repositories/IUserRepository'
 import { IUserOAuthIdentityRepository, ISessionRepository } from '@/data/repositories'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
@@ -39,7 +39,7 @@ function createOAuthIdentityRepositoryMock(): jest.Mocked<
     }
 }
 
-function createSubscriptionServiceMock(): jest.Mocked<Pick<SubscriptionService, 'disableAllForUser'>> {
+function createSubscriptionServiceMock(): jest.Mocked<Pick<SubscriptionLifecycleService, 'disableAllForUser'>> {
     return {
         disableAllForUser: jest.fn(),
     }
@@ -64,7 +64,7 @@ describe('UserService', () => {
                 { provide: IUserRepository, useValue: userRepositoryMock },
                 { provide: IUserOAuthIdentityRepository, useValue: createOAuthIdentityRepositoryMock() },
                 { provide: LoggingProvider, useValue: loggerMock },
-                { provide: SubscriptionService, useValue: subscriptionServiceMock },
+                { provide: SubscriptionLifecycleService, useValue: subscriptionServiceMock },
                 { provide: ISessionRepository, useValue: sessionRepositoryMock },
             ],
         }).compile()

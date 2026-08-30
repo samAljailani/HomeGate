@@ -5,6 +5,7 @@ export enum SystemConfigKey {
     JELLYFIN = 'jellyfin',
     IMMICH = 'immich',
     SESSIONS = 'sessions',
+    SUBSCRIPTIONS = 'subscriptions',
 }
 
 export type TaskConfig = {
@@ -32,9 +33,14 @@ export type SessionsSystemConfig = {
     maxPerUser: number
 }
 
+export type SubscriptionsSystemConfig = {
+    defaultExpiryDays: number
+}
+
 export type SystemConfigMap = {
     [SystemConfigKey.TASKS]: TasksSystemConfig
     [SystemConfigKey.JELLYFIN]: JellyfinSystemConfig
     [SystemConfigKey.IMMICH]: ImmichSystemConfig
     [SystemConfigKey.SESSIONS]: SessionsSystemConfig
+    [SystemConfigKey.SUBSCRIPTIONS]: SubscriptionsSystemConfig
 }

@@ -16,8 +16,19 @@ export function useHomePage() {
                 serviceService.getAllServices(),
                 subscriptionService.getMySubscriptions(),
             ])
-            setServices(services)
-            setSubscribedServiceIds(userSubscriptions.map((s) => s.serviceId))
+            const subscribedServiceIds = userSubscriptions
+                .filter(
+                    (s) =>
+                        s.status === 'active' &&
+                        (!s.expiresAt || new Date(s.expiresAt).getTime() > Date.now())
+                )
+                .map((s) => s.serviceId)
+            setServices(
+                services.filter(
+                    (s) => s.allowed !== false || subscribedServiceIds.includes(s.id)
+                )
+            )
+            setSubscribedServiceIds(subscribedServiceIds)
         } finally {
             setIsLoading(false)
         }

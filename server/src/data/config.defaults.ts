@@ -1,6 +1,6 @@
 import { CronExpression } from '@nestjs/schedule'
 import { ScheduledTasks, ImmichProvisioningMode } from '@/types/enums'
-import { SystemConfigKey, SystemConfigMap, TasksSystemConfig, JellyfinSystemConfig, ImmichSystemConfig, SessionsSystemConfig } from '@/types/models/SystemConfig'
+import { SystemConfigKey, SystemConfigMap, TasksSystemConfig, JellyfinSystemConfig, ImmichSystemConfig, SessionsSystemConfig, SubscriptionsSystemConfig } from '@/types/models/SystemConfig'
 
 const taskDefaults: TasksSystemConfig = Object.freeze({
     [ScheduledTasks.PROCESS_SUBSCRIPTIONS]: {
@@ -8,7 +8,7 @@ const taskDefaults: TasksSystemConfig = Object.freeze({
         runOnStartup: true,
         cronExpression: CronExpression.EVERY_HOUR,
     },
-    [ScheduledTasks.SYNC_CLIENT_ACCOUNTS]: {
+    [ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS]: {
         enabled: true,
         runOnStartup: true,
         cronExpression: CronExpression.EVERY_12_HOURS,
@@ -57,9 +57,14 @@ const sessionsDefaults: SessionsSystemConfig = Object.freeze({
     maxPerUser: 10,
 })
 
+const subscriptionsDefaults: SubscriptionsSystemConfig = Object.freeze({
+    defaultExpiryDays: 30,
+})
+
 export const systemDefaults: Readonly<SystemConfigMap> = Object.freeze({
     [SystemConfigKey.TASKS]: taskDefaults,
     [SystemConfigKey.JELLYFIN]: jellyfinDefaults,
     [SystemConfigKey.IMMICH]: immichDefaults,
     [SystemConfigKey.SESSIONS]: sessionsDefaults,
+    [SystemConfigKey.SUBSCRIPTIONS]: subscriptionsDefaults,
 })

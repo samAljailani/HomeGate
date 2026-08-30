@@ -5,7 +5,7 @@ import { BaseRepository } from './base.repository'
 import { IServiceRepository } from './IServiceRepository'
 import type { ServiceModel as PrismaService } from '@prisma/generated/models'
 import { CreateServiceModel, ServiceModel, UpdateServiceModel, ServiceFilterOptions } from '@/types/models/service'
-import { ApplicationClientNames } from '@/types/enums'
+import { AccountType, IntegrationProvider } from '@/types/enums'
 import { mapPrismaError } from './util'
 import { repositoryErrorMessages } from './resources'
 
@@ -16,16 +16,17 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
     }
 
     private mapService(service: PrismaService): ServiceModel {
-        if (!Object.values(ApplicationClientNames).includes(service.name as ApplicationClientNames)) {
-            throw new Error('Service name is not a recognized application client name. Cannot map to model.')
-        }
-
         return {
             id: service.id,
-            name: service.name as ApplicationClientNames,
+            name: service.name,
+            slug: service.slug,
             enabled: service.enabled,
             url: service.url ?? null,
             imageUrl: service.imageUrl ?? null,
+            accountType: service.accountType as AccountType,
+            integrationProvider: (service.integrationProvider as IntegrationProvider) ?? null,
+            accountSourceServiceId: service.accountSourceServiceId ?? null,
+            defaultAllowed: service.defaultAllowed,
         }
     }
 
@@ -45,15 +46,31 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async findByName(name: ApplicationClientNames): Promise<ServiceModel | null> {
+    async findBySlug(slug: string): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.findUnique({
-                where: { name },
+                where: { slug },
             })
 
             return service ? this.mapService(service) : null
         } catch (error) {
-            this.logger.error(`findByName failed for name: ${name}`, {
+            this.logger.error(`findBySlug failed for slug: ${slug}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+
+            mapPrismaError(error, repositoryErrorMessages.service)
+        }
+    }
+
+    async findByIntegrationProvider(provider: IntegrationProvider): Promise<ServiceModel | null> {
+        try {
+            const service = await this.db.service.findUnique({
+                where: { integrationProvider: provider },
+            })
+
+            return service ? this.mapService(service) : null
+        } catch (error) {
+            this.logger.error(`findByIntegrationProvider failed for provider: ${provider}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
 
@@ -101,16 +118,16 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async isEnabled(name: ApplicationClientNames): Promise<boolean> {
+    async isEnabled(slug: string): Promise<boolean> {
         try {
             const service = await this.db.service.findUnique({
-                where: { name },
+                where: { slug },
                 select: { enabled: true },
             })
 
             return service?.enabled ?? false
         } catch (error) {
-            this.logger.error(`isApplicationClientEnabled failed for name: ${name}`, {
+            this.logger.error(`isEnabled failed for slug: ${slug}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
 
@@ -118,16 +135,16 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async setEnabled(name: ApplicationClientNames, enabled: boolean): Promise<ServiceModel | null> {
+    async setEnabled(slug: string, enabled: boolean): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.update({
-                where: { name },
+                where: { slug },
                 data: { enabled },
             })
 
             return this.mapService(service)
         } catch (error) {
-            this.logger.error(`setApplicationClientEnabled failed for name: ${name}`, {
+            this.logger.error(`setEnabled failed for slug: ${slug}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
 
@@ -135,16 +152,33 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async setImageUrl(name: ApplicationClientNames, imageUrl: string | null): Promise<ServiceModel | null> {
+    async setSlug(slug: string, newSlug: string): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.update({
-                where: { name },
+                where: { slug },
+                data: { slug: newSlug },
+            })
+
+            return this.mapService(service)
+        } catch (error) {
+            this.logger.error(`setSlug failed for slug: ${slug}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+
+            mapPrismaError(error, repositoryErrorMessages.service)
+        }
+    }
+
+    async setImageUrl(slug: string, imageUrl: string | null): Promise<ServiceModel | null> {
+        try {
+            const service = await this.db.service.update({
+                where: { slug },
                 data: { imageUrl },
             })
 
             return this.mapService(service)
         } catch (error) {
-            this.logger.error(`setImageUrl failed for name: ${name}`, {
+            this.logger.error(`setImageUrl failed for slug: ${slug}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
 
@@ -152,16 +186,16 @@ export class ServiceRepository extends BaseRepository implements IServiceReposit
         }
     }
 
-    async setUrl(name: ApplicationClientNames, url: string | null): Promise<ServiceModel | null> {
+    async setUrl(slug: string, url: string | null): Promise<ServiceModel | null> {
         try {
             const service = await this.db.service.update({
-                where: { name },
+                where: { slug },
                 data: { url },
             })
 
             return this.mapService(service)
         } catch (error) {
-            this.logger.error(`setUrl failed for name: ${name}`, {
+            this.logger.error(`setUrl failed for slug: ${slug}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
 

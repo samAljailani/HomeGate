@@ -17,6 +17,7 @@ import { classNames } from '@/utils/styles'
 import { SignUpForm } from '@/views/Home/components/SignUp'
 import { addToastMessage, capitalizeFirstLetter, copyToClipboard } from '@/lib/utils'
 import { config } from '@/constants/app'
+import type { ServiceResponseDto } from '@/services/service.service'
 
 // const ServiceCardsVariants = cva(
 //   "",
@@ -39,6 +40,9 @@ import { config } from '@/constants/app'
 // export function CardTopImage({isLocked = true, size = "default" }: { isLocked: boolean } & VariantProps<typeof CardTopImageVariants>) {
 export interface ServiceCardProps {
     isLocked: boolean
+    allowed?: boolean
+    accountType?: ServiceResponseDto['accountType']
+    requiredInputs?: ServiceResponseDto['requiredInputs']
     className?: string
     /** Service display name, shown as the card title and used for image alt text / fallback initial. */
     name?: string
@@ -48,15 +52,21 @@ export interface ServiceCardProps {
     url?: string | null
     /** Id of the service, needed for the Sign Up form submission */
     serviceId: number
+    /** Called after a successful sign-up so the page can refresh its subscription state */
+    onSubscribed?: () => void
 }
 
 export function ServiceCard({
     isLocked = true,
+    allowed = true,
+    accountType,
+    requiredInputs,
     className,
     name = 'Service',
     imageUrl,
     url,
     serviceId,
+    onSubscribed,
 }: ServiceCardProps) {
     const [imageFailed, setImageFailed] = React.useState(false)
     const [signUpOpen, setSignUpOpen] = React.useState(false)
@@ -73,7 +83,7 @@ export function ServiceCard({
         }
     }
     const dropDownMenuItems = [
-        { label: 'Manage subscription', href: config.routes.account },
+        { label: 'Manage subscription', href: config.routes.subscriptions },
         {
             label: 'Copy link',
             onClick: copyServiceLink,
@@ -82,11 +92,22 @@ export function ServiceCard({
 
     let footerButton: React.ReactNode
 
-    if (isLocked) {
+    if (isLocked && accountType === 'REFERENCED') {
+        footerButton = (
+            <Button
+                className="h-8 px-3 text-xs md:h-9 md:px-4 md:text-sm lg:h-10 lg:px-6 z-20 invisible"
+                disabled
+                aria-hidden
+            >
+                Sign Up
+            </Button>
+        )
+    } else if (isLocked) {
         footerButton = (
             <Button
                 className="h-8 px-3 text-xs md:h-9 md:px-4 md:text-sm lg:h-10 lg:px-6 z-20"
                 onClick={() => setSignUpOpen(true)}
+                disabled={!allowed}
             >
                 Sign Up
             </Button>
@@ -148,6 +169,9 @@ export function ServiceCard({
                 open={signUpOpen}
                 setOpen={setSignUpOpen}
                 serviceId={serviceId}
+                accountType={accountType}
+                requiredInputs={requiredInputs}
+                onSubscribed={onSubscribed}
             />
         </div>
     )

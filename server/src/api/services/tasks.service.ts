@@ -3,7 +3,7 @@ import { BaseService } from './base.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { ScheduledTasks } from '@/types/enums'
 import { Task } from '@/decorators'
-import { SubscriptionService } from './subscriptions.service'
+import { SubscriptionLifecycleService } from './subscriptionLifecycle.service'
 import { UserService } from './user.service'
 import { ITaskRunRepository } from '@/data/repositories/ITaskRunRepository'
 import { ISessionRepository } from '@/data/repositories/ISessionRepository'
@@ -14,7 +14,7 @@ import { LogService } from './log.service'
 export class TaskService extends BaseService {
     constructor(
         @Inject(LoggingProvider) logger: LoggingProvider,
-        @Inject(SubscriptionService) private subscriptionService: SubscriptionService,
+        @Inject(SubscriptionLifecycleService) private subscriptionLifecycle: SubscriptionLifecycleService,
         @Inject(UserService) private userService: UserService,
         @Inject(LogService) private logService: LogService,
         @Inject(ISessionRepository) private sessionRepository: ISessionRepository,
@@ -25,18 +25,22 @@ export class TaskService extends BaseService {
 
     @Task(ScheduledTasks.PROCESS_SUBSCRIPTIONS)
     async processSubscriptionsHandler(): Promise<boolean> {
-        return this.runTask(ScheduledTasks.PROCESS_SUBSCRIPTIONS, () => this.subscriptionService.processSubscriptions())
+        return this.runTask(ScheduledTasks.PROCESS_SUBSCRIPTIONS, () =>
+            this.subscriptionLifecycle.processSubscriptions()
+        )
     }
 
-    @Task(ScheduledTasks.SYNC_CLIENT_ACCOUNTS)
-    async syncClientAccountsHandler(): Promise<boolean> {
-        return this.runTask(ScheduledTasks.SYNC_CLIENT_ACCOUNTS, () => this.subscriptionService.syncClientAccounts())
+    @Task(ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS)
+    async syncIntegrationAccountsHandler(): Promise<boolean> {
+        return this.runTask(ScheduledTasks.SYNC_INTEGRATION_ACCOUNTS, () =>
+            this.subscriptionLifecycle.syncIntegrationAccounts()
+        )
     }
 
     @Task(ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS)
     async cleanupStaleLocalAccountsHandler(): Promise<boolean> {
         return this.runTask(ScheduledTasks.CLEANUP_STALE_LOCAL_ACCOUNTS, () =>
-            this.subscriptionService.cleanupStaleLocalAccounts()
+            this.subscriptionLifecycle.cleanupStaleLocalAccounts()
         )
     }
 

@@ -16,6 +16,7 @@ const getEnv = (): EnvData => {
     const DATABASE_URL = process.env['DATABASE_URL']
     const SESSION_SECRET = process.env['SESSION_SECRET']
     const SESSION_COOKIE_NAME = process.env['SESSION_COOKIE_NAME']
+    const SESSION_COOKIE_DOMAIN = process.env['SESSION_COOKIE_DOMAIN']
     const LOG_TARGETS = (process.env['LOG_TARGETS'] ?? '')
         .split(',')
         .map((x) => x.trim())
@@ -48,6 +49,7 @@ const getEnv = (): EnvData => {
         session: {
             secret: SESSION_SECRET!,
             cookieName: SESSION_COOKIE_NAME!,
+            ...(SESSION_COOKIE_DOMAIN && { cookieDomain: SESSION_COOKIE_DOMAIN }),
         },
         logger: {
             targets: LOG_TARGETS,

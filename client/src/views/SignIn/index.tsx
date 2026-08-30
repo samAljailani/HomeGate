@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { IconGoogle } from '@/components/ui/icons/IconGoogle'
 import { config } from '@/constants/app'
 import { authService } from '@/services/auth.service'
+import { addToastMessage } from '@/lib/utils'
 import React from 'react'
 
 export function OAuthSignInPage() {
@@ -15,6 +16,18 @@ export function OAuthSignInPage() {
         authService.getEnabledProviders()
             .then(setEnabledProviders)
             .catch(() => setEnabledProviders([]))
+    }, [])
+
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search)
+        const appName = params.get('appName')
+        const returnUrl = params.get('returnUrl')
+
+        if (appName) {
+            addToastMessage('info', `You must sign in to HomeGate before you can access ${appName}.`)
+        } else if (returnUrl) {
+            addToastMessage('info', 'You must sign in to HomeGate before you can continue.')
+        }
     }, [])
 
     function onOAuthSignInClick(href: string) {
@@ -39,7 +52,7 @@ export function OAuthSignInPage() {
                 setOpen={setOpen}
                 showCloseButton={false}
                 title="Sign In"
-                description="Sign in to a world of mistery"
+                description="The front door to your digital home"
                 className="data-[state=open]:slide-in-from-bottom-1/4 data-[state=open]:duration-500"
             >
                 {enabledProviders?.includes('google') && (

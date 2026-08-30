@@ -6,7 +6,7 @@ import { LogListRequestDto, LogResponseDto } from '@/types/dtos/logDto'
 import { LogFilterOptions } from '@/data/repositories/ILoggingRepository'
 import { PaginatedResponseDto, ApiPaginatedResponse } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
-import { LogLevel } from '@/types/enums'
+import { LogLevel, LogSortField, SortDirection } from '@/types/enums'
 
 @ApiTags('Logs')
 @Controller(routes.logs.basePath)
@@ -24,12 +24,16 @@ export class LogController {
     @ApiQuery({ name: 'search', type: String, required: false })
     @ApiQuery({ name: 'take', type: Number, required: false })
     @ApiQuery({ name: 'skip', type: Number, required: false })
+    @ApiQuery({ name: 'orderBy', enum: LogSortField, required: false })
+    @ApiQuery({ name: 'orderDirection', enum: SortDirection, required: false })
     @ApiPaginatedResponse(LogResponseDto)
     async list(@Query() query: LogListRequestDto): Promise<PaginatedResponseDto<LogResponseDto>> {
         const filter: LogFilterOptions = {}
         if (query.userId !== undefined) filter.userId = query.userId
         if (query.sessionId !== undefined) filter.sessionId = query.sessionId
         if (query.logLevel !== undefined) filter.logLevel = query.logLevel
+        if (query.orderBy !== undefined) filter.orderBy = query.orderBy
+        if (query.orderDirection !== undefined) filter.orderDirection = query.orderDirection
         if (query.createdAfter !== undefined) filter.createdAfter = new Date(query.createdAfter)
         if (query.createdBefore !== undefined) filter.createdBefore = new Date(query.createdBefore)
         if (query.search !== undefined) filter.search = query.search

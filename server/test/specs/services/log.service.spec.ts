@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { LogService } from '@/api/services/log.service'
 import { ILoggingRepository } from '@/data/repositories/ILoggingRepository'
 import { LogModel } from '@/types/models/logs'
-import { LogLevel } from '@/types/enums'
+import { LogLevel, LogSortField, SortDirection } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 
@@ -63,6 +63,23 @@ describe('LogService', () => {
                 { userId: 'user-1', logLevel: LogLevel.Error },
                 10,
                 20
+            )
+        })
+
+        it('passes sort options to repository', async () => {
+            loggingRepositoryMock.findMany.mockResolvedValue([])
+            loggingRepositoryMock.count.mockResolvedValue(0)
+
+            await service.list(
+                { orderBy: LogSortField.Message, orderDirection: SortDirection.Asc },
+                50,
+                0
+            )
+
+            expect(loggingRepositoryMock.findMany).toHaveBeenCalledWith(
+                { orderBy: LogSortField.Message, orderDirection: SortDirection.Asc },
+                50,
+                0
             )
         })
 

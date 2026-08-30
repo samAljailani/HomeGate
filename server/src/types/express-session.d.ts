@@ -13,7 +13,9 @@ declare module 'express-session' {
         isAdmin?: boolean
         csrfToken?: string
         authProviderId?: number
-        avatarUrl?: string
-        oauthTransaction?: OAuthTransaction
-    }
+avatarUrl?: string
+    oauthTransaction?: OAuthTransaction
+    /** Absolute URL to return the user to after signing in (set by forward auth). */
+    returnUrl?: string
+}
 }

@@ -18,8 +18,8 @@ import { buildSwaggerConfig } from '@/swagger.config'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { resolve } from 'path'
 
-import { ApplicationClientRegistry } from './core/clients/applicationClientRegistry'
-import { clients } from './core/clients'
+import { AccountIntegrationRegistry } from './core/integrations/accountIntegrationRegistry'
+import { accountIntegrationProviders } from './core/integrations'
 
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule)
@@ -35,7 +35,7 @@ async function bootstrap() {
     app.useStaticAssets(resolve(clientBuildPath, '_next'), { prefix: '/_next', index: false })
     app.useStaticAssets(resolve(clientBuildPath, 'images'), { prefix: '/images', index: false })
 
-    await configureApplicationClients(app)
+    await configureAccountIntegrations(app)
 
     const sessionOptions: session.SessionOptions = {
         secret: env.session.secret,
@@ -47,6 +47,7 @@ async function bootstrap() {
             httpOnly: true,
             sameSite: 'lax',
             maxAge: 1000 * 60 * 60 * 24 * 30,
+            ...(env.session.cookieDomain && { domain: env.session.cookieDomain }),
         },
     }
 
@@ -82,11 +83,11 @@ async function bootstrap() {
     console.log(`Server listening on http://localhost:${port}`)
 }
 
-async function configureApplicationClients(app: NestExpressApplication) {
-    const applicationClientRegistry = app.get(ApplicationClientRegistry)
+async function configureAccountIntegrations(app: NestExpressApplication) {
+    const registry = app.get(AccountIntegrationRegistry)
 
-    for (const client of clients) {
-        await applicationClientRegistry.register(app.get(client))
+    for (const provider of accountIntegrationProviders) {
+        await registry.register(app.get(provider))
     }
 }
 

@@ -30,17 +30,39 @@ export enum LogTarget {
     Database = 'database',
 }
 
+export enum LogSortField {
+    CreatedAt = 'createdAt',
+    LogLevel = 'logLevel',
+    Context = 'context',
+    Message = 'message',
+    UserId = 'userId',
+}
+
+export enum SortDirection {
+    Asc = 'asc',
+    Desc = 'desc',
+}
+
 export enum ImmichProvisioningMode {
     Local = 'local',
     OAuth = 'oauth',
 }
 
-export enum ApplicationClientNames {
+export enum IntegrationProvider {
     Jellyfin = 'jellyfin',
     Immich = 'immich',
 }
 
-export enum UserAccountStatus {
+export enum AccountType {
+    /** HomeGate provisions and owns an external account through an integration provider. */
+    MANAGED = 'MANAGED',
+    /** Access relies on another service's account; nothing to provision here. */
+    REFERENCED = 'REFERENCED',
+    /** No account of any kind; the subscription is purely an access grant. */
+    NONE = 'NONE',
+}
+
+export enum SubscriptionStatus {
     provisioning = 'provisioning',
     active = 'active',
     failed = 'failed',
@@ -59,10 +81,15 @@ export enum FailedOperation {
     sync = 'sync',
 }
 
+export enum PolicyEffect {
+    ALLOW = 'ALLOW',
+    DENY = 'DENY',
+}
+
 export enum ScheduledTasks {
     PROCESS_SUBSCRIPTIONS = 'process_subscriptions',
     CLEANUP_STALE_LOCAL_ACCOUNTS = 'cleanup_stale_local_accounts',
-    SYNC_CLIENT_ACCOUNTS = 'sync_client_accounts',
+    SYNC_INTEGRATION_ACCOUNTS = 'sync_integration_accounts',
     CLEANUP_DELETED_USERS = 'cleanup_deleted_users',
     PURGE_OLD_LOGS = 'purge_old_logs',
     PURGE_OLD_TASK_RUNS = 'purge_old_task_runs',
@@ -71,4 +98,6 @@ export enum ScheduledTasks {
 
 export enum AppEvent {
     INVITE_CLAIMED = 'invite.claimed',
+    SUBSCRIPTION_CHANGED = 'subscription.changed',
+    SERVICE_POLICY_CHANGED = 'servicePolicy.changed',
 }

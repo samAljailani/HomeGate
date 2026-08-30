@@ -34,14 +34,25 @@ export class ClientRouteController {
     }
 
     @Get(clientRoutes.account)
-    account(@Res() res: Response) {
-        return this.sendPage(res, clientRoutes.account)
+    legacyAccount(@Res() res: Response) {
+        return res.redirect(clientRoutes.subscriptions)
+    }
+
+    @Get(clientRoutes.subscriptions)
+    subscriptions(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.subscriptions)
     }
 
     @AdminRoute()
     @Get(clientRoutes.adminUsers)
     adminUsers(@Res() res: Response) {
         return this.sendPage(res, clientRoutes.adminUsers)
+    }
+
+    @AdminRoute()
+    @Get(clientRoutes.adminPolicies)
+    adminPolicies(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminPolicies)
     }
 
     @AdminRoute()

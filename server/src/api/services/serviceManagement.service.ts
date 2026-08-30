@@ -1,29 +1,54 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common'
-import { IServiceRepository } from '@/data/repositories'
+import { Injectable, Inject, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common'
+import { IServiceRepository, ISubscriptionRepository } from '@/data/repositories'
 import { ServiceModel } from '@/types/models/service'
-import { ExternalAccountResponseDto, ServiceResponseDto } from '@/types/dtos/serviceDto'
-import { ApplicationClientNames } from '@/types/enums'
-import { ApplicationClientRegistry } from '@/core/clients/applicationClientRegistry'
-import { ApplicationUserModel } from '@/types/params/application.client'
+import {
+    CREATABLE_ACCOUNT_TYPES,
+    ExternalAccountResponseDto,
+    ServicePatchRequestDto,
+    ServiceResponseDto,
+    ServicePutRequestDto,
+} from '@/types/dtos/serviceDto'
+import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
+import { ApplicationUserModel } from '@/types/params/accountIntegration'
 import { PaginatedResponseDto } from '@/types/dtos/paginationDto'
+import { AccountType, AppEvent } from '@/types/enums'
+import { LoggingProvider } from '@/infrastructure/logger.provider'
+import { EventEmitter2 } from '@nestjs/event-emitter'
+import { ServiceAccessService } from './serviceAccess.service'
+import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
+
+const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 @Injectable()
 export class ServiceManagementService {
     constructor(
         @Inject(IServiceRepository) private readonly serviceRepository: IServiceRepository,
-        @Inject(ApplicationClientRegistry) private readonly clientRegistry: ApplicationClientRegistry
-    ) {}
+        @Inject(ISubscriptionRepository) private readonly subscriptionRepository: ISubscriptionRepository,
+        @Inject(AccountIntegrationRegistry) private readonly integrationRegistry: AccountIntegrationRegistry,
+        @Inject(ServiceAccessService) private readonly accessService: ServiceAccessService,
+        @Inject(SubscriptionCascadeService) private readonly cascade: SubscriptionCascadeService,
+        @Inject(EventEmitter2) private readonly events: EventEmitter2,
+        @Inject(LoggingProvider) private readonly logger: LoggingProvider
+    ) {
+        this.logger.setContext(this.constructor.name)
+    }
 
     serviceModelToResponseDto(service: ServiceModel): ServiceResponseDto {
-        const dto: ServiceResponseDto = {
+        const provider = this.integrationRegistry.get(service.integrationProvider)
+
+        return {
             id: service.id,
             name: service.name,
+            slug: service.slug,
             enabled: service.enabled,
+            accountType: service.accountType,
+            integrationProvider: service.integrationProvider,
+            accountSourceServiceId: service.accountSourceServiceId,
+            defaultAllowed: service.defaultAllowed,
             url: service.url,
             imageUrl: service.imageUrl,
+            ...(provider && { requiredInputs: provider.requiredInputs }),
         }
-
-        return dto
     }
 
     applicationUserModelToResponseDto(user: ApplicationUserModel): ExternalAccountResponseDto {
@@ -35,54 +60,249 @@ export class ServiceManagementService {
         }
     }
 
-    async listExternalAccounts(name: ApplicationClientNames): Promise<ExternalAccountResponseDto[]> {
-        if (!this.clientRegistry.has(name)) {
-            throw new BadRequestException(`Service '${name}' is not an integrated external client`)
+    async listExternalAccounts(slug: string): Promise<ExternalAccountResponseDto[]> {
+        const service = await this.serviceRepository.findBySlug(slug)
+
+        if (!service) {
+            throw new NotFoundException(`Service '${slug}' not found`)
         }
 
-        const users = await this.clientRegistry.get(name).getAllUsers()
+        const provider = this.integrationRegistry.get(service.integrationProvider)
+
+        if (!provider) {
+            throw new BadRequestException(`Service '${slug}' does not manage external accounts`)
+        }
+
+        const users = await provider.getAllUsers()
         return (users ?? []).map((u) => this.applicationUserModelToResponseDto(u))
     }
 
-    async list(take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<ServiceResponseDto>> {
+    async list(userId: string, take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<ServiceResponseDto>> {
         const [services, total] = await Promise.all([
             this.serviceRepository.findMany({}, take, skip),
             this.serviceRepository.count({}),
         ])
-        return new PaginatedResponseDto(services.map((s) => this.serviceModelToResponseDto(s)), total, skip)
+        const accessMap = await this.accessService.resolveAccess(userId, services)
+        return new PaginatedResponseDto(
+            services.map((s) => ({ ...this.serviceModelToResponseDto(s), allowed: accessMap.get(s.id) ?? false })),
+            total,
+            skip
+        )
     }
 
-    async enable(name: ApplicationClientNames): Promise<ServiceResponseDto> {
-        if (this.clientRegistry.has(name)) {
-            await this.clientRegistry.enable(name)
-        } else {
-            await this.serviceRepository.setEnabled(name, true)
+    /**
+     * Creates a service. Only REFERENCED and NONE are accepted: a MANAGED service needs a
+     * built-in integration provider, which cannot be added at runtime.
+     */
+    async create(request: ServicePutRequestDto): Promise<ServiceResponseDto> {
+        // Enforced here as well as on the DTO: the HTTP validator does not cover internal callers.
+        if (!CREATABLE_ACCOUNT_TYPES.includes(request.accountType)) {
+            throw new BadRequestException(
+                `Account type '${request.accountType}' cannot be created through the API; ` +
+                    `a MANAGED service requires a built-in integration provider`
+            )
         }
-        const service = await this.serviceRepository.findByName(name)
-        if (!service) throw new NotFoundException(`Service '${name}' not found`)
-        return this.serviceModelToResponseDto(service)
-    }
 
-    async disable(name: ApplicationClientNames): Promise<ServiceResponseDto> {
-        if (this.clientRegistry.has(name)) {
-            await this.clientRegistry.disable(name)
-        } else {
-            await this.serviceRepository.setEnabled(name, false)
+        if (!SLUG_PATTERN.test(request.slug)) {
+            throw new BadRequestException(
+                'Slug must be lowercase alphanumeric words separated by single hyphens, e.g. "jellyseerr"'
+            )
         }
-        const service = await this.serviceRepository.findByName(name)
-        if (!service) throw new NotFoundException(`Service '${name}' not found`)
+
+        const accountSourceServiceId = await this.resolveAccountSource(request)
+
+        if (await this.serviceRepository.findBySlug(request.slug)) {
+            throw new ConflictException(`A service with slug '${request.slug}' already exists`)
+        }
+
+        const [nameClash] = await this.serviceRepository.findMany({ name: request.name }, 1)
+
+        if (nameClash) {
+            throw new ConflictException(`A service named '${request.name}' already exists`)
+        }
+
+        const service = await this.serviceRepository.create({
+            name: request.name,
+            slug: request.slug,
+            enabled: request.enabled ?? true,
+            accountType: request.accountType as AccountType,
+            integrationProvider: null,
+            accountSourceServiceId,
+            defaultAllowed: request.defaultAllowed ?? true,
+            url: request.url ?? null,
+            imageUrl: request.imageUrl ?? null,
+        })
+
+        if (!service) {
+            throw new BadRequestException(`Failed to create service '${request.slug}'`)
+        }
+
+        this.logger.log(
+            `Service '${service.slug}' created as ${service.accountType}` +
+                (accountSourceServiceId ? ` sourcing accounts from service '${accountSourceServiceId}'` : '')
+        )
+
+        if (service.accountType === AccountType.REFERENCED) {
+            const affectedUserIds = await this.cascade.onReferencedServiceCreated(service)
+
+            for (const userId of affectedUserIds) {
+                this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId })
+            }
+        }
+
         return this.serviceModelToResponseDto(service)
     }
 
-    async updateImageUrl(name: ApplicationClientNames, imageUrl: string | null): Promise<ServiceResponseDto> {
-        const service = await this.serviceRepository.setImageUrl(name, imageUrl)
-        if (!service) throw new NotFoundException(`Service '${name}' not found`)
+    private async resolveAccountSource(request: ServicePutRequestDto): Promise<number | null> {
+        if (request.accountType !== AccountType.REFERENCED) {
+            if (request.accountSourceServiceId != null) {
+                throw new BadRequestException('Only a REFERENCED service may name an account source')
+            }
+
+            return null
+        }
+
+        if (request.accountSourceServiceId == null) {
+            throw new BadRequestException('A REFERENCED service must name the service supplying its accounts')
+        }
+
+        const source = await this.serviceRepository.findById(request.accountSourceServiceId)
+
+        if (!source) {
+            throw new BadRequestException(`Account source service '${request.accountSourceServiceId}' does not exist`)
+        }
+
+        // Chaining references would make the entitlement clamp ambiguous.
+        if (source.accountType !== AccountType.MANAGED) {
+            throw new BadRequestException(
+                `Account source '${source.slug}' must be a MANAGED service, but it is ${source.accountType}`
+            )
+        }
+
+        return source.id
+    }
+
+    private async setEnabled(slug: string, enabled: boolean): Promise<ServiceResponseDto> {
+        const service = await this.serviceRepository.findBySlug(slug)
+
+        if (!service) {
+            throw new NotFoundException(`Service '${slug}' not found`)
+        }
+
+        // A REFERENCED or NONE service has no provider to notify; the flag alone is the state.
+        if (this.integrationRegistry.has(service.integrationProvider)) {
+            await (enabled
+                ? this.integrationRegistry.enable(service.integrationProvider!)
+                : this.integrationRegistry.disable(service.integrationProvider!))
+        } else {
+            await this.serviceRepository.setEnabled(slug, enabled)
+        }
+
+        const updated = await this.serviceRepository.findBySlug(slug)
+        if (!updated) throw new NotFoundException(`Service '${slug}' not found`)
+        return this.serviceModelToResponseDto(updated)
+    }
+
+    async enable(slug: string): Promise<ServiceResponseDto> {
+        return this.setEnabled(slug, true)
+    }
+
+    async disable(slug: string): Promise<ServiceResponseDto> {
+        return this.setEnabled(slug, false)
+    }
+
+    async updateSlug(slug: string, newSlug: string): Promise<ServiceResponseDto> {
+        if (newSlug === slug) {
+            const service = await this.serviceRepository.findBySlug(slug)
+            if (!service) throw new NotFoundException(`Service '${slug}' not found`)
+            return this.serviceModelToResponseDto(service)
+        }
+
+        if (await this.serviceRepository.findBySlug(newSlug)) {
+            throw new ConflictException(`A service with slug '${newSlug}' already exists`)
+        }
+
+        const service = await this.serviceRepository.setSlug(slug, newSlug)
+        if (!service) throw new NotFoundException(`Service '${slug}' not found`)
         return this.serviceModelToResponseDto(service)
     }
 
-    async updateUrl(name: ApplicationClientNames, url: string | null): Promise<ServiceResponseDto> {
-        const service = await this.serviceRepository.setUrl(name, url)
-        if (!service) throw new NotFoundException(`Service '${name}' not found`)
+    /**
+     * Full update: slug (optional rename), enabled, url and imageUrl (optional).
+     * The rename applies first so every subsequent write targets the new slug.
+     */
+    async update(slug: string, request: ServicePatchRequestDto): Promise<ServiceResponseDto> {
+        let currentSlug = slug
+
+        if (request.slug !== slug) {
+            currentSlug = (await this.updateSlug(slug, request.slug)).slug
+        }
+
+        await this.setEnabled(currentSlug, request.enabled)
+        await this.updateUrl(currentSlug, request.url)
+
+        if (request.imageUrl !== undefined) {
+            return this.updateImageUrl(currentSlug, request.imageUrl)
+        }
+
+        return this.serviceModelToResponseDto(
+            (await this.serviceRepository.findBySlug(currentSlug))!
+        )
+    }
+
+    async updateImageUrl(slug: string, imageUrl: string | null): Promise<ServiceResponseDto> {
+        const service = await this.serviceRepository.setImageUrl(slug, imageUrl)
+        if (!service) throw new NotFoundException(`Service '${slug}' not found`)
+        return this.serviceModelToResponseDto(service)
+    }
+
+    async updateUrl(slug: string, url: string | null): Promise<ServiceResponseDto> {
+        const service = await this.serviceRepository.setUrl(slug, url)
+        if (!service) throw new NotFoundException(`Service '${slug}' not found`)
+        return this.serviceModelToResponseDto(service)
+    }
+
+    /**
+     * Deletes a service. MANAGED services are excluded: they back built-in integrations and
+     * cannot be removed at runtime.
+     *
+     * Deleting a REFERENCED service cascades its subscriptions (and their external accounts and
+     * derived subscriptions, handled by the database) before the service row itself goes. Other
+     * dependencies — invite subscriptions or an account-source reference — are protected by the
+     * database's NO ACTION foreign keys, so a deletion only succeeds when none remain.
+     */
+    async delete(slug: string): Promise<ServiceResponseDto> {
+        const service = await this.serviceRepository.findBySlug(slug)
+
+        if (!service) {
+            throw new NotFoundException(`Service '${slug}' not found`)
+        }
+
+        if (service.accountType === AccountType.MANAGED) {
+            throw new BadRequestException(
+                `Service '${slug}' is MANAGED and cannot be deleted through the API; ` +
+                    `it requires a built-in integration provider`
+            )
+        }
+
+        if (service.accountType === AccountType.REFERENCED) {
+            const subscriptions = await this.subscriptionRepository.findMany({ serviceId: service.id })
+            const deleted = await this.subscriptionRepository.deleteByServiceId(service.id)
+
+            if (deleted > 0) {
+                this.logger.log(
+                    `Deleted ${deleted} subscription(s) cascaded from referenced service '${slug}'`
+                )
+            }
+
+            const impactedUserIds = [...new Set(subscriptions.map((s) => s.userId))]
+            for (const userId of impactedUserIds) {
+                this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId })
+            }
+        }
+
+        await this.serviceRepository.delete(service.id)
+        this.logger.log(`Service '${slug}' deleted (${service.accountType})`)
         return this.serviceModelToResponseDto(service)
     }
 }

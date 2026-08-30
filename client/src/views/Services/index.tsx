@@ -5,7 +5,7 @@ import { useServicesTable } from './hooks/useServicesTable'
 import { ServicesTable } from './components/ServicesTable'
 
 export function AdminServices() {
-    const { services, isLoading, patchService } = useServicesPage()
+    const { services, isLoading, patchService, refresh, removeService } = useServicesPage()
     const servicesTable = useServicesTable({ patchService })
 
     return (
@@ -20,6 +20,8 @@ export function AdminServices() {
                 isLoading={isLoading}
                 pendingName={servicesTable.pendingName}
                 onUpdate={servicesTable.updateService}
+                onCreated={refresh}
+                onDelete={removeService}
             />
         </div>
     )

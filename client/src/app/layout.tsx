@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { Toaster } from '@/components/ui/toast'
 import { PreferencesProvider } from '@/context/preferences-context'
-import { AuthProvider } from '@/context/auth-context'
 import { config } from '@/constants/app'
 import { preferences } from '@/constants/preferences'
 import '@/styles/index.css'
@@ -22,12 +21,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </head>
             <body>
                 <PreferencesProvider>
-                    <AuthProvider>
-                        <div className="app">
-                            <main className="content">{children}</main>
-                        </div>
-                        <Toaster />
-                    </AuthProvider>
+                    <div className="app">
+                        <main className="content">{children}</main>
+                    </div>
+                    <Toaster />
                 </PreferencesProvider>
             </body>
         </html>

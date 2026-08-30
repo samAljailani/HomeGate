@@ -9,16 +9,18 @@ services:
     restart: unless-stopped
     environment:
       APP_ENV: production
+      TZ: America/New_York
       PORT: ${PORT:-3003}
       HOST: https://${APP_SUBDOMAIN}.${DOMAIN}
       CLIENT_RELATIVE_STATIC_PATH: ./dist/client/
       SESSION_SECRET: ${SESSION_SECRET}
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-HOMEGATE_SID}
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-.${DOMAIN}}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       DATABASE_URL: ${DATABASE_URL}
       LOG_TARGETS: console,database
-      LOG_LEVEL: log
+      LOG_LEVEL: debug
       LOG_FORMAT: console
       COLOR_LOGS: "false"
     ports:
