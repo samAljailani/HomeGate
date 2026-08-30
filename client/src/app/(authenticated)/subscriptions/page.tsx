@@ -1,5 +1,5 @@
-import { Account } from '@/views/Account'
+import { Subscriptions } from '@/views/Subscriptions'
 
-export default function AccountPage() {
-    return <Account />
+export default function SubscriptionsPage() {
+    return <Subscriptions />
 }
