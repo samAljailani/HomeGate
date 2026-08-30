@@ -224,7 +224,8 @@ describe('Service create through ValidationPipe (main.ts options)', () => {
     })
 
     it('rejects a missing url', async () => {
-        const { url: _removed, ...rest } = swaggerPayload
+        const { url, ...rest } = swaggerPayload
+        void url
         await expect(pipeCreate(rest)).rejects.toThrow(BadRequestException)
     })
 
