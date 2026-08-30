@@ -108,7 +108,7 @@ describe('ForwardAuthController', () => {
 
         it('allows a request when the user has an authorized session', async () => {
             forwardAuthMock.resolveService.mockResolvedValue(
-                createReferencedServiceFixture({ url: 'https://jellyfin.example.com' })
+                createReferencedServiceFixture({ name: 'Jellyseerr', url: 'https://jellyfin.example.com' })
             )
             forwardAuthMock.isAuthorized.mockResolvedValue(true)
             const req = createRequestMock({
@@ -124,9 +124,9 @@ describe('ForwardAuthController', () => {
             expect(res.redirect).not.toHaveBeenCalled()
         })
 
-        it('denies a request when the user is not entitled', async () => {
+        it('redirects a denied navigation to the HomeGate error page with a toast payload', async () => {
             forwardAuthMock.resolveService.mockResolvedValue(
-                createReferencedServiceFixture({ url: 'https://jellyfin.example.com' })
+                createReferencedServiceFixture({ name: 'Jellyseerr', url: 'https://jellyfin.example.com' })
             )
             forwardAuthMock.isAuthorized.mockResolvedValue(false)
             const req = createRequestMock({
@@ -137,13 +137,44 @@ describe('ForwardAuthController', () => {
 
             await controller.forward(req, res)
 
+            expect(res.redirect).toHaveBeenCalledWith(302, `${HOME_URL}/error?error=access_denied&appName=Jellyseerr`)
+        })
+
+        it('returns 403 for a denied non-navigation request', async () => {
+            forwardAuthMock.resolveService.mockResolvedValue(
+                createReferencedServiceFixture({ name: 'Jellyseerr', url: 'https://jellyfin.example.com' })
+            )
+            forwardAuthMock.isAuthorized.mockResolvedValue(false)
+            const req = createRequestMock({
+                headers: { 'x-forwarded-host': APP_HOST, accept: 'application/json' },
+            })
+            req.session.userId = 'user-1'
+            const res = createResponseMock()
+
+            await controller.forward(req, res)
+
             expect(res.status).toHaveBeenCalledWith(403)
             expect(res.send).toHaveBeenCalled()
         })
 
-        it('denies a request when the service cannot be resolved', async () => {
+        it('redirects a navigation for an unresolvable service to the error page naming the host', async () => {
             const req = createRequestMock({
                 headers: { 'x-forwarded-host': 'unknown.example.com', accept: 'text/html' },
+            })
+            req.session.userId = 'user-1'
+            const res = createResponseMock()
+
+            await controller.forward(req, res)
+
+            expect(res.redirect).toHaveBeenCalledWith(
+                302,
+                `${HOME_URL}/error?error=access_denied&appName=unknown.example.com`
+            )
+        })
+
+        it('denies a non-navigation request when the service cannot be resolved', async () => {
+            const req = createRequestMock({
+                headers: { 'x-forwarded-host': 'unknown.example.com', accept: 'application/json' },
             })
             req.session.userId = 'user-1'
             const res = createResponseMock()

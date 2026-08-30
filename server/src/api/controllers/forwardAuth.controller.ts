@@ -62,7 +62,11 @@ export class ForwardAuthController {
 
         if (!service) {
             this.logger.warn(`Forward auth: no service found for host '${hostname}'`)
-            res.status(403).send()
+            if (this.isNavigationRequest(req)) {
+                this.redirectToError(res, 'access_denied', hostname)
+            } else {
+                res.status(403).send()
+            }
             return
         }
 
@@ -70,11 +74,23 @@ export class ForwardAuthController {
 
         if (!allowed) {
             this.logger.warn(`Forward auth: denied user '${userId}' for service '${service.slug}'`)
-            res.status(403).send()
+            if (this.isNavigationRequest(req)) {
+                this.redirectToError(res, 'access_denied', service.name)
+            } else {
+                res.status(403).send()
+            }
             return
         }
 
         res.status(200).send()
+    }
+
+    private redirectToError(res: Response, error: string, appName?: string): void {
+        const redirectUrl = new URL(this.homeUrl)
+        redirectUrl.pathname = clientRoutes.error
+        redirectUrl.searchParams.set('error', error)
+        if (appName) redirectUrl.searchParams.set('appName', appName)
+        res.redirect(302, redirectUrl.toString())
     }
 
     private isNavigationRequest(req: Request): boolean {

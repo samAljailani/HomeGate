@@ -2,6 +2,8 @@
 
 import { useSearchParams } from 'next/navigation'
 import { config } from '@/constants/app'
+import { addToastMessage } from '@/lib/utils'
+import React from 'react'
 
 const messages: Record<string, { title: string; description: string }> = {
     '401': {
@@ -21,7 +23,28 @@ const messages: Record<string, { title: string; description: string }> = {
 export function ErrorPage() {
     const params = useSearchParams()
     const status = params.get('status') ?? '404'
-    const { title, description } = messages[status] ?? messages['404']
+    const error = params.get('error')
+    const appName = params.get('appName')
+
+    React.useEffect(() => {
+        if (error === 'access_denied') {
+            addToastMessage(
+                'error',
+                appName
+                    ? `You must be subscribed to ${appName} on HomeGate to access it.`
+                    : 'You do not have permission to access this page.'
+            )
+        }
+    }, [error, appName])
+
+    const isAccessDenied = error === 'access_denied'
+    const fallback = messages[status] ?? messages['404']
+    const title = isAccessDenied ? 'Access Denied' : fallback.title
+    const description = isAccessDenied
+        ? appName
+            ? `You must be subscribed to ${appName} on HomeGate to access it.`
+            : 'You do not have permission to access this page.'
+        : fallback.description
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-center">
