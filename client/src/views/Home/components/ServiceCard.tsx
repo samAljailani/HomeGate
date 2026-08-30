@@ -52,6 +52,8 @@ export interface ServiceCardProps {
     url?: string | null
     /** Id of the service, needed for the Sign Up form submission */
     serviceId: number
+    /** Name of the MANAGED service that provides this REFERENCED service's account access */
+    sourceServiceName?: string | null
     /** Called after a successful sign-up so the page can refresh its subscription state */
     onSubscribed?: () => void
 }
@@ -66,6 +68,7 @@ export function ServiceCard({
     imageUrl,
     url,
     serviceId,
+    sourceServiceName,
     onSubscribed,
 }: ServiceCardProps) {
     const [imageFailed, setImageFailed] = React.useState(false)
@@ -94,13 +97,10 @@ export function ServiceCard({
 
     if (isLocked && accountType === 'REFERENCED') {
         footerButton = (
-            <Button
-                className="h-8 px-3 text-xs md:h-9 md:px-4 md:text-sm lg:h-10 lg:px-6 z-20 invisible"
-                disabled
-                aria-hidden
-            >
-                Sign Up
-            </Button>
+            <p className="w-full text-center text-xs text-muted-foreground">
+                Subscribe to {sourceServiceName != null ? capitalizeFirstLetter(sourceServiceName) : 'the source service'} to get
+                access to this app
+            </p>
         )
     } else if (isLocked) {
         footerButton = (

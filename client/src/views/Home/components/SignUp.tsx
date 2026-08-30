@@ -71,7 +71,9 @@ function Form({
         watch,
         setError,
         formState: { errors },
-    } = useForm<SubscriptionCreateRequestDto>({ defaultValues: { serviceId } })
+    } = useForm<SubscriptionCreateRequestDto>({
+        defaultValues: { serviceId, autoRenew: true },
+    })
 
     const signUpForm = signUpFormValidator(register, watch, requiredInputs)
 
@@ -160,9 +162,7 @@ function Form({
                 <Input
                     type="checkbox"
                     id="auto-renew"
-                    name="autoRenew"
-                    value="true"
-                    defaultChecked
+                    {...signUpForm.autoRenew}
                     className="h-4 w-4 shrink-0"
                 />
                 <Label htmlFor="auto-renew">Auto Renew</Label>
@@ -246,5 +246,6 @@ function signUpFormValidator(
             required: requiredInputs?.password ? 'Confirm your password' : false,
             validate: requiredInputs?.password ? validateConfirmedPassword : undefined,
         }),
+        autoRenew: register('autoRenew'),
     }
 }

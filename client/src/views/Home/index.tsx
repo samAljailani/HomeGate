@@ -7,6 +7,16 @@ import { useHomePage } from '@/views/Home/hooks/useHomePage'
 export function Home() {
     const { services, subscribedServiceIds, isLoading, refresh } = useHomePage()
 
+    const sortedServices = [...services].sort(
+        (a, b) =>
+            Number(subscribedServiceIds.includes(b.id)) -
+            Number(subscribedServiceIds.includes(a.id))
+    )
+
+    const serviceNameById = new Map(
+        services.map((service) => [service.id, service.name])
+    )
+
     return (
         <div className="py-8 space-y-8">
             <div>
@@ -20,7 +30,7 @@ export function Home() {
                 </div>
             ) : (
                 <div className="w-full flex flex-row flex-wrap justify-center sm:justify-start p-0 m-0">
-                    {services.map((service) => {
+                    {sortedServices.map((service) => {
                         if (!service.enabled) {
                             return null
                         }
@@ -33,6 +43,13 @@ export function Home() {
                                 name={service.name}
                                 isLocked={
                                     !subscribedServiceIds.includes(service.id)
+                                }
+                                sourceServiceName={
+                                    service.accountSourceServiceId != null
+                                        ? serviceNameById.get(
+                                              service.accountSourceServiceId
+                                          )
+                                        : null
                                 }
                                 allowed={service.allowed !== false}
                                 accountType={service.accountType}
