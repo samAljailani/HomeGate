@@ -36,7 +36,10 @@ services:
       - "traefik.http.services.homegate.loadbalancer.server.port=${PORT:-3003}"
 
       # HomeGate ForwardAuth
-      - "traefik.http.middlewares.homegate-auth.forwardauth.address=https://${APP_SUBDOMAIN}.${DOMAIN}/api/auth/forward"
+      # Use the internal container address (not the public https URL) so the request does not
+      # re-enter Traefik's entrypoint, which would rewrite X-Forwarded-Host to the HomeGate host
+      # and hide the original app hostname from /api/auth/forward.
+      - "traefik.http.middlewares.homegate-auth.forwardauth.address=http://homegate-server:${PORT:-3003}/api/auth/forward"
       - "traefik.http.middlewares.homegate-auth.forwardauth.trustForwardHeader=true"
       - "traefik.http.middlewares.homegate-auth.forwardauth.preserveLocationHeader=true"
     networks:
