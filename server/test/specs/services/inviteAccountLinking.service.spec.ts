@@ -3,6 +3,7 @@ import { InviteAccountLinkingService } from '@/api/services/inviteAccountLinking
 import { ISubscriptionRepository } from '@/data/repositories/ISubscriptionRepository'
 import { IExternalUserAccountRepository } from '@/data/repositories/IExternalUserAccountRepository'
 import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
+import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { IntegrationProvider, SubscriptionStatus } from '@/types/enums'
 import { InviteAccountModel } from '@/types/models/invite'
@@ -29,6 +30,9 @@ describe('InviteAccountLinkingService', () => {
         const configServiceMock = {
             get: jest.fn((key: SystemConfigKey) => systemDefaults[key]),
         }
+        const cascadeMock = {
+            onActivated: jest.fn().mockResolvedValue(undefined),
+        }
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -38,6 +42,7 @@ describe('InviteAccountLinkingService', () => {
                 { provide: IExternalUserAccountRepository, useValue: externalAccountRepoMock },
                 { provide: AccountIntegrationRegistry, useValue: registryMock },
                 { provide: ConfigService, useValue: configServiceMock },
+                { provide: SubscriptionCascadeService, useValue: cascadeMock },
             ],
         }).compile()
 
