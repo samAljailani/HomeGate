@@ -23,11 +23,20 @@ export function OAuthSignInPage() {
         const appName = params.get('appName')
         const returnUrl = params.get('returnUrl')
 
-        if (appName) {
-            addToastMessage('info', `You must sign in to HomeGate before you can access ${appName}.`)
-        } else if (returnUrl) {
-            addToastMessage('info', 'You must sign in to HomeGate before you can continue.')
-        }
+        if (!appName && !returnUrl) return
+
+        // Defer until after the Toaster (mounted in the root layout) has subscribed to the
+        // toast manager. Firing immediately in this effect would emit before the provider's
+        // subscribe effect runs, so base-ui's manager would drop the toast silently.
+        const timeout = window.setTimeout(() => {
+            if (appName) {
+                addToastMessage('info', `You must sign in to HomeGate before you can access ${appName}.`)
+            } else {
+                addToastMessage('info', 'You must sign in to HomeGate before you can continue.')
+            }
+        }, 0)
+
+        return () => window.clearTimeout(timeout)
     }, [])
 
     function onOAuthSignInClick(href: string) {

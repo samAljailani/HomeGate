@@ -27,14 +27,21 @@ export function ErrorPage() {
     const appName = params.get('appName')
 
     React.useEffect(() => {
-        if (error === 'access_denied') {
+        if (error !== 'access_denied') return
+
+        // Defer until after the Toaster (mounted in the root layout) has subscribed to the
+        // toast manager. Firing immediately in this effect would emit before the provider's
+        // subscribe effect runs, so base-ui's manager would drop the toast silently.
+        const timeout = window.setTimeout(() => {
             addToastMessage(
                 'error',
                 appName
                     ? `You must be subscribed to ${appName} on HomeGate to access it.`
                     : 'You do not have permission to access this page.'
             )
-        }
+        }, 0)
+
+        return () => window.clearTimeout(timeout)
     }, [error, appName])
 
     const isAccessDenied = error === 'access_denied'
