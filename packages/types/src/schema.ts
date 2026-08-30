@@ -752,6 +752,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminPolicies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/dashboard": {
         parameters: {
             query?: never;
@@ -2565,6 +2581,23 @@ export interface operations {
         };
     };
     ClientRouteController_adminUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminPolicies: {
         parameters: {
             query?: never;
             header?: never;
