@@ -141,6 +141,15 @@ export function SubscriptionsTable({
             ),
         },
         {
+            id: 'accounts',
+            header: 'Accounts',
+            cell: ({ row }) => {
+                const s = row.original
+                if (s.accountType !== 'MANAGED') return '—'
+                return `${s.accounts.length} / ${s.accountCap}`
+            },
+        },
+        {
             id: 'status',
             accessorKey: 'status',
             header: 'Status',

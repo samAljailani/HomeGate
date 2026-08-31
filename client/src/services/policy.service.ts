@@ -23,7 +23,7 @@ class PolicyService {
 
     async set(
         userId: string,
-        body: { serviceId: number; effect: PolicyEffect }
+        body: { serviceId: number; effect: PolicyEffect; accountsPerService?: number }
     ): Promise<UserServicePolicyResponseDto> {
         const { data, error } = await apiClient.PATCH(
             '/api/users/{id}/service-policies',

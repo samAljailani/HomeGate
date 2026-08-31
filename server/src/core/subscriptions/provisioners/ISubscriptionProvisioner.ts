@@ -42,7 +42,8 @@ export type LifecycleContext = {
     user: ProvisionSubject
     service: ServiceModel
     subscription: SubscriptionModel
-    account: ExternalUserAccountModel | null
+    /** All external accounts linked to the subscription; empty when the service owns no account. */
+    accounts: ExternalUserAccountModel[]
 }
 
 /** 'not-applicable' when the account type owns no external account at all. */
@@ -60,14 +61,16 @@ export interface ISubscriptionProvisioner {
 
     provision(ctx: ProvisionContext): Promise<ProvisionResult>
 
-    /** Permanently removes the external account, if there is one. */
+    /** Permanently removes every linked external account. Skips accounts that no longer exist upstream. */
     deprovision(ctx: LifecycleContext): Promise<void>
 
+    /** Disables every still-active linked external account. */
     disable(ctx: LifecycleContext): Promise<void>
 
+    /** Enables every linked external account that is present upstream but not yet active. */
     enable(ctx: LifecycleContext): Promise<void>
 
-    resetPassword(ctx: LifecycleContext, newPassword: string): Promise<void>
+    resetPassword(ctx: LifecycleContext, account: ExternalUserAccountModel, newPassword: string): Promise<void>
 
-    getExternalAccountStatus(ctx: LifecycleContext): Promise<ExternalAccountStatus>
+    getExternalAccountStatus(ctx: LifecycleContext, account: ExternalUserAccountModel): Promise<ExternalAccountStatus>
 }

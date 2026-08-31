@@ -86,6 +86,12 @@ export class ClientRouteController {
     }
 
     @AdminRoute()
+    @Get(clientRoutes.adminAccounts)
+    adminAccounts(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminAccounts)
+    }
+
+    @AdminRoute()
     @Get(clientRoutes.adminLogs)
     adminLogs(@Res() res: Response) {
         return this.sendPage(res, clientRoutes.adminLogs)

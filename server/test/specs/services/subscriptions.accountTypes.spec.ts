@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { BadRequestException } from '@nestjs/common'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import { UserService } from '@/api/services/user.service'
-import { IServiceRepository, ISubscriptionRepository, IExternalUserAccountRepository } from '@/data/repositories'
+import { IServiceRepository, ISubscriptionRepository, IExternalUserAccountRepository, IUserServicePolicyRepository } from '@/data/repositories'
 import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { subscriptionProvisioners } from '@/core/subscriptions/provisioners'
@@ -17,6 +17,7 @@ import {
 } from '../../mocks/subscription.repository.mock'
 import { createServiceRepositoryMock } from '../../mocks/service.repository.mock'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
+import { createUserServicePolicyRepositoryMock } from '../../mocks/userServicePolicy.repository.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 import { createSubscriptionFixture } from '../../fixtures/subscription.stub'
 import {
@@ -69,6 +70,7 @@ describe('SubscriptionService — account types', () => {
                 { provide: ISubscriptionRepository, useValue: subscriptionRepoMock },
                 { provide: IExternalUserAccountRepository, useValue: externalAccountRepoMock },
                 { provide: IServiceRepository, useValue: serviceRepoMock },
+                { provide: IUserServicePolicyRepository, useValue: createUserServicePolicyRepositoryMock() },
                 { provide: AccountIntegrationRegistry, useValue: registry },
                 { provide: ServiceAccessService, useValue: { assertCanSubscribe: jest.fn(), resolveAccess: jest.fn() } },
                 { provide: EventEmitter2, useValue: { emit: jest.fn() } },
@@ -149,9 +151,9 @@ describe('SubscriptionService — account types', () => {
             serviceRepoMock.findById.mockResolvedValue(referenced)
             subscriptionRepoMock.findById.mockResolvedValue(subscription)
 
-            await expect(service.resetAccountPassword(subscription.id, userId, 'pw')).rejects.toThrow(
-                BadRequestException
-            )
+            await expect(
+                service.resetAccountPassword(subscription.id, userId, 'nonexistent-account-id', 'pw')
+            ).rejects.toThrow(BadRequestException)
         })
     })
 

@@ -1,14 +1,13 @@
 'use client'
 
 import * as React from 'react'
-import { useForm } from 'react-hook-form'
-import { addToastMessage, cn, getErrorMessage } from '@/lib/utils'
+import { addToastMessage, getErrorMessage } from '@/lib/utils'
 import { ResponsiveModal } from '@/components/ResponsiveModal'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { StatusBadge } from '@/components/ui/status-badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { subscriptionService } from '@/services/subscription.service'
+import { SubscriptionAccountsPanel } from './SubscriptionAccountsPanel'
 import type { AccountSubscription } from '../hooks/useAccountPage'
 
 interface ManageSubscriptionDialogProps {
@@ -16,12 +15,8 @@ interface ManageSubscriptionDialogProps {
     open: boolean
     setOpen: React.Dispatch<React.SetStateAction<boolean>>
     onAutoRenewChanged: (id: string, autoRenew: boolean) => void
+    onAccountChanged: (id: string, updated: AccountSubscription) => void
     onCancelled: (id: string) => void
-}
-
-type PasswordFormValues = {
-    newPassword: string
-    confirmPassword: string
 }
 
 export function ManageSubscriptionDialog({
@@ -29,23 +24,16 @@ export function ManageSubscriptionDialog({
     open,
     setOpen,
     onAutoRenewChanged,
+    onAccountChanged,
     onCancelled,
 }: ManageSubscriptionDialogProps) {
     const [isSaving, setIsSaving] = React.useState(false)
 
-    const {
-        register,
-        handleSubmit,
-        reset,
-        setError,
-        formState: { errors },
-    } = useForm<PasswordFormValues>()
-
-    React.useEffect(() => {
-        if (open) reset({ newPassword: '', confirmPassword: '' })
-    }, [open, reset])
-
     if (!subscription) return null
+
+    const linkedAccountCount = subscription.accounts?.length ?? 0
+    const accountCap = subscription.accountCap ?? 1
+    const isManaged = subscription.accountType === 'MANAGED'
 
     const toggleAutoRenew = async () => {
         setIsSaving(true)
@@ -80,79 +68,61 @@ export function ManageSubscriptionDialog({
         }
     }
 
-    const resetPassword = handleSubmit(async (values) => {
-        if (values.newPassword !== values.confirmPassword) {
-            setError('confirmPassword', { message: 'Passwords do not match' })
-            return
-        }
-        setIsSaving(true)
-        try {
-            await subscriptionService.resetPassword(subscription.id, values.newPassword, values.confirmPassword)
-            addToastMessage('success', 'Password updated')
-            reset({ newPassword: '', confirmPassword: '' })
-        } catch (error) {
-            addToastMessage(
-                'error',
-                getErrorMessage(error, 'Failed to reset password')
-            )
-        } finally {
-            setIsSaving(false)
-        }
-    })
-
     return (
         <ResponsiveModal
             open={open}
             setOpen={setOpen}
             title={`Manage ${subscription.serviceName}`}
-            description="Manage your subscription and service account."
+            description="Manage your subscription and service accounts."
+            className="sm:max-w-[480px]"
         >
-            <div className={cn('grid gap-6')}>
-                <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium">Status</p>
-                        <StatusBadge tone={subscription.status === 'active' ? 'success' : 'neutral'}>
-                            {subscription.status}
-                        </StatusBadge>
+            <Tabs defaultValue="subscription" className="grid gap-4">
+                <TabsList>
+                    <TabsTrigger value="subscription">Subscription</TabsTrigger>
+                    {isManaged && (
+                        <TabsTrigger value="accounts">
+                            Accounts ({linkedAccountCount}/{accountCap})
+                        </TabsTrigger>
+                    )}
+                </TabsList>
+
+                <TabsContent value="subscription" className="grid gap-6">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium">Status</p>
+                            <StatusBadge tone={subscription.status === 'active' ? 'success' : 'neutral'}>
+                                {subscription.status}
+                            </StatusBadge>
+                        </div>
                     </div>
-                </div>
 
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                        type="checkbox"
-                        className="size-4 accent-primary"
-                        checked={subscription.autoRenew}
-                        disabled={isSaving}
-                        onChange={toggleAutoRenew}
-                    />
-                    <span className="text-sm">Auto-renew subscription</span>
-                </label>
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            className="size-4 accent-primary"
+                            checked={subscription.autoRenew}
+                            disabled={isSaving}
+                            onChange={toggleAutoRenew}
+                        />
+                        <span className="text-sm">Auto-renew subscription</span>
+                    </label>
 
-                {subscription.accountType === 'MANAGED' && (
-                    <form className="grid gap-3" onSubmit={resetPassword}>
-                        <p className="text-sm font-medium">Reset service password</p>
-                        <div className="grid gap-2">
-                            <Label htmlFor="newPassword">New password</Label>
-                            <Input id="newPassword" type="password" autoComplete="new-password" {...register('newPassword', { required: 'Required' })} />
-                            {errors.newPassword && <p className="text-sm text-destructive">{errors.newPassword.message}</p>}
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="confirmPassword">Confirm password</Label>
-                            <Input id="confirmPassword" type="password" autoComplete="new-password" {...register('confirmPassword', { required: 'Required' })} />
-                            {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
-                        </div>
-                        <Button type="submit" disabled={isSaving}>
-                            Update password
+                    <div className="border-t pt-4">
+                        <Button variant="destructive" disabled={isSaving} onClick={cancel}>
+                            Cancel subscription
                         </Button>
-                    </form>
-                )}
+                    </div>
+                </TabsContent>
 
-                <div className="border-t pt-4">
-                    <Button variant="destructive" disabled={isSaving} onClick={cancel}>
-                        Cancel subscription
-                    </Button>
-                </div>
-            </div>
+                {isManaged && (
+                    <TabsContent value="accounts" className="grid gap-6">
+                        <SubscriptionAccountsPanel
+                            subscription={subscription}
+                            onAccountChanged={onAccountChanged}
+                        />
+                    </TabsContent>
+                )}
+            </Tabs>
         </ResponsiveModal>
     )
 }

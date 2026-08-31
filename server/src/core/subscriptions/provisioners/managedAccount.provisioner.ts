@@ -11,6 +11,7 @@ import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrati
 import { IAccountIntegrationProvider } from '@/core/integrations/IAccountIntegrationProvider'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { ServiceModel } from '@/types/models/service'
+import { ExternalUserAccountModel } from '@/types/models/externalUserAccount'
 import { ApplicationUserModel } from '@/types/params/accountIntegration'
 import {
     ExternalAccountStatus,
@@ -23,6 +24,8 @@ import {
 /**
  * The only provisioner that talks to a vendor integration. Owns account creation, deletion,
  * enable/disable and password reset for services HomeGate provisions accounts for.
+ * A single subscription may own several linked accounts; whenever an account is missing upstream
+ * the corresponding local row is skipped so a stale record can never block the others.
  */
 @Injectable()
 export class ManagedAccountProvisioner implements ISubscriptionProvisioner {
@@ -168,64 +171,94 @@ export class ManagedAccountProvisioner implements ISubscriptionProvisioner {
     }
 
     async deprovision(ctx: LifecycleContext): Promise<void> {
+        if (ctx.accounts.length === 0) return
+
         const provider = this.resolveProvider(ctx.service)
 
-        const deleted = await provider.deleteUser({
-            userServiceAccountId: ctx.account?.externalAccountId ?? undefined,
-            username: ctx.account?.username ?? undefined,
-            email: ctx.user.email,
-        })
+        for (const account of ctx.accounts) {
+            if ((await this.accountStatus(provider, account)) === 'missing') {
+                continue
+            }
 
-        if (!deleted) {
-            throw new ServiceUnavailableException(
-                `Failed to delete the external account for user '${ctx.user.userId}' on service '${ctx.service.id}'`
-            )
+            const deleted = await provider.deleteUser({
+                userServiceAccountId: account.externalAccountId ?? undefined,
+                username: account.username ?? undefined,
+                email: ctx.user.email,
+            })
+
+            if (!deleted) {
+                throw new ServiceUnavailableException(
+                    `Failed to delete the external account for user '${ctx.user.userId}' on service '${ctx.service.id}'`
+                )
+            }
         }
     }
 
     async disable(ctx: LifecycleContext): Promise<void> {
+        if (ctx.accounts.length === 0) return
+
         const provider = this.resolveProvider(ctx.service)
 
-        const disabled = await provider.disableUser({
-            userServiceAccountId: ctx.account?.externalAccountId ?? undefined,
-            username: ctx.account?.username ?? undefined,
-            email: ctx.user.email,
-        })
+        for (const account of ctx.accounts) {
+            if ((await this.accountStatus(provider, account)) !== 'active') {
+                continue
+            }
 
-        if (!disabled) {
-            throw new ServiceUnavailableException(
-                `Failed to disable the external account for user '${ctx.user.userId}' on service '${ctx.service.id}'`
-            )
+            const disabled = await provider.disableUser({
+                userServiceAccountId: account.externalAccountId ?? undefined,
+                username: account.username ?? undefined,
+                email: ctx.user.email,
+            })
+
+            if (!disabled) {
+                throw new ServiceUnavailableException(
+                    `Failed to disable the external account for user '${ctx.user.userId}' on service '${ctx.service.id}'`
+                )
+            }
         }
     }
 
     async enable(ctx: LifecycleContext): Promise<void> {
+        if (ctx.accounts.length === 0) return
+
         const provider = this.resolveProvider(ctx.service)
 
-        const enabled = await provider.enableUser({
-            userServiceAccountId: ctx.account?.externalAccountId ?? undefined,
-            username: ctx.account?.username ?? undefined,
-            email: ctx.user.email,
-        })
+        for (const account of ctx.accounts) {
+            const status = await this.accountStatus(provider, account)
 
-        if (!enabled) {
-            throw new ServiceUnavailableException(
-                `Failed to enable the external account for user '${ctx.user.userId}' on service '${ctx.service.id}'`
-            )
+            if (status === 'active' || status === 'missing') {
+                continue
+            }
+
+            const enabled = await provider.enableUser({
+                userServiceAccountId: account.externalAccountId ?? undefined,
+                username: account.username ?? undefined,
+                email: ctx.user.email,
+            })
+
+            if (!enabled) {
+                throw new ServiceUnavailableException(
+                    `Failed to enable the external account for user '${ctx.user.userId}' on service '${ctx.service.id}'`
+                )
+            }
         }
     }
 
-    async resetPassword(ctx: LifecycleContext, newPassword: string): Promise<void> {
+    async resetPassword(
+        ctx: LifecycleContext,
+        account: ExternalUserAccountModel,
+        newPassword: string
+    ): Promise<void> {
         const provider = this.resolveProvider(ctx.service)
 
-        if (!ctx.account?.externalAccountId) {
+        if (!account?.externalAccountId) {
             throw new BadRequestException('Service account is not provisioned yet')
         }
 
         const ok = await provider.resetPassword(
             {
-                userServiceAccountId: ctx.account.externalAccountId,
-                username: ctx.account.username ?? undefined,
+                userServiceAccountId: account.externalAccountId,
+                username: account.username ?? undefined,
                 email: undefined,
             },
             newPassword
@@ -236,20 +269,32 @@ export class ManagedAccountProvisioner implements ISubscriptionProvisioner {
         }
     }
 
-    async getExternalAccountStatus(ctx: LifecycleContext): Promise<ExternalAccountStatus> {
+    async getExternalAccountStatus(
+        ctx: LifecycleContext,
+        account: ExternalUserAccountModel
+    ): Promise<ExternalAccountStatus> {
         const provider = this.registry.get(ctx.service.integrationProvider)
 
-        if (!provider || !ctx.account) {
+        if (!provider || !account) {
             return 'missing'
         }
 
+        return this.accountStatus(provider, account)
+    }
+
+    private async accountStatus(
+        provider: IAccountIntegrationProvider,
+        account: ExternalUserAccountModel
+    ): Promise<ExternalAccountStatus> {
+        if (!account) return 'missing'
+
         const result = await provider.getUser({
-            userServiceAccountId: ctx.account.externalAccountId ?? undefined,
-            username: ctx.account.username ?? undefined,
+            userServiceAccountId: account.externalAccountId ?? undefined,
+            username: account.username ?? undefined,
             email: undefined,
         })
 
-        if (!result.ok || !result.user) {
+        if (!result || !result.ok || !result.user) {
             return 'missing'
         }
 

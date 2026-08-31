@@ -277,12 +277,12 @@ export class SubscriptionLifecycleService {
         return success
     }
 
-    /** Joins each enabled MANAGED service to its provider and its local subscription/account pairs. */
+    /** Joins each enabled MANAGED service to its provider and its linked subscription/account pairs. */
     private async loadManagedServiceAccounts(): Promise<
         {
             provider: IAccountIntegrationProvider
             service: ServiceModel
-            accounts: { subscription: SubscriptionModel; account: ExternalUserAccountModel | null }[]
+            accounts: { subscription: SubscriptionModel; account: ExternalUserAccountModel }[]
         }[]
     > {
         const services = await this.serviceRepository.findMany(
@@ -302,15 +302,23 @@ export class SubscriptionLifecycleService {
 
             const subscriptions = await this.subscriptionRepository.findMany({ serviceId: service.id }, ALL)
             const externalAccounts = await this.externalAccountRepository.findMany({ serviceId: service.id }, ALL)
-            const accountBySubscriptionId = new Map(externalAccounts.map((a) => [a.subscriptionId, a]))
+            const accountsBySubscriptionId = new Map<string, ExternalUserAccountModel[]>()
+
+            for (const account of externalAccounts) {
+                const list = accountsBySubscriptionId.get(account.subscriptionId) ?? []
+                list.push(account)
+                accountsBySubscriptionId.set(account.subscriptionId, list)
+            }
 
             result.push({
                 provider,
                 service,
-                accounts: subscriptions.map((subscription) => ({
-                    subscription,
-                    account: accountBySubscriptionId.get(subscription.id) ?? null,
-                })),
+                accounts: subscriptions.flatMap((subscription) =>
+                    (accountsBySubscriptionId.get(subscription.id) ?? []).map((account) => ({
+                        subscription,
+                        account,
+                    }))
+                ),
             })
         }
 
@@ -320,7 +328,7 @@ export class SubscriptionLifecycleService {
     private async syncExternalToLocal(
         provider: IAccountIntegrationProvider,
         externalUsers: NonNullable<Awaited<ReturnType<IAccountIntegrationProvider['getAllUsers']>>>,
-        accounts: { subscription: SubscriptionModel; account: ExternalUserAccountModel | null }[]
+        accounts: { subscription: SubscriptionModel; account: ExternalUserAccountModel }[]
     ): Promise<void> {
         const localByExternalId = new Map(
             accounts
@@ -394,7 +402,7 @@ export class SubscriptionLifecycleService {
     private async syncLocalToExternal(
         provider: IAccountIntegrationProvider,
         externalUsers: NonNullable<Awaited<ReturnType<IAccountIntegrationProvider['getAllUsers']>>>,
-        accounts: { subscription: SubscriptionModel; account: ExternalUserAccountModel | null }[]
+        accounts: { subscription: SubscriptionModel; account: ExternalUserAccountModel }[]
     ): Promise<void> {
         const externalById = new Map(externalUsers.map((u) => [u.id, u]))
 
@@ -457,47 +465,58 @@ export class SubscriptionLifecycleService {
         const { failedOperation } = subscription
 
         try {
-            const externalStatus = await provisioner.getExternalAccountStatus(context)
-            const externalMissing = externalStatus === 'missing'
-
             if (failedOperation === FailedOperation.cancellation) {
-                if (!externalMissing) {
-                    await provisioner.deprovision(context)
-                }
+                // deprovision() skips accounts that no longer exist upstream.
+                await provisioner.deprovision(context)
 
                 await this.clearFailure(userId, serviceId, SubscriptionStatus.cancelled, true)
 
                 this.logger.log(
-                    `Retry cancellation succeeded for user '${user.id}' on service '${service.id}'` +
-                        (externalMissing ? ' (external account was already deleted)' : '')
+                    `Retry cancellation succeeded for user '${user.id}' on service '${service.id}'`
                 )
 
                 return true
             }
 
             if (failedOperation === FailedOperation.expiration) {
-                // Already-inactive accounts need no second disable call.
-                if (externalStatus === 'active') {
-                    await provisioner.disable(context)
-                }
+                // disable() is idempotent per linked account.
+                await provisioner.disable(context)
 
                 await this.clearFailure(userId, serviceId, SubscriptionStatus.expired, false)
 
                 this.logger.log(
-                    `Retry expiration succeeded for user '${user.id}' on service '${service.id}'` +
-                        (externalStatus === 'active' ? '' : ' (external account was already disabled or gone)')
+                    `Retry expiration succeeded for user '${user.id}' on service '${service.id}'`
                 )
 
                 return true
             }
 
-            // FailedOperation.sync — the external account was missing during a sync pass.
-            const status = externalMissing ? SubscriptionStatus.cancelled : SubscriptionStatus.active
-            await this.clearFailure(userId, serviceId, status, externalMissing)
+            // FailedOperation.sync — at least one linked external account was missing during a sync pass.
+            const present: ExternalUserAccountModel[] = []
+
+            for (const account of context.accounts) {
+                if ((await provisioner.getExternalAccountStatus(context, account)) !== 'missing') {
+                    present.push(account)
+                }
+            }
+
+            if (present.length === 0) {
+                await this.clearFailure(userId, serviceId, SubscriptionStatus.cancelled, true)
+
+                this.logger.log(
+                    `Retry sync for user '${user.id}' on service '${service.id}': no linked external ` +
+                        `accounts remain, marked as cancelled`
+                )
+
+                return true
+            }
+
+            await this.clearFailure(userId, serviceId, SubscriptionStatus.active, false)
+            await provisioner.enable({ ...context, accounts: present })
 
             this.logger.log(
-                `Retry sync for user '${user.id}' on service '${service.id}': external account ` +
-                    (externalMissing ? 'confirmed gone, marked as cancelled' : 'found, restored to active')
+                `Retry sync for user '${user.id}' on service '${service.id}': external account found, ` +
+                    `restored to active`
             )
 
             return true

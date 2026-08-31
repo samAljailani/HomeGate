@@ -9,8 +9,15 @@ import {
     forwardRef,
 } from '@nestjs/common'
 import { UserService } from './user.service'
-import { IExternalUserAccountRepository, IServiceRepository, ISubscriptionRepository } from '@/data/repositories'
 import {
+    IExternalUserAccountRepository,
+    IServiceRepository,
+    ISubscriptionRepository,
+    IUserServicePolicyRepository,
+} from '@/data/repositories'
+import {
+    SubscriptionAccountDto,
+    SubscriptionAddAccountRequestDto,
     SubscriptionCreateRequestDto,
     SubscriptionPatchRequestDto,
     SubscriptionResponseDto,
@@ -20,7 +27,13 @@ import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { SubscriptionModel } from '@/types/models/subscription'
 import { ExternalUserAccountModel } from '@/types/models/externalUserAccount'
 import { ServiceModel } from '@/types/models/service'
-import { SubscriptionProvisionerResolver, LifecycleContext } from '@/core/subscriptions/provisioners'
+import { UserServicePolicyModel } from '@/types/models/userServicePolicy'
+import {
+    SubscriptionProvisionerResolver,
+    LifecycleContext,
+    ProvisionContext,
+    ProvisionResult,
+} from '@/core/subscriptions/provisioners'
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { ServiceAccessService } from './serviceAccess.service'
 import { EventEmitter2 } from '@nestjs/event-emitter'
@@ -44,6 +57,9 @@ export class SubscriptionService {
 
         @Inject(IExternalUserAccountRepository)
         private readonly externalAccountRepository: IExternalUserAccountRepository,
+
+        @Inject(IUserServicePolicyRepository)
+        private readonly policyRepository: IUserServicePolicyRepository,
 
         @Inject(SubscriptionProvisionerResolver)
         private readonly provisioners: SubscriptionProvisionerResolver,
@@ -88,12 +104,13 @@ export class SubscriptionService {
             throw new ConflictException('User already subscribed to the service')
         }
 
-        const existingAccount = existing
+        const existingAccounts = existing
             ? await this.externalAccountRepository.findBySubscriptionId(existing.id)
-            : null
+            : []
 
         const provisioner = this.provisioners.resolve(service)
-        const context = {
+
+        const context: ProvisionContext = {
             user: { userId, email: user.email },
             service,
             request: {
@@ -102,7 +119,7 @@ export class SubscriptionService {
                 email: request.email,
             },
             existingSubscription: existing,
-            existingAccount,
+            existingAccount: existingAccounts[0] ?? null,
         }
 
         await provisioner.validate(context)
@@ -138,7 +155,7 @@ export class SubscriptionService {
                 await this.cascade.onActivated(activated)
             }
 
-            return this.mapSubscription(activated, result.account?.username ?? existingAccount?.username ?? null, service)
+            return this.composeSubscriptionResponse(activated, existingAccounts, result.account, service)
         } catch (error) {
             await this.markSubscriptionFailed(
                 userId,
@@ -149,6 +166,110 @@ export class SubscriptionService {
 
             throw error
         }
+    }
+
+    /**
+     * Links one additional external account to an active subscription, respecting the
+     * subscription-level policy cap (accountsPerService, default 1). Only MANAGED services can
+     * own extra accounts; REFERENCED and NONE subscriptions are state-only.
+     */
+    async addAccount(
+        subscriptionId: string,
+        request: SubscriptionAddAccountRequestDto,
+        currentUserId: string
+    ): Promise<SubscriptionResponseDto> {
+        const subscription = await this.getRawById(subscriptionId)
+
+        if (subscription.userId !== currentUserId) {
+            const currentUser = await this.userService.getUserById({ userId: currentUserId })
+
+            if (!currentUser?.isAdmin) {
+                throw new ForbiddenException('You can only add accounts to your own subscription')
+            }
+        }
+
+        if (!this.isCurrentlyActive(subscription)) {
+            throw new ConflictException('Subscription is not active')
+        }
+
+        const service = await this.serviceRepository.findById(subscription.serviceId)
+
+        if (!service) {
+            throw new BadRequestException('Service does not exist')
+        }
+
+        if (service.accountType !== AccountType.MANAGED) {
+            throw new BadRequestException('Only managed services can have multiple linked accounts')
+        }
+
+        await this.assertCanAddAccount(subscription, service)
+
+        const user = await this.userService.getUserById({ userId: subscription.userId })
+
+        if (!user) {
+            throw new BadRequestException('User does not exist')
+        }
+
+        const context: ProvisionContext = {
+            user: { userId: subscription.userId, email: user.email },
+            service,
+            request: {
+                username: request.serviceUsername,
+                password: request.servicePassword,
+                email: request.email,
+            },
+            existingSubscription: subscription,
+            existingAccount: null,
+        }
+
+        try {
+            const provisioner = this.provisioners.resolve(service)
+            await provisioner.validate(context)
+            const result = await provisioner.provision(context)
+
+            if (!result.account) {
+                throw new InternalServerErrorException('No account was provisioned')
+            }
+
+            await this.externalAccountRepository.create({
+                subscriptionId: subscription.id,
+                userId: subscription.userId,
+                serviceId: subscription.serviceId,
+                ...result.account,
+            })
+
+            this.logger.log(
+                `Linked new '${service.name}' account '${result.account.username}' to subscription '${subscription.id}'`
+            )
+            this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId: subscription.userId })
+
+            return this.getById(subscriptionId)
+        } catch (error) {
+            this.logger.error(`Failed to link an additional account to subscription '${subscriptionId}'`, {
+                stackTrace: error instanceof Error ? error.stack : String(error),
+            })
+
+            throw error
+        }
+    }
+
+    /** Rejects the add-account operation when the subscription already holds its policy cap. */
+    private async assertCanAddAccount(subscription: SubscriptionModel, service: ServiceModel): Promise<number> {
+        const cap = await this.getAccountCap(subscription.userId, service.id)
+        const current = await this.externalAccountRepository.countBySubscriptionId(subscription.id)
+
+        if (current >= cap) {
+            throw new ConflictException(
+                `Subscription already has the maximum allowed number of accounts (${cap})`
+            )
+        }
+
+        return cap
+    }
+
+    private async getAccountCap(userId: string, serviceId: number): Promise<number> {
+        const policy = await this.policyRepository.find(userId, serviceId)
+        return policy?.accountsPerService ?? 1
     }
 
     private async upsertProvisioning(
@@ -196,10 +317,10 @@ export class SubscriptionService {
         subscription: SubscriptionModel,
         account: { externalAccountId: string | null; username: string | null; email: string | null }
     ): Promise<void> {
-        const existing = await this.externalAccountRepository.findBySubscriptionId(subscription.id)
+        const existing = (await this.externalAccountRepository.findBySubscriptionId(subscription.id))[0]
 
         if (existing) {
-            await this.externalAccountRepository.update({ subscriptionId: subscription.id, ...account })
+            await this.externalAccountRepository.update(existing.id, account)
             return
         }
 
@@ -282,9 +403,7 @@ export class SubscriptionService {
                 lastError: null,
             })
 
-            if (context.account) {
-                await this.externalAccountRepository.delete(subscription.id)
-            }
+            await this.externalAccountRepository.deleteBySubscriptionId(subscription.id)
 
             // Cancelling a referenced subscription must never affect its account source.
             if (cancelled) {
@@ -330,7 +449,7 @@ export class SubscriptionService {
 
     /**
      * Applies a partial state update (policy object) to a subscription.
-     * - `enabled` transitions between active and disabled, including the external account when there is one.
+     * - `enabled` transitions between active and disabled, including the linked external accounts.
      * - `autoRenew` toggles automatic renewal.
      */
     async update(subscriptionId: string, patch: SubscriptionPatchRequestDto): Promise<SubscriptionResponseDto> {
@@ -389,10 +508,11 @@ export class SubscriptionService {
         return this.getById(subscriptionId)
     }
 
-    /** Resets the external account password. Rejected for account types that own no account. */
+    /** Resets the password of one linked external account. Rejected for account types that own no account. */
     async resetAccountPassword(
         subscriptionId: string,
         currentUserId: string,
+        accountId: string,
         newPassword: string
     ): Promise<boolean> {
         const subscription = await this.getRawById(subscriptionId)
@@ -411,6 +531,12 @@ export class SubscriptionService {
             throw new BadRequestException('This subscription has no password to reset')
         }
 
+        const account = await this.externalAccountRepository.findById(accountId)
+
+        if (!account || account.subscriptionId !== subscription.id) {
+            throw new NotFoundException('Linked account not found for this subscription')
+        }
+
         const user = await this.userService.getUserById({ userId: subscription.userId })
 
         if (!user) {
@@ -418,11 +544,82 @@ export class SubscriptionService {
         }
 
         const context = await this.buildLifecycleContext(subscription, service, user.email)
-        await this.provisioners.resolve(service).resetPassword(context, newPassword)
+        await this.provisioners.resolve(service).resetPassword(context, account, newPassword)
 
-        this.logger.log(`User '${currentUserId}' reset password for subscription '${subscriptionId}'`)
+        this.logger.log(
+            `User '${currentUserId}' reset password for account '${accountId}' on subscription '${subscriptionId}'`
+        )
 
         return true
+    }
+
+    async deleteAccount(
+        subscriptionId: string,
+        accountId: string,
+        currentUserId: string,
+        deprovisionExternal: boolean = true
+    ): Promise<boolean> {
+        const subscription = await this.getRawById(subscriptionId)
+
+        if (subscription.userId !== currentUserId) {
+            const currentUser = await this.userService.getUserById({ userId: currentUserId })
+
+            if (!currentUser?.isAdmin) {
+                throw new ForbiddenException('You can only delete accounts from your own subscription')
+            }
+        }
+
+        const service = await this.serviceRepository.findById(subscription.serviceId)
+
+        if (!service) {
+            throw new BadRequestException('Service does not exist')
+        }
+
+        if (service.accountType !== AccountType.MANAGED) {
+            throw new BadRequestException('Only managed services have linked accounts to delete')
+        }
+
+        const account = await this.externalAccountRepository.findById(accountId)
+
+        if (!account || account.subscriptionId !== subscription.id) {
+            throw new NotFoundException('Linked account not found for this subscription')
+        }
+
+        const count = await this.externalAccountRepository.countBySubscriptionId(subscription.id)
+
+        if (count <= 1) {
+            throw new ConflictException('Cannot delete the last linked account of a subscription')
+        }
+
+        const user = await this.userService.getUserById({ userId: subscription.userId })
+
+        if (!user) {
+            throw new BadRequestException('User does not exist')
+        }
+
+        try {
+            if (deprovisionExternal) {
+                const context = await this.buildLifecycleContext(subscription, service, user.email, [account])
+                await this.provisioners.resolve(service).deprovision(context)
+            }
+
+            await this.externalAccountRepository.delete(account.id)
+
+            this.logger.log(
+                deprovisionExternal
+                    ? `User '${currentUserId}' deleted '${service.name}' account '${account.username ?? accountId}' from subscription '${subscription.id}'`
+                    : `User '${currentUserId}' unlinked '${service.name}' account '${account.username ?? accountId}' from subscription '${subscription.id}' (external account preserved)`
+            )
+            this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId: subscription.userId })
+
+            return true
+        } catch (error) {
+            this.logger.error(`Failed to delete account '${accountId}' from subscription '${subscriptionId}'`, {
+                stackTrace: error instanceof Error ? error.stack : String(error),
+            })
+
+            throw error
+        }
     }
 
     async renew(subscriptionId: string): Promise<SubscriptionResponseDto> {
@@ -469,7 +666,7 @@ export class SubscriptionService {
         return this.hydrateSubscriptionDetails(subscriptions)
     }
 
-    /** Transitions a subscription between active and disabled, including the external account. */
+    /** Transitions a subscription between active and disabled, including the linked external accounts. */
     async setDisabledStatus(userId: string, serviceId: number, status: SubscriptionStatus): Promise<boolean> {
         const isDisableOperation = status === SubscriptionStatus.disabled
 
@@ -513,16 +710,16 @@ export class SubscriptionService {
             if (isDisableOperation) {
                 await provisioner.disable(context)
             } else {
-                // A vanished external account means the local record is stale and should go.
-                if ((await provisioner.getExternalAccountStatus(context)) === 'missing' && context.account !== null) {
-                    await this.subscriptionRepository.delete(userId, serviceId)
+                // Drop local rows whose upstream account has vanished, then re-enable the survivors.
+                for (const account of context.accounts) {
+                    if ((await provisioner.getExternalAccountStatus(context, account)) === 'missing') {
+                        await this.externalAccountRepository.delete(account.id)
 
-                    this.logger.warn(
-                        `External account for user '${user.id}' on service '${service.id}' no longer exists. ` +
-                            `Stale local record deleted.`
-                    )
-
-                    return true
+                        this.logger.warn(
+                            `External account '${account.username ?? account.id}' for user '${user.id}' on ` +
+                                `service '${service.id}' no longer exists. Stale local record deleted.`
+                        )
+                    }
                 }
 
                 await provisioner.enable(context)
@@ -568,20 +765,20 @@ export class SubscriptionService {
         subscription: SubscriptionModel,
         service: ServiceModel,
         email: string,
-        account?: ExternalUserAccountModel | null
+        accounts?: ExternalUserAccountModel[]
     ): Promise<LifecycleContext> {
         const resolved =
-            account !== undefined
-                ? account
+            accounts !== undefined
+                ? accounts
                 : service.accountType === AccountType.MANAGED
                 ? await this.externalAccountRepository.findBySubscriptionId(subscription.id)
-                : null
+                : []
 
         return {
             user: { userId: subscription.userId, email },
             service,
             subscription,
-            account: resolved ?? null,
+            accounts: resolved,
         }
     }
 
@@ -627,38 +824,98 @@ export class SubscriptionService {
             cancelledAt: model.cancelledAt,
             derivedFromSubscriptionId: model.derivedFromSubscriptionId,
             accountType: service?.accountType ?? AccountType.NONE,
+            accounts: [],
+            accountCap: 1,
             ...(service ? { serviceName: service.name, serviceSlug: service.slug } : {}),
         }
     }
 
-    /** Batch-resolves owner, service and external account details for listings. */
+    /**
+     * Builds a response for provisioning flows without a second DB read. The linked-account list
+     * reflects the account that was just provisioned (blank id for brand-new rows whose UUID is
+     * only known to the database) alongside the subscription-level policy cap.
+     */
+    private async composeSubscriptionResponse(
+        model: SubscriptionModel,
+        existingAccounts: ExternalUserAccountModel[],
+        provisioned: ProvisionResult['account'],
+        service?: ServiceModel | null
+    ): Promise<SubscriptionResponseDto> {
+        const accountCap = await this.getAccountCap(model.userId, model.serviceId)
+
+        let accounts: SubscriptionAccountDto[]
+
+        if (provisioned) {
+            const reused = existingAccounts.find((a) => a.externalAccountId === provisioned.externalAccountId)
+
+            accounts = [
+                {
+                    id: reused?.id ?? '',
+                    externalAccountId: provisioned.externalAccountId,
+                    username: provisioned.username,
+                    email: provisioned.email,
+                },
+            ]
+        } else {
+            accounts = existingAccounts.map((a) => ({
+                id: a.id,
+                externalAccountId: a.externalAccountId,
+                username: a.username,
+                email: a.email,
+            }))
+        }
+
+        return {
+            ...this.mapSubscription(model, accounts[0]?.username ?? null, service),
+            accounts,
+            accountCap,
+        }
+    }
+
+    /** Batch-resolves owner, service, linked accounts and policy caps for listings. */
     private async hydrateSubscriptionDetails(
         subscriptions: SubscriptionModel[]
     ): Promise<SubscriptionResponseDto[]> {
         const userIds = [...new Set(subscriptions.map((s) => s.userId))]
         const serviceIds = [...new Set(subscriptions.map((s) => s.serviceId))]
 
-        const [users, services, accounts] = await Promise.all([
+        const [users, services, accounts, policies] = await Promise.all([
             Promise.all(userIds.map((id) => this.userService.getUserById({ userId: id }))),
             Promise.all(serviceIds.map((id) => this.serviceRepository.findById(id))),
-            Promise.all(
-                subscriptions.map((s) => this.externalAccountRepository.findBySubscriptionId(s.id))
-            ),
+            Promise.all(subscriptions.map((s) => this.externalAccountRepository.findBySubscriptionId(s.id))),
+            Promise.all(userIds.map((id) => this.policyRepository.findByUserId(id))),
         ])
 
         const userMap = new Map(users.filter((u) => u != null).map((u) => [u.id, u]))
         const serviceMap = new Map(services.filter((s) => s != null).map((s) => [s.id, s]))
-        const accountMap = new Map(
-            accounts.filter((a) => a != null).map((a) => [a.subscriptionId, a])
-        )
+        const accountMap = new Map<string, ExternalUserAccountModel[]>()
+        const policyMap = new Map<string, UserServicePolicyModel>()
+
+        subscriptions.forEach((subscription, index) => {
+            accountMap.set(subscription.id, accounts[index] ?? [])
+        })
+
+        for (const list of policies) {
+            for (const policy of list) {
+                policyMap.set(`${policy.userId}:${policy.serviceId}`, policy)
+            }
+        }
 
         return subscriptions.map((subscription) => {
             const user = userMap.get(subscription.userId)
             const service = serviceMap.get(subscription.serviceId)
-            const account = accountMap.get(subscription.id)
+            const linked = accountMap.get(subscription.id) ?? []
+            const policy = policyMap.get(`${subscription.userId}:${subscription.serviceId}`)
 
             return {
-                ...this.mapSubscription(subscription, account?.username ?? null, service),
+                ...this.mapSubscription(subscription, linked[0]?.username ?? null, service),
+                accounts: linked.map((a) => ({
+                    id: a.id,
+                    externalAccountId: a.externalAccountId,
+                    username: a.username,
+                    email: a.email,
+                })),
+                accountCap: policy?.accountsPerService ?? 1,
                 ...(user ? { userUsername: user.username, userEmail: user.email } : {}),
             }
         })
@@ -670,7 +927,7 @@ export class SubscriptionService {
      * Re-grants access after an ALLOW policy is applied, but only when a REFERENCED service's
      * account source is still active: the derived subscription mirrors the active parent. NONE
      * subscriptions are not revived (the user can simply re-subscribe) and MANAGED is a no-op —
-     * cancelling it destroys the vendor account, so access must be re-established through a normal
+     * cancelling it destroys the vendor accounts, so access must be re-established through a normal
      * sign-up that provisions a fresh one.
      */
     async activateFromPolicy(userId: string, service: ServiceModel): Promise<void> {

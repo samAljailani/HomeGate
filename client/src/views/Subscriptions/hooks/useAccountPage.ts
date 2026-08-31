@@ -8,6 +8,7 @@ import { serviceService, type ServiceResponseDto } from '@/services/service.serv
 export interface AccountSubscription extends SubscriptionResponseDto {
     serviceName: string
     accountType: ServiceResponseDto['accountType']
+    requiredInputs?: ServiceResponseDto['requiredInputs']
 }
 
 export function useAccountPage() {
@@ -24,11 +25,15 @@ export function useAccountPage() {
 
             const nameById = new Map<number, string>(services.map((s: ServiceResponseDto) => [s.id, s.name]))
             const typeById = new Map<number, ServiceResponseDto['accountType']>(services.map((s) => [s.id, s.accountType]))
+            const requiredInputsById = new Map<number, ServiceResponseDto['requiredInputs']>(
+                services.map((s: ServiceResponseDto) => [s.id, s.requiredInputs])
+            )
             setSubscriptions(
                 subs.map((s) => ({
                     ...s,
                     serviceName: nameById.get(s.serviceId) ?? `Service ${s.serviceId}`,
                     accountType: typeById.get(s.serviceId) ?? 'NONE',
+                    requiredInputs: requiredInputsById.get(s.serviceId),
                 }))
             )
         } catch (error) {

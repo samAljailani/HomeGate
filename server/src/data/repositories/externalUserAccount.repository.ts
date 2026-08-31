@@ -33,12 +33,24 @@ export class ExternalUserAccountRepository extends BaseRepository implements IEx
         }
     }
 
-    async findBySubscriptionId(subscriptionId: string): Promise<ExternalUserAccountModel | null> {
+    async findBySubscriptionId(subscriptionId: string): Promise<ExternalUserAccountModel[]> {
         try {
-            const account = await this.db.externalUserAccount.findUnique({ where: { subscriptionId } })
-            return account ? this.mapExternalUserAccount(account) : null
+            const accounts = await this.db.externalUserAccount.findMany({ where: { subscriptionId } })
+            return accounts.map(a => this.mapExternalUserAccount(a))
         } catch (error) {
             this.logger.error(`findBySubscriptionId failed for subscriptionId: ${subscriptionId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.externalUserAccount)
+        }
+    }
+
+    async findById(id: string): Promise<ExternalUserAccountModel | null> {
+        try {
+            const account = await this.db.externalUserAccount.findUnique({ where: { id } })
+            return account ? this.mapExternalUserAccount(account) : null
+        } catch (error) {
+            this.logger.error(`findById failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.externalUserAccount)
@@ -61,6 +73,17 @@ export class ExternalUserAccountRepository extends BaseRepository implements IEx
         }
     }
 
+    async countBySubscriptionId(subscriptionId: string): Promise<number> {
+        try {
+            return await this.db.externalUserAccount.count({ where: { subscriptionId } })
+        } catch (error) {
+            this.logger.error(`countBySubscriptionId failed for subscriptionId: ${subscriptionId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.externalUserAccount)
+        }
+    }
+
     async create(request: CreateExternalUserAccountModel): Promise<ExternalUserAccountModel | null> {
         try {
             const account = await this.db.externalUserAccount.create({ data: request })
@@ -73,24 +96,34 @@ export class ExternalUserAccountRepository extends BaseRepository implements IEx
         }
     }
 
-    async update(request: UpdateExternalUserAccountModel): Promise<ExternalUserAccountModel | null> {
+    async update(id: string, request: UpdateExternalUserAccountModel): Promise<ExternalUserAccountModel | null> {
         try {
-            const { subscriptionId, ...data } = request
-            const account = await this.db.externalUserAccount.update({ where: { subscriptionId }, data })
+            const account = await this.db.externalUserAccount.update({ where: { id }, data: request })
             return this.mapExternalUserAccount(account)
         } catch (error) {
-            this.logger.error(`update failed for subscriptionId: ${request.subscriptionId}`, {
+            this.logger.error(`update failed for id: ${id}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.externalUserAccount)
         }
     }
 
-    async delete(subscriptionId: string): Promise<void> {
+    async delete(id: string): Promise<void> {
         try {
-            await this.db.externalUserAccount.delete({ where: { subscriptionId } })
+            await this.db.externalUserAccount.delete({ where: { id } })
         } catch (error) {
-            this.logger.error(`delete failed for subscriptionId: ${subscriptionId}`, {
+            this.logger.error(`delete failed for id: ${id}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.externalUserAccount)
+        }
+    }
+
+    async deleteBySubscriptionId(subscriptionId: string): Promise<void> {
+        try {
+            await this.db.externalUserAccount.deleteMany({ where: { subscriptionId } })
+        } catch (error) {
+            this.logger.error(`deleteBySubscriptionId failed for subscriptionId: ${subscriptionId}`, {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.externalUserAccount)

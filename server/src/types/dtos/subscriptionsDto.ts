@@ -8,6 +8,20 @@ import { EmptyStringToUndefined } from '../../../lib/utils'
 
 export { SubscriptionStatus as UserAccountStatus }
 
+export class SubscriptionAccountDto {
+    @ApiProperty({ type: String, format: 'uuid' })
+    id: string
+
+    @ApiProperty({ type: String, nullable: true })
+    externalAccountId: string | null
+
+    @ApiProperty({ type: String, nullable: true })
+    username: string | null
+
+    @ApiProperty({ type: String, nullable: true })
+    email: string | null
+}
+
 export class SubscriptionResponseDto {
     @ApiProperty({ type: String, format: 'uuid' })
     id: string
@@ -18,7 +32,7 @@ export class SubscriptionResponseDto {
     @ApiProperty({ type: Number })
     serviceId: number
 
-    @ApiProperty({ type: String, nullable: true, description: 'External account username; null when the service has no account' })
+    @ApiProperty({ type: String, nullable: true, description: 'Primary external account username; null when the service has no account' })
     username: string | null
 
     @ApiProperty({ enum: SubscriptionStatus })
@@ -52,6 +66,12 @@ export class SubscriptionResponseDto {
     @ApiProperty({ type: String, format: 'uuid', nullable: true, description: 'Source subscription that auto-created this one (REFERENCED services)' })
     derivedFromSubscriptionId: string | null
 
+    @ApiProperty({ type: [SubscriptionAccountDto], description: 'External accounts linked to this subscription' })
+    accounts: SubscriptionAccountDto[]
+
+    @ApiProperty({ type: Number, description: "Maximum accounts this subscription may be linked to (policy accountsPerService, default 1)" })
+    accountCap: number
+
     @ApiPropertyOptional({ type: String, description: 'The subscribing user\'s HomeGate username (admin listings only)' })
     userUsername?: string
 
@@ -70,6 +90,37 @@ export class SubscriptionParamsDto {
     @IsUUID()
     @IsNotEmpty()
     id: string
+}
+
+export class SubscriptionAccountParamsDto extends SubscriptionParamsDto {
+    @ApiProperty({ type: String, format: 'uuid' })
+    @IsUUID()
+    @IsNotEmpty()
+    accountId: string
+}
+
+export class SubscriptionAddAccountRequestDto {
+    @ApiProperty({ type: String })
+    @IsString()
+    @IsNotEmpty()
+    serviceUsername: string
+
+    @ApiPropertyOptional({ type: String })
+    @Transform(EmptyStringToUndefined)
+    @IsOptional()
+    @IsEmail()
+    email?: string
+
+    @ApiProperty({ type: String, writeOnly: true })
+    @IsString()
+    @IsNotEmpty()
+    servicePassword: string
+
+    @ApiProperty({ type: String, writeOnly: true })
+    @IsString()
+    @IsNotEmpty()
+    @Match('servicePassword', { message: 'Passwords do not match' })
+    confirmServicePassword: string
 }
 
 export class SubscriptionCreateRequestDto {
@@ -147,6 +198,18 @@ export class SubscriptionPasswordResetDto {
     @IsString()
     @Match('newPassword', { message: 'Passwords do not match' })
     confirmPassword!: string
+}
+
+export class SubscriptionAccountDeleteRequestDto {
+    @ApiPropertyOptional({
+        type: Boolean,
+        description: 'Deprovision (delete) the external account upstream as well. Defaults to true.',
+        default: true,
+    })
+    @IsOptional()
+    @Transform(({ value }) => value !== false && value !== 'false')
+    @IsBoolean()
+    deprovisionExternal?: boolean
 }
 
 export class SubscriptionListRequestDto extends PaginationRequestDto {

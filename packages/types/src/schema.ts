@@ -223,7 +223,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/subscriptions/{id}/reset-password": {
+    "/api/subscriptions/{id}/accounts": {
         parameters: {
             query?: never;
             header?: never;
@@ -232,9 +232,43 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reset the service account password (subscription owner only) */
+        /** Link an additional account to a subscription (owner or admin) */
+        post: operations["SubscriptionController_addAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subscriptions/{id}/accounts/{accountId}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset the password of one linked service account (subscription owner only) */
         post: operations["SubscriptionController_resetPassword"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subscriptions/{id}/accounts/{accountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink an account from a subscription — only while more than one account is linked (owner or admin) */
+        delete: operations["SubscriptionController_deleteAccount"];
         options?: never;
         head?: never;
         patch?: never;
@@ -848,6 +882,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClientRouteController_adminAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/logs": {
         parameters: {
             query?: never;
@@ -936,13 +986,20 @@ export interface components {
          * @enum {string}
          */
         AccountType: "MANAGED" | "REFERENCED" | "NONE";
+        SubscriptionAccountDto: {
+            /** Format: uuid */
+            id: string;
+            externalAccountId: string | null;
+            username: string | null;
+            email: string | null;
+        };
         SubscriptionResponseDto: {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
             userId: string;
             serviceId: number;
-            /** @description External account username; null when the service has no account */
+            /** @description Primary external account username; null when the service has no account */
             username: string | null;
             /** @enum {string} */
             status: "provisioning" | "active" | "failed" | "cancelling" | "cancelled" | "expired" | "disabling" | "disabled" | "enabling";
@@ -964,6 +1021,10 @@ export interface components {
              * @description Source subscription that auto-created this one (REFERENCED services)
              */
             derivedFromSubscriptionId: string | null;
+            /** @description External accounts linked to this subscription */
+            accounts: components["schemas"]["SubscriptionAccountDto"][];
+            /** @description Maximum accounts this subscription may be linked to (policy accountsPerService, default 1) */
+            accountCap: number;
             /** @description The subscribing user's HomeGate username (admin listings only) */
             userUsername?: string;
             /** @description The subscribing user's email (admin listings only) */
@@ -981,9 +1042,22 @@ export interface components {
             /** @description Immediately delete the external account instead of cancelling auto-renew */
             immediate?: boolean;
         };
+        SubscriptionAddAccountRequestDto: {
+            serviceUsername: string;
+            email?: string;
+            servicePassword: string;
+            confirmServicePassword: string;
+        };
         SubscriptionPasswordResetDto: {
             newPassword: string;
             confirmPassword: string;
+        };
+        SubscriptionAccountDeleteRequestDto: {
+            /**
+             * @description Deprovision (delete) the external account upstream as well. Defaults to true.
+             * @default true
+             */
+            deprovisionExternal: boolean;
         };
         SubscriptionAutoRenewDto: {
             autoRenew: boolean;
@@ -1077,6 +1151,8 @@ export interface components {
             serviceName: string;
             serviceSlug: string;
             effect: components["schemas"]["PolicyEffect"];
+            /** @description Maximum accounts a subscription to this service may be linked to */
+            accountsPerService: number;
             /** Format: uuid */
             createdByUserId?: string | null;
             /** Format: date-time */
@@ -1086,6 +1162,8 @@ export interface components {
             /** @description Target service ID */
             serviceId: number;
             effect: components["schemas"]["PolicyEffect"];
+            /** @description Maximum number of external accounts a subscription to this service may be linked to (defaults to 1) */
+            accountsPerService?: number;
         };
         /** @enum {string} */
         IntegrationProvider: "jellyfin" | "immich";
@@ -1664,11 +1742,59 @@ export interface operations {
             };
         };
     };
+    SubscriptionController_addAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionAddAccountRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Account linked successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionResponseDto"];
+                };
+            };
+            /** @description Subscription not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Subscription already at its account limit or not active */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description External service unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SubscriptionController_resetPassword: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                accountId: string;
                 id: string;
             };
             cookie?: never;
@@ -1693,8 +1819,54 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Subscription not found */
+            /** @description Subscription or linked account not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description External service unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SubscriptionController_deleteAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionAccountDeleteRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Account unlinked successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Subscription or linked account not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Subscription owns only a single account */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2685,6 +2857,23 @@ export interface operations {
         };
     };
     ClientRouteController_adminSubscriptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClientRouteController_adminAccounts: {
         parameters: {
             query?: never;
             header?: never;

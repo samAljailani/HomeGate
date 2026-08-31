@@ -207,6 +207,7 @@ function signUpFormValidator(
 
     return {
         email: register('email', {
+            required: requiredInputs?.email ? 'Email is required' : false,
             maxLength: {
                 value: serviceSignUpConstants.maxEmailLength,
                 message: `Email must be ${serviceSignUpConstants.maxEmailLength} characters or fewer`,

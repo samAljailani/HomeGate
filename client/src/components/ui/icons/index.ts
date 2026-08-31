@@ -31,6 +31,7 @@ export {
     Square,
     Trash2,
     TriangleAlertIcon,
+    Unlink,
     X,
     XIcon,
     Zap,

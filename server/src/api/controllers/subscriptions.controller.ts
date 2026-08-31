@@ -27,6 +27,8 @@ import type { Request as ExpressRequest } from 'express'
 import { AdminRoute } from '@/decorators'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import {
+    SubscriptionAccountParamsDto,
+    SubscriptionAddAccountRequestDto,
     SubscriptionAutoRenewDto,
     SubscriptionCreateRequestDto,
     SubscriptionDeleteRequestDto,
@@ -35,6 +37,7 @@ import {
     SubscriptionPasswordResetDto,
     SubscriptionPatchRequestDto,
     SubscriptionResponseDto,
+    SubscriptionAccountDeleteRequestDto,
 } from '@/types/dtos/subscriptionsDto'
 import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { routes } from '@/types/dtos/routes'
@@ -135,21 +138,67 @@ export class SubscriptionController {
         return this.subscriptionService.delete(params.id, req.session.userId!, body?.immediate)
     }
 
+    @Post(routes.subscriptions.subPath.addAccount)
+    @Throttle({ default: { ttl: 60_000, limit: 5 } })
+    @ApiOperation({ summary: 'Link an additional account to a subscription (owner or admin)' })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
+    @ApiBody({ type: SubscriptionAddAccountRequestDto })
+    @ApiOkResponse({ description: 'Account linked successfully', type: SubscriptionResponseDto })
+    @ApiNotFoundResponse({ description: 'Subscription not found' })
+    @ApiConflictResponse({ description: 'Subscription already at its account limit or not active' })
+    @ApiServiceUnavailableResponse({ description: 'External service unavailable' })
+    async addAccount(
+        @Param() params: SubscriptionParamsDto,
+        @Body() request: SubscriptionAddAccountRequestDto,
+        @Request() req: ExpressRequest
+    ): Promise<SubscriptionResponseDto> {
+        return this.subscriptionService.addAccount(params.id, request, req.session.userId!)
+    }
+
     @Post(routes.subscriptions.subPath.resetPassword)
     @Throttle({ default: { ttl: 60_000, limit: 5 } })
-    @ApiOperation({ summary: 'Reset the service account password (subscription owner only)' })
+    @ApiOperation({ summary: 'Reset the password of one linked service account (subscription owner only)' })
     @ApiParam({ name: 'id', type: String, format: 'uuid' })
+    @ApiParam({ name: 'accountId', type: String, format: 'uuid' })
     @ApiBody({ type: SubscriptionPasswordResetDto })
     @ApiOkResponse({ description: 'Password reset successfully' })
     @ApiBadRequestResponse({ description: 'Passwords do not match or account not provisioned' })
-    @ApiNotFoundResponse({ description: 'Subscription not found' })
+    @ApiNotFoundResponse({ description: 'Subscription or linked account not found' })
     @ApiServiceUnavailableResponse({ description: 'External service unavailable' })
     async resetPassword(
-        @Param() params: SubscriptionParamsDto,
+        @Param() params: SubscriptionAccountParamsDto,
         @Body() body: SubscriptionPasswordResetDto,
         @Request() req: ExpressRequest
     ): Promise<boolean> {
-        return this.subscriptionService.resetAccountPassword(params.id, req.session.userId!, body.newPassword)
+        return this.subscriptionService.resetAccountPassword(
+            params.id,
+            req.session.userId!,
+            params.accountId,
+            body.newPassword
+        )
+    }
+
+    @Delete(routes.subscriptions.subPath.deleteAccount)
+    @Throttle({ default: { ttl: 60_000, limit: 5 } })
+    @ApiOperation({ summary: 'Unlink an account from a subscription — only while more than one account is linked (owner or admin)' })
+    @ApiParam({ name: 'id', type: String, format: 'uuid' })
+    @ApiParam({ name: 'accountId', type: String, format: 'uuid' })
+    @ApiBody({ type: SubscriptionAccountDeleteRequestDto, required: false })
+    @ApiOkResponse({ description: 'Account unlinked successfully' })
+    @ApiConflictResponse({ description: 'Subscription owns only a single account' })
+    @ApiNotFoundResponse({ description: 'Subscription or linked account not found' })
+    @ApiServiceUnavailableResponse({ description: 'External service unavailable' })
+    async deleteAccount(
+        @Param() params: SubscriptionAccountParamsDto,
+        @Body() body: SubscriptionAccountDeleteRequestDto,
+        @Request() req: ExpressRequest
+    ): Promise<boolean> {
+        return this.subscriptionService.deleteAccount(
+            params.id,
+            params.accountId,
+            req.session.userId!,
+            body?.deprovisionExternal
+        )
     }
 
     @Patch(routes.subscriptions.subPath.autoRenew)

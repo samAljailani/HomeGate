@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { AccountType } from '@/types/enums'
+import { ExternalUserAccountModel } from '@/types/models/externalUserAccount'
 import {
     ExternalAccountStatus,
     ISubscriptionProvisioner,
@@ -28,11 +29,18 @@ export class NoAccountProvisioner implements ISubscriptionProvisioner {
 
     async enable(_ctx: LifecycleContext): Promise<void> {}
 
-    async resetPassword(_ctx: LifecycleContext, _newPassword: string): Promise<void> {
+    async resetPassword(
+        _ctx: LifecycleContext,
+        _account: ExternalUserAccountModel,
+        _newPassword: string
+    ): Promise<void> {
         throw new Error('NOT_SUPPORTED')
     }
 
-    async getExternalAccountStatus(_ctx: LifecycleContext): Promise<ExternalAccountStatus> {
+    async getExternalAccountStatus(
+        _ctx: LifecycleContext,
+        _account: ExternalUserAccountModel
+    ): Promise<ExternalAccountStatus> {
         return 'not-applicable'
     }
 }

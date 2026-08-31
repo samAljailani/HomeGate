@@ -20,7 +20,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       DATABASE_URL: ${DATABASE_URL}
       LOG_TARGETS: console,database
-      LOG_LEVEL: debug
+      LOG_LEVEL: log
       LOG_FORMAT: console
       COLOR_LOGS: "false"
     ports:

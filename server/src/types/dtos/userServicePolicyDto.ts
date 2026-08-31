@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsIn, IsInt, IsNotEmpty } from 'class-validator'
+import { IsIn, IsInt, IsNotEmpty, IsOptional, Min } from 'class-validator'
 import { PolicyEffect } from '@/types/enums'
 
 const POLICY_EFFECTS = [PolicyEffect.ALLOW, PolicyEffect.DENY] as const
@@ -13,6 +13,15 @@ export class UserServicePolicySetRequestDto {
     @ApiProperty({ enum: POLICY_EFFECTS, enumName: 'PolicyEffect' })
     @IsIn(POLICY_EFFECTS as readonly string[])
     effect: PolicyEffect
+
+    @ApiPropertyOptional({
+        type: Number,
+        description: "Maximum number of external accounts a subscription to this service may be linked to (defaults to 1)",
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    accountsPerService?: number
 }
 
 export class UserServicePolicyResponseDto {
@@ -33,6 +42,9 @@ export class UserServicePolicyResponseDto {
 
     @ApiProperty({ enum: POLICY_EFFECTS, enumName: 'PolicyEffect' })
     effect: PolicyEffect
+
+    @ApiProperty({ type: Number, description: "Maximum accounts a subscription to this service may be linked to" })
+    accountsPerService: number
 
     @ApiPropertyOptional({ type: String, format: 'uuid', nullable: true })
     createdByUserId: string | null

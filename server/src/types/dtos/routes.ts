@@ -48,7 +48,9 @@ export const routes = {
         autoRenew: ':id/auto-renew',
         renew: ':id/renew',
         delete: ':id',
-        resetPassword: ':id/reset-password',
+        addAccount: ':id/accounts',
+        resetPassword: ':id/accounts/:accountId/reset-password',
+        deleteAccount: ':id/accounts/:accountId',
     }),
     invites: defineRoutes('/api/invites', {
         create: '',
@@ -112,6 +114,7 @@ export const clientRoutes = {
     adminServices: '/admin/services',
     adminOAuthProviders: '/admin/oauth-providers',
     adminSubscriptions: '/admin/subscriptions',
+    adminAccounts: '/admin/accounts',
     adminLogs: '/admin/logs',
     adminScheduledTasks: '/admin/scheduled-tasks',
     adminSessions: '/admin/sessions',

@@ -16,10 +16,13 @@ export function createSubscriptionRepositoryMock(): jest.Mocked<ISubscriptionRep
 
 export function createExternalUserAccountRepositoryMock(): jest.Mocked<IExternalUserAccountRepository> {
     return {
-        findBySubscriptionId: jest.fn(),
+        findBySubscriptionId: jest.fn().mockResolvedValue([]),
+        findById: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
+        countBySubscriptionId: jest.fn().mockResolvedValue(0),
         create: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
+        deleteBySubscriptionId: jest.fn(),
     }
 }

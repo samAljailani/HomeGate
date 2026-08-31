@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
-import { ISubscriptionRepository, IExternalUserAccountRepository } from '@/data/repositories'
+import { ISubscriptionRepository, IExternalUserAccountRepository, IUserServicePolicyRepository } from '@/data/repositories'
 import { IServiceRepository } from '@/data/repositories'
 import { UserService } from '@/api/services/user.service'
 import { SubscriptionProvisionerResolver } from '@/core/subscriptions/provisioners'
@@ -12,6 +12,7 @@ import { AccountType } from '@/types/enums'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createExternalUserAccountRepositoryMock } from '../../mocks/subscription.repository.mock'
+import { createUserServicePolicyRepositoryMock } from '../../mocks/userServicePolicy.repository.mock'
 import { createSubscriptionFixture, createExternalUserAccountFixture, toSubscriptionResponseDto } from '../../fixtures/subscription.stub'
 
 function createSubscriptionRepositoryMock(): jest.Mocked<
@@ -50,6 +51,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
                 { provide: IServiceRepository, useValue: createServiceRepositoryMock() },
                 { provide: ISubscriptionRepository, useValue: userAccountRepositoryMock },
                 { provide: IExternalUserAccountRepository, useValue: externalAccountRepoMock },
+                { provide: IUserServicePolicyRepository, useValue: createUserServicePolicyRepositoryMock() },
                 { provide: SubscriptionProvisionerResolver, useValue: { resolve: jest.fn() } },
                 {
                     provide: SubscriptionCascadeService,
@@ -63,7 +65,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
 
         service = module.get<SubscriptionService>(SubscriptionService)
 
-        externalAccountRepoMock.findBySubscriptionId.mockResolvedValue(createExternalUserAccountFixture())
+        externalAccountRepoMock.findBySubscriptionId.mockResolvedValue([createExternalUserAccountFixture()])
     })
 
     // #region renew
@@ -90,7 +92,18 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
 
             const newExpiry = userAccountRepositoryMock.update.mock.calls[0]![0]!.expiresAt!
             expect(newExpiry.getTime()).toBeGreaterThan(futureExpiry.getTime())
-            expect(result).toEqual({ ...toSubscriptionResponseDto(updated), accountType: AccountType.NONE })
+            expect(result).toEqual({
+                ...toSubscriptionResponseDto(updated),
+                accountType: AccountType.NONE,
+                accounts: [
+                    {
+                        id: 'external-account-uuid-1',
+                        externalAccountId: 'external-id-1',
+                        username: 'testuser',
+                        email: null,
+                    },
+                ],
+            })
         })
 
         it('extends expiry from now when already expired', async () => {

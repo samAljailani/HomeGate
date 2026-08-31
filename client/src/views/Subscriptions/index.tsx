@@ -74,8 +74,17 @@ export function Subscriptions() {
                                         </StatusBadge>
                                     </div>
                                     <div className="text-sm text-muted-foreground space-y-1">
-                                        {sub.username && (
-                                            <p>Username: {sub.username}</p>
+                                        {sub.accounts.length > 0 && (
+                                            <p>
+                                                Username: {sub.accounts.map(a => a.username).join(", ")}
+                                            </p>
+                                        )}
+                                        {sub.accountType === 'MANAGED' && (
+                                            <p>
+                                                Accounts:{' '}
+                                                {sub.accounts?.length ?? 0} /{' '}
+                                                {sub.accountCap ?? 1}
+                                            </p>
                                         )}
                                         <p>
                                             Expires: {formatDate(sub.expiresAt)}
@@ -172,6 +181,7 @@ export function Subscriptions() {
                 onAutoRenewChanged={(id, autoRenew) =>
                     patchSubscription(id, { autoRenew })
                 }
+                onAccountChanged={(id, updated) => patchSubscription(id, updated)}
                 onCancelled={() => void reload({ silent: true })}
             />
         </div>

@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import {
@@ -42,6 +43,7 @@ function effectiveAccess(
 interface PendingChoice {
     serviceId: number
     value: 'DEFAULT' | 'ALLOW' | 'DENY'
+    maxAccounts: number
 }
 
 export function UserServiceAccess({ users }: UserServiceAccessProps) {
@@ -52,22 +54,48 @@ export function UserServiceAccess({ users }: UserServiceAccessProps) {
         isLoading,
         pendingServiceId,
         policyFor,
+        capFor,
+        updateCap,
         applyPolicy,
     } = useUserServiceAccess(users)
     const [pendingChoice, setPendingChoice] = useState<PendingChoice | null>(null)
+    const [draftCaps, setDraftCaps] = useState<Record<number, string>>({})
+
+    useEffect(() => {
+        setDraftCaps({})
+    }, [selectedUserId])
 
     const selectedUser = users.find((u) => u.id === selectedUserId) ?? null
     const pendingService = pendingChoice ? services.find((s) => s.id === pendingChoice.serviceId) : null
 
     const onChangePolicy = useCallback((serviceId: number, value: string) => {
         if (value !== 'DEFAULT' && value !== 'ALLOW' && value !== 'DENY') return
-        setPendingChoice({ serviceId, value })
-    }, [])
+        const raw = draftCaps[serviceId]
+        const parsed = raw !== undefined ? Math.max(1, Math.floor(Number(raw))) : capFor(serviceId)
+        setPendingChoice({ serviceId, value, maxAccounts: Number.isFinite(parsed) ? parsed : 1 })
+    }, [capFor, draftCaps])
+
+    const commitCap = useCallback(async (serviceId: number) => {
+        const raw = draftCaps[serviceId]
+        if (raw === undefined) return
+        const parsed = Math.max(1, Math.floor(Number(raw)))
+        if (!Number.isFinite(parsed)) return
+        const ok = await updateCap(serviceId, parsed)
+        if (ok) {
+            setDraftCaps((prev) => {
+                const next = { ...prev }
+                delete next[serviceId]
+                return next
+            })
+        } else {
+            setDraftCaps((prev) => ({ ...prev, [serviceId]: String(capFor(serviceId)) }))
+        }
+    }, [draftCaps, updateCap, capFor])
 
     const confirmChoice = useCallback(async () => {
         if (!pendingChoice) return
         const effect = pendingChoice.value === 'DEFAULT' ? null : pendingChoice.value
-        await applyPolicy(pendingChoice.serviceId, effect)
+        await applyPolicy(pendingChoice.serviceId, effect, pendingChoice.maxAccounts)
         setPendingChoice(null)
     }, [pendingChoice, applyPolicy])
 
@@ -101,13 +129,15 @@ export function UserServiceAccess({ users }: UserServiceAccessProps) {
                     Loading access policies…
                 </p>
             ) : (
-                <Table>
+                <>
+                    <Table>
                     <TableHeader>
                         <TableRow>
                             <TableCell className="font-medium">Service</TableCell>
                             <TableCell className="font-medium">Default</TableCell>
                             <TableCell className="font-medium">Policy</TableCell>
                             <TableCell className="font-medium">Effective Access</TableCell>
+                            <TableCell className="font-medium">Max accounts</TableCell>
                             <TableCell className="font-medium">Override</TableCell>
                         </TableRow>
                     </TableHeader>
@@ -134,6 +164,42 @@ export function UserServiceAccess({ users }: UserServiceAccessProps) {
                                         </StatusBadge>
                                     </TableCell>
                                     <TableCell>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            className={cn(
+                                                SELECT_CLASS,
+                                                'w-24',
+                                                effective === 'DENY' && 'cursor-not-allowed opacity-50'
+                                            )}
+                                            disabled={
+                                                pendingServiceId === service.id ||
+                                                effective === 'DENY'
+                                            }
+                                            value={
+                                                draftCaps[service.id] ??
+                                                capFor(service.id)
+                                            }
+                                            title={
+                                                effective === 'DENY'
+                                                    ? 'Set an Allow policy to configure the account limit'
+                                                    : 'Change the account limit and press Enter or Tab to save'
+                                            }
+                                            onChange={(e) =>
+                                                setDraftCaps((prev) => ({
+                                                    ...prev,
+                                                    [service.id]: e.target.value,
+                                                }))
+                                            }
+                                            onBlur={() => void commitCap(service.id)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.currentTarget.blur()
+                                                }
+                                            }}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
                                         <select
                                             className={SELECT_CLASS}
                                             disabled={pendingServiceId === service.id}
@@ -150,6 +216,13 @@ export function UserServiceAccess({ users }: UserServiceAccessProps) {
                         })}
                     </TableBody>
                 </Table>
+                        <p className="text-sm text-muted-foreground">
+                            Max accounts limits how many accounts a subscription
+                            to that service can link (only applies when access is
+                            allowed). Change a value and press Enter or Tab to
+                            save.
+                        </p>
+                </>
             )}
 
             <ConfirmDialog

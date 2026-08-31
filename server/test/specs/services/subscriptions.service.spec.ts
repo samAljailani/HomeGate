@@ -9,7 +9,12 @@ import {
 } from '@nestjs/common'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import { UserService } from '@/api/services/user.service'
-import { IServiceRepository, ISubscriptionRepository, IExternalUserAccountRepository } from '@/data/repositories'
+import {
+    IServiceRepository,
+    ISubscriptionRepository,
+    IExternalUserAccountRepository,
+    IUserServicePolicyRepository,
+} from '@/data/repositories'
 import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import {
     ManagedAccountProvisioner,
@@ -27,6 +32,7 @@ import {
     createSubscriptionRepositoryMock,
     createExternalUserAccountRepositoryMock,
 } from '../../mocks/subscription.repository.mock'
+import { createUserServicePolicyRepositoryMock } from '../../mocks/userServicePolicy.repository.mock'
 import { createServiceRepositoryMock } from '../../mocks/service.repository.mock'
 import { createAccountIntegrationRegistryMock } from '../../mocks/accountIntegrationRegistry.mock'
 import { createAccountIntegrationProviderMock } from '../../mocks/accountIntegrationProvider.mock'
@@ -54,6 +60,7 @@ describe('SubscriptionService', () => {
     let accessServiceMock: jest.Mocked<Pick<ServiceAccessService, 'assertCanSubscribe' | 'resolveAccess'>>
     let loggerMock: ReturnType<typeof createLoggerMock>
     let eventsMock: jest.Mocked<Pick<EventEmitter2, 'emit'>>
+    let policyRepoMock: ReturnType<typeof createUserServicePolicyRepositoryMock>
 
     beforeEach(async () => {
         userServiceMock = createUserServiceMock()
@@ -64,6 +71,7 @@ describe('SubscriptionService', () => {
         accessServiceMock = { assertCanSubscribe: jest.fn(), resolveAccess: jest.fn() }
         loggerMock = createLoggerMock()
         eventsMock = { emit: jest.fn() }
+        policyRepoMock = createUserServicePolicyRepositoryMock()
 
         // Real provisioners and cascade so orchestration and integration behaviour are tested together.
         const module: TestingModule = await Test.createTestingModule({
@@ -78,6 +86,7 @@ describe('SubscriptionService', () => {
                 { provide: ISubscriptionRepository, useValue: userAccountRepoMock },
                 { provide: IExternalUserAccountRepository, useValue: externalAccountRepoMock },
                 { provide: IServiceRepository, useValue: serviceRepoMock },
+                { provide: IUserServicePolicyRepository, useValue: policyRepoMock },
                 { provide: AccountIntegrationRegistry, useValue: clientRegistryMock },
                 { provide: ServiceAccessService, useValue: accessServiceMock },
                 { provide: EventEmitter2, useValue: eventsMock },
@@ -87,7 +96,7 @@ describe('SubscriptionService', () => {
 
         service = module.get(SubscriptionService)
 
-        externalAccountRepoMock.findBySubscriptionId.mockResolvedValue(createExternalUserAccountFixture())
+        externalAccountRepoMock.findBySubscriptionId.mockResolvedValue([createExternalUserAccountFixture()])
     })
 
     // #region subscribe
@@ -135,6 +144,14 @@ describe('SubscriptionService', () => {
                 ...toSubscriptionResponseDto(createdAccount, 'newuser'),
                 serviceName: 'jellyfin',
                 serviceSlug: 'jellyfin',
+                accounts: [
+                    {
+                        id: '',
+                        externalAccountId: 'external-id-1',
+                        username: 'newuser',
+                        email: 'test@example.com',
+                    },
+                ],
             })
             expect(userAccountRepoMock.create).toHaveBeenCalledWith(
                 expect.objectContaining({ userId, status: SubscriptionStatus.provisioning })
@@ -202,9 +219,9 @@ describe('SubscriptionService', () => {
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.get.mockReturnValue(client)
             userAccountRepoMock.find.mockResolvedValue(cancelledAccount)
-            externalAccountRepoMock.findBySubscriptionId.mockResolvedValue(
-                createExternalUserAccountFixture({ externalAccountId: 'old-ext-id' })
-            )
+            externalAccountRepoMock.findBySubscriptionId.mockResolvedValue([
+                createExternalUserAccountFixture({ externalAccountId: 'old-ext-id' }),
+            ])
             client.getUser.mockResolvedValue({ ok: false, user: null })
             userAccountRepoMock.update.mockResolvedValue(activeAccount)
             client.createUser.mockResolvedValue({
@@ -218,6 +235,14 @@ describe('SubscriptionService', () => {
                 ...toSubscriptionResponseDto(activeAccount, 'newuser'),
                 serviceName: 'jellyfin',
                 serviceSlug: 'jellyfin',
+                accounts: [
+                    {
+                        id: '',
+                        externalAccountId: 'external-id-1',
+                        username: 'newuser',
+                        email: 'test@example.com',
+                    },
+                ],
             })
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ status: SubscriptionStatus.provisioning })
@@ -236,9 +261,9 @@ describe('SubscriptionService', () => {
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.get.mockReturnValue(client)
             userAccountRepoMock.find.mockResolvedValue(cancelledAccount)
-            externalAccountRepoMock.findBySubscriptionId.mockResolvedValue(
-                createExternalUserAccountFixture({ externalAccountId: 'old-ext-id' })
-            )
+            externalAccountRepoMock.findBySubscriptionId.mockResolvedValue([
+                createExternalUserAccountFixture({ externalAccountId: 'old-ext-id' }),
+            ])
             client.getUser.mockResolvedValue({
                 ok: true,
                 user: { id: 'old-ext-id', username: 'testuser', isActive: false, isAdmin: false },
@@ -252,6 +277,14 @@ describe('SubscriptionService', () => {
                 ...toSubscriptionResponseDto(reactivatedAccount),
                 serviceName: 'jellyfin',
                 serviceSlug: 'jellyfin',
+                accounts: [
+                    {
+                        id: 'external-account-uuid-1',
+                        externalAccountId: 'old-ext-id',
+                        username: 'testuser',
+                        email: 'test@example.com',
+                    },
+                ],
             })
             expect(client.enableUser).toHaveBeenCalledWith(
                 expect.objectContaining({ userServiceAccountId: 'old-ext-id' })
@@ -271,9 +304,9 @@ describe('SubscriptionService', () => {
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.get.mockReturnValue(client)
             userAccountRepoMock.find.mockResolvedValue(cancelledAccount)
-            externalAccountRepoMock.findBySubscriptionId.mockResolvedValue(
-                createExternalUserAccountFixture({ externalAccountId: 'old-ext-id' })
-            )
+            externalAccountRepoMock.findBySubscriptionId.mockResolvedValue([
+                createExternalUserAccountFixture({ externalAccountId: 'old-ext-id' }),
+            ])
             client.getUser.mockResolvedValue({
                 ok: true,
                 user: { id: 'old-ext-id', username: 'testuser', isActive: true, isAdmin: false },
@@ -287,6 +320,14 @@ describe('SubscriptionService', () => {
                 ...toSubscriptionResponseDto(reactivatedAccount),
                 serviceName: 'jellyfin',
                 serviceSlug: 'jellyfin',
+                accounts: [
+                    {
+                        id: 'external-account-uuid-1',
+                        externalAccountId: 'old-ext-id',
+                        username: 'testuser',
+                        email: 'test@example.com',
+                    },
+                ],
             })
             expect(client.enableUser).toHaveBeenCalledWith(
                 expect.objectContaining({ userServiceAccountId: 'old-ext-id' })
@@ -305,9 +346,9 @@ describe('SubscriptionService', () => {
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.get.mockReturnValue(client)
             userAccountRepoMock.find.mockResolvedValue(cancelledAccount)
-            externalAccountRepoMock.findBySubscriptionId.mockResolvedValue(
-                createExternalUserAccountFixture({ externalAccountId: 'old-ext-id' })
-            )
+            externalAccountRepoMock.findBySubscriptionId.mockResolvedValue([
+                createExternalUserAccountFixture({ externalAccountId: 'old-ext-id' }),
+            ])
             // First getUser call: old external account gone
             // Second getUser call: new username availability check returns not found
             client.getUser
@@ -325,6 +366,14 @@ describe('SubscriptionService', () => {
                 ...toSubscriptionResponseDto(activeAccount, 'newuser'),
                 serviceName: 'jellyfin',
                 serviceSlug: 'jellyfin',
+                accounts: [
+                    {
+                        id: '',
+                        externalAccountId: 'new-ext-id',
+                        username: 'newuser',
+                        email: 'test@example.com',
+                    },
+                ],
             })
             expect(client.createUser).toHaveBeenCalled()
         })
@@ -355,6 +404,14 @@ describe('SubscriptionService', () => {
                 ...toSubscriptionResponseDto(activeAccount, 'newuser'),
                 serviceName: 'jellyfin',
                 serviceSlug: 'jellyfin',
+                accounts: [
+                    {
+                        id: 'external-account-uuid-1',
+                        externalAccountId: 'external-id-1',
+                        username: 'newuser',
+                        email: 'test@example.com',
+                    },
+                ],
             })
         })
 
@@ -474,6 +531,10 @@ describe('SubscriptionService', () => {
             userServiceMock.getUserById.mockResolvedValue(user)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.get.mockReturnValue(client)
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+            })
             client.deleteUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue({ ...activeAccount, status: SubscriptionStatus.cancelled })
 
@@ -495,6 +556,10 @@ describe('SubscriptionService', () => {
             userServiceMock.getUserById.mockResolvedValue(user)
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.get.mockReturnValue(client)
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+            })
             client.deleteUser.mockResolvedValue(false)
             userAccountRepoMock.update.mockResolvedValue(activeAccount)
 
@@ -543,6 +608,166 @@ describe('SubscriptionService', () => {
 
     // #endregion delete
 
+    // #region deleteAccount
+
+    describe('deleteAccount', () => {
+        const subscriptionId = 'subscription-uuid-1'
+        const accountId = 'external-account-uuid-1'
+        const currentUserId = 'user-uuid-1'
+
+        function createActiveSubscription(overrides: Parameters<typeof createSubscriptionFixture>[0] = {}) {
+            return createSubscriptionFixture({
+                id: subscriptionId,
+                userId: currentUserId,
+                ...overrides,
+            })
+        }
+
+        function createAccount(overrides: Parameters<typeof createExternalUserAccountFixture>[0] = {}) {
+            return createExternalUserAccountFixture({
+                id: accountId,
+                subscriptionId,
+                userId: currentUserId,
+                username: 'testuser',
+                ...overrides,
+            })
+        }
+
+        it('should throw NotFoundException when subscription does not exist', async () => {
+            userAccountRepoMock.findById.mockResolvedValue(null)
+
+            await expect(service.deleteAccount(subscriptionId, accountId, currentUserId)).rejects.toThrow(
+                NotFoundException
+            )
+        })
+
+        it('should throw BadRequestException when service is not managed', async () => {
+            userAccountRepoMock.findById.mockResolvedValue(createActiveSubscription())
+            serviceRepoMock.findById.mockResolvedValue(createReferencedServiceFixture())
+
+            await expect(service.deleteAccount(subscriptionId, accountId, currentUserId)).rejects.toThrow(
+                BadRequestException
+            )
+        })
+
+        it('should throw NotFoundException when the linked account is missing', async () => {
+            userAccountRepoMock.findById.mockResolvedValue(createActiveSubscription())
+            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            externalAccountRepoMock.findById.mockResolvedValue(null)
+
+            await expect(service.deleteAccount(subscriptionId, accountId, currentUserId)).rejects.toThrow(
+                NotFoundException
+            )
+        })
+
+        it('should throw NotFoundException when the linked account belongs to another subscription', async () => {
+            userAccountRepoMock.findById.mockResolvedValue(createActiveSubscription())
+            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            externalAccountRepoMock.findById.mockResolvedValue(
+                createExternalUserAccountFixture({ id: accountId, subscriptionId: 'other-subscription' })
+            )
+
+            await expect(service.deleteAccount(subscriptionId, accountId, currentUserId)).rejects.toThrow(
+                NotFoundException
+            )
+        })
+
+        it('should throw ConflictException when the subscription has only a single account', async () => {
+            userAccountRepoMock.findById.mockResolvedValue(createActiveSubscription())
+            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            externalAccountRepoMock.findById.mockResolvedValue(createAccount())
+            externalAccountRepoMock.countBySubscriptionId.mockResolvedValue(1)
+
+            await expect(service.deleteAccount(subscriptionId, accountId, currentUserId)).rejects.toThrow(
+                ConflictException
+            )
+        })
+
+        it('should throw ForbiddenException when a non-admin tries to delete another user account', async () => {
+            const foreigner = createUserFixture({ id: currentUserId, isAdmin: false })
+
+            userAccountRepoMock.findById.mockResolvedValue(createActiveSubscription({ userId: 'other-user' }))
+            userServiceMock.getUserById.mockResolvedValue(foreigner)
+
+            await expect(service.deleteAccount(subscriptionId, accountId, currentUserId)).rejects.toThrow(
+                ForbiddenException
+            )
+        })
+
+        it('should deprovision and delete the account when the owner has more than one account', async () => {
+            const user = createUserFixture({ id: currentUserId })
+            const client = createAccountIntegrationProviderMock()
+
+            userAccountRepoMock.findById.mockResolvedValue(createActiveSubscription())
+            userServiceMock.getUserById.mockResolvedValue(user)
+            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            externalAccountRepoMock.findById.mockResolvedValue(createAccount())
+            externalAccountRepoMock.countBySubscriptionId.mockResolvedValue(2)
+            clientRegistryMock.get.mockReturnValue(client)
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+            })
+            client.deleteUser.mockResolvedValue(true)
+
+            const result = await service.deleteAccount(subscriptionId, accountId, currentUserId)
+
+            expect(result).toBe(true)
+            expect(client.deleteUser).toHaveBeenCalled()
+            expect(externalAccountRepoMock.delete).toHaveBeenCalledWith(accountId)
+            expect(eventsMock.emit).toHaveBeenCalledWith(
+                'subscription.changed',
+                expect.objectContaining({ userId: currentUserId })
+            )
+        })
+
+        it('should only delete the local reference when deprovisionExternal is false', async () => {
+            const user = createUserFixture({ id: currentUserId })
+
+            userAccountRepoMock.findById.mockResolvedValue(createActiveSubscription())
+            userServiceMock.getUserById.mockResolvedValue(user)
+            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            externalAccountRepoMock.findById.mockResolvedValue(createAccount())
+            externalAccountRepoMock.countBySubscriptionId.mockResolvedValue(2)
+            externalAccountRepoMock.delete.mockResolvedValue(undefined)
+
+            const result = await service.deleteAccount(subscriptionId, accountId, currentUserId, false)
+
+            expect(result).toBe(true)
+            expect(clientRegistryMock.get).not.toHaveBeenCalled()
+            expect(externalAccountRepoMock.delete).toHaveBeenCalledWith(accountId)
+            expect(eventsMock.emit).toHaveBeenCalledWith(
+                'subscription.changed',
+                expect.objectContaining({ userId: currentUserId })
+            )
+        })
+
+        it('should allow an admin to delete a linked account of another user', async () => {
+            const targetUser = createUserFixture({ id: 'target-user' })
+            const adminUser = createUserFixture({ id: currentUserId, isAdmin: true })
+            const client = createAccountIntegrationProviderMock()
+
+            userAccountRepoMock.findById.mockResolvedValue(createActiveSubscription({ userId: 'target-user' }))
+            userServiceMock.getUserById.mockResolvedValueOnce(adminUser).mockResolvedValueOnce(targetUser)
+            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            externalAccountRepoMock.findById.mockResolvedValue(createAccount({ userId: 'target-user' }))
+            externalAccountRepoMock.countBySubscriptionId.mockResolvedValue(2)
+            clientRegistryMock.get.mockReturnValue(client)
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+            })
+            client.deleteUser.mockResolvedValue(true)
+
+            const result = await service.deleteAccount(subscriptionId, accountId, currentUserId)
+
+            expect(result).toBe(true)
+            expect(externalAccountRepoMock.delete).toHaveBeenCalledWith(accountId)
+        })
+    })
+
+    // #endregion deleteAccount
+
     // #region update — enabled
 
     describe('update — enabled: false (disable)', () => {
@@ -566,6 +791,10 @@ describe('SubscriptionService', () => {
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             userAccountRepoMock.find.mockResolvedValue(activeAccount)
             clientRegistryMock.get.mockReturnValue(client)
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+            })
             client.disableUser.mockResolvedValue(true)
             userAccountRepoMock.update.mockResolvedValue({ ...activeAccount, status: SubscriptionStatus.disabled })
 
@@ -687,7 +916,7 @@ describe('SubscriptionService', () => {
             )
         })
 
-        it('should delete stale local record and return when enabling but external account no longer exists', async () => {
+        it('should delete the stale local account row when enabling but external account no longer exists', async () => {
             const targetUser = createUserFixture({ id: userId })
             const disabledAccount = createSubscriptionFixture({
                 id: subscriptionId,
@@ -704,11 +933,13 @@ describe('SubscriptionService', () => {
             userAccountRepoMock.find.mockResolvedValue(disabledAccount)
             clientRegistryMock.get.mockReturnValue(client)
             client.getUser.mockResolvedValue({ ok: false, user: null })
+            externalAccountRepoMock.delete.mockResolvedValue(undefined)
+            userAccountRepoMock.update.mockResolvedValue({ ...disabledAccount, status: SubscriptionStatus.active })
 
             await service.update(subscriptionId, { enabled: true })
 
             expect(client.enableUser).not.toHaveBeenCalled()
-            expect(userAccountRepoMock.delete).toHaveBeenCalledWith(userId, serviceId)
+            expect(externalAccountRepoMock.delete).toHaveBeenCalledWith('external-account-uuid-1')
         })
     })
 

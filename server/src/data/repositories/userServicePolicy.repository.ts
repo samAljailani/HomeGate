@@ -15,6 +15,7 @@ export class UserServicePolicyRepository extends BaseRepository implements IUser
             userId: row.userId,
             serviceId: row.serviceId,
             effect: row.effect as PolicyEffect,
+            accountsPerService: row.accountsPerService,
             createdByUserId: row.createdByUserId,
             createdAt: row.createdAt,
         }
@@ -55,10 +56,12 @@ export class UserServicePolicyRepository extends BaseRepository implements IUser
                     serviceId: request.serviceId,
                     effect: request.effect,
                     createdByUserId: request.createdByUserId,
+                    accountsPerService: request.accountsPerService
                 },
                 update: {
                     effect: request.effect,
                     createdByUserId: request.createdByUserId,
+                    accountsPerService: request.accountsPerService,
                 },
             })
             return this.mapPolicy(row)

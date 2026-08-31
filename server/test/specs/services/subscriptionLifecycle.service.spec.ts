@@ -3,7 +3,7 @@ import { BadRequestException, ConflictException } from '@nestjs/common'
 import { SubscriptionService } from '@/api/services/subscriptions.service'
 import { SubscriptionLifecycleService } from '@/api/services/subscriptionLifecycle.service'
 import { UserService } from '@/api/services/user.service'
-import { IServiceRepository, ISubscriptionRepository, IExternalUserAccountRepository } from '@/data/repositories'
+import { IServiceRepository, ISubscriptionRepository, IExternalUserAccountRepository, IUserServicePolicyRepository } from '@/data/repositories'
 import { AccountIntegrationRegistry } from '@/core/integrations/accountIntegrationRegistry'
 import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCascade.service'
 import { subscriptionProvisioners } from '@/core/subscriptions/provisioners'
@@ -20,6 +20,7 @@ import { createServiceRepositoryMock } from '../../mocks/service.repository.mock
 import { createAccountIntegrationRegistryMock } from '../../mocks/accountIntegrationRegistry.mock'
 import { createAccountIntegrationProviderMock } from '../../mocks/accountIntegrationProvider.mock'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
+import { createUserServicePolicyRepositoryMock } from '../../mocks/userServicePolicy.repository.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 import { createSubscriptionFixture, createExternalUserAccountFixture } from '../../fixtures/subscription.stub'
 import { createServiceFixture } from '../../fixtures/service.stub'
@@ -32,6 +33,7 @@ describe('SubscriptionLifecycleService', () => {
     let serviceRepoMock: ReturnType<typeof createServiceRepositoryMock>
     let clientRegistryMock: ReturnType<typeof createAccountIntegrationRegistryMock>
     let loggerMock: ReturnType<typeof createLoggerMock>
+    let policyRepoMock: ReturnType<typeof createUserServicePolicyRepositoryMock>
 
     beforeEach(async () => {
         userServiceMock = createUserServiceMock()
@@ -40,6 +42,7 @@ describe('SubscriptionLifecycleService', () => {
         serviceRepoMock = createServiceRepositoryMock()
         clientRegistryMock = createAccountIntegrationRegistryMock()
         loggerMock = createLoggerMock()
+        policyRepoMock = createUserServicePolicyRepositoryMock()
 
         // Real provisioners and cascade so integration behaviour is exercised, not stubbed away.
         const module: TestingModule = await Test.createTestingModule({
@@ -52,6 +55,7 @@ describe('SubscriptionLifecycleService', () => {
                 { provide: ISubscriptionRepository, useValue: subscriptionRepoMock },
                 { provide: IExternalUserAccountRepository, useValue: externalAccountRepoMock },
                 { provide: IServiceRepository, useValue: serviceRepoMock },
+                { provide: IUserServicePolicyRepository, useValue: policyRepoMock },
                 { provide: AccountIntegrationRegistry, useValue: clientRegistryMock },
                 { provide: ServiceAccessService, useValue: { assertCanSubscribe: jest.fn(), resolveAccess: jest.fn() } },
                 { provide: EventEmitter2, useValue: { emit: jest.fn() } },
@@ -62,7 +66,7 @@ describe('SubscriptionLifecycleService', () => {
         lifecycle = module.get(SubscriptionLifecycleService)
 
         serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
-        externalAccountRepoMock.findBySubscriptionId.mockResolvedValue(createExternalUserAccountFixture())
+        externalAccountRepoMock.findBySubscriptionId.mockResolvedValue([createExternalUserAccountFixture()])
         externalAccountRepoMock.findMany.mockResolvedValue([
             createExternalUserAccountFixture({ externalAccountId: 'ext-1' }),
         ])
@@ -366,6 +370,10 @@ describe('SubscriptionLifecycleService', () => {
             serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
             clientRegistryMock.get.mockReturnValue(client)
             userServiceMock.getUserById.mockResolvedValue(createUserFixture({ id: expired.userId }))
+            client.getUser.mockResolvedValue({
+                ok: true,
+                user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+            })
             client.disableUser.mockResolvedValue(false)
             subscriptionRepoMock.update.mockResolvedValue(expired)
 
@@ -601,6 +609,10 @@ describe('SubscriptionLifecycleService', () => {
                 subscriptionRepoMock.findMany.mockResolvedValue([account])
                 userServiceMock.getUserById.mockResolvedValue(user)
                 clientRegistryMock.get.mockReturnValue(client)
+                client.getUser.mockResolvedValue({
+                    ok: true,
+                    user: { id: 'ext-1', username: 'testuser', isActive: true, isAdmin: false },
+                })
                 serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
 
                 await lifecycle.disableAllForUser(userId)

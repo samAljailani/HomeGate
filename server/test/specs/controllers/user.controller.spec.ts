@@ -351,6 +351,7 @@ describe('UserController', () => {
                 userId,
                 serviceId: 7,
                 effect: PolicyEffect.DENY,
+                accountsPerService: 1,
                 createdByUserId: actorId,
             })
             expect(result.effect).toBe(PolicyEffect.DENY)

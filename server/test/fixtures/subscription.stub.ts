@@ -64,6 +64,8 @@ export function toSubscriptionResponseDto(
         cancelledAt: model.cancelledAt,
         accountType: AccountType.MANAGED,
         derivedFromSubscriptionId: model.derivedFromSubscriptionId,
+        accounts: [],
+        accountCap: 1,
     }
 }
 

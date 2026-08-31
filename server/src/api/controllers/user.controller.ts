@@ -190,6 +190,7 @@ export class UserController {
                 serviceName: service?.name ?? '',
                 serviceSlug: service?.slug ?? '',
                 effect: p.effect,
+                accountsPerService: p.accountsPerService,
                 createdByUserId: p.createdByUserId,
                 createdAt: p.createdAt.toISOString(),
             }
@@ -214,6 +215,7 @@ export class UserController {
             userId: params.id,
             serviceId: body.serviceId,
             effect: body.effect,
+            accountsPerService: body.accountsPerService ?? 1,
             createdByUserId: req.session.userId!,
         })
 
@@ -224,6 +226,7 @@ export class UserController {
             serviceName: service.name,
             serviceSlug: service.slug,
             effect: policy.effect,
+            accountsPerService: policy.accountsPerService,
             createdByUserId: policy.createdByUserId,
             createdAt: policy.createdAt.toISOString(),
         }

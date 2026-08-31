@@ -12,6 +12,7 @@ export function useUserServiceAccess(users: UserResponseForAdminDto[]) {
     const [selectedUserId, setSelectedUserId] = useState<string | null>(users[0]?.id ?? null)
     const [services, setServices] = useState<ServiceResponseDto[]>([])
     const [policies, setPolicies] = useState<Map<number, PolicyEffect>>(new Map())
+    const [caps, setCaps] = useState<Map<number, number>>(new Map())
     const [isLoading, setIsLoading] = useState(true)
     const [pendingServiceId, setPendingServiceId] = useState<number | null>(null)
 
@@ -38,7 +39,12 @@ export function useUserServiceAccess(users: UserResponseForAdminDto[]) {
         setIsLoading(true)
         policyService
             .listForUser(selectedUserId)
-            .then((list) => setPolicies(new Map(list.map((p) => [p.serviceId, p.effect]))))
+            .then((list) => {
+                setPolicies(new Map(list.map((p) => [p.serviceId, p.effect])))
+                setCaps(
+                    new Map(list.map((p) => [p.serviceId, p.accountsPerService]))
+                )
+            })
             .catch((error) =>
                 addToastMessage(
                     'error',
@@ -49,7 +55,11 @@ export function useUserServiceAccess(users: UserResponseForAdminDto[]) {
     }, [selectedUserId])
 
     const applyPolicy = useCallback(
-        async (serviceId: number, effect: PolicyChoice) => {
+        async (
+            serviceId: number,
+            effect: PolicyChoice,
+            accountsPerService?: number
+        ) => {
             if (!selectedUserId) return
             setPendingServiceId(serviceId)
             try {
@@ -60,10 +70,22 @@ export function useUserServiceAccess(users: UserResponseForAdminDto[]) {
                         next.delete(serviceId)
                         return next
                     })
+                    setCaps((prev) => {
+                        const next = new Map(prev)
+                        next.delete(serviceId)
+                        return next
+                    })
                     addToastMessage('success', 'Policy removed; service default applies')
                 } else {
-                    await policyService.set(selectedUserId, { serviceId, effect })
+                    const saved = await policyService.set(selectedUserId, {
+                        serviceId,
+                        effect,
+                        accountsPerService,
+                    })
                     setPolicies((prev) => new Map(prev).set(serviceId, effect))
+                    setCaps((prev) =>
+                        new Map(prev).set(serviceId, saved.accountsPerService)
+                    )
                     addToastMessage('success', `${effect} policy saved`)
                 }
             } catch (error) {
@@ -83,6 +105,41 @@ export function useUserServiceAccess(users: UserResponseForAdminDto[]) {
         [policies]
     )
 
+    const capFor = useCallback(
+        (serviceId: number): number => caps.get(serviceId) ?? 1,
+        [caps]
+    )
+
+    const updateCap = useCallback(
+        async (serviceId: number, accountsPerService: number): Promise<boolean> => {
+            if (!selectedUserId) return false
+            setPendingServiceId(serviceId)
+            try {
+                const effect = policies.get(serviceId) ?? 'ALLOW'
+                const saved = await policyService.set(selectedUserId, {
+                    serviceId,
+                    effect,
+                    accountsPerService,
+                })
+                setPolicies((prev) => new Map(prev).set(serviceId, saved.effect))
+                setCaps((prev) =>
+                    new Map(prev).set(serviceId, saved.accountsPerService)
+                )
+                addToastMessage('success', 'Account limit updated')
+                return true
+            } catch (error) {
+                addToastMessage(
+                    'error',
+                    getErrorMessage(error, 'Failed to update account limit')
+                )
+                return false
+            } finally {
+                setPendingServiceId(null)
+            }
+        },
+        [selectedUserId, policies]
+    )
+
     return {
         selectedUserId,
         setSelectedUserId,
@@ -91,6 +148,8 @@ export function useUserServiceAccess(users: UserResponseForAdminDto[]) {
         pendingServiceId,
         policies,
         policyFor,
+        capFor,
+        updateCap,
         applyPolicy,
     }
 }

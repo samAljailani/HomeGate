@@ -11,6 +11,10 @@ export type SubscriptionPatchRequestDto =
     components['schemas']['SubscriptionPatchRequestDto']
 export type SubscriptionDeleteRequestDto =
     components['schemas']['SubscriptionDeleteRequestDto']
+export type SubscriptionAddAccountRequestDto =
+    components['schemas']['SubscriptionAddAccountRequestDto']
+export type SubscriptionAccountDto =
+    components['schemas']['SubscriptionAccountDto']
 
 /**
  * All subscription-related API calls live here. Components/hooks call these methods
@@ -101,10 +105,43 @@ class SubscriptionService {
         return data!
     }
 
-    async resetPassword(id: string, newPassword: string, confirmPassword: string): Promise<boolean> {
+    async resetPassword(
+        id: string,
+        accountId: string,
+        newPassword: string,
+        confirmPassword: string
+    ): Promise<boolean> {
         const { data, error } = await apiClient.POST(
-            '/api/subscriptions/{id}/reset-password',
-            { params: { path: { id } }, body: { newPassword, confirmPassword } }
+            '/api/subscriptions/{id}/accounts/{accountId}/reset-password',
+            {
+                params: { path: { id, accountId } },
+                body: { newPassword, confirmPassword },
+            }
+        )
+        if (error) throw error
+        return data!
+    }
+
+    async addAccount(
+        id: string,
+        body: SubscriptionAddAccountRequestDto
+    ): Promise<SubscriptionResponseDto> {
+        const { data, error } = await apiClient.POST(
+            '/api/subscriptions/{id}/accounts',
+            { params: { path: { id } }, body }
+        )
+        if (error) throw error
+        return data!
+    }
+
+    async removeAccount(
+        id: string,
+        accountId: string,
+        deprovisionExternal: boolean = true
+    ): Promise<boolean> {
+        const { data, error } = await apiClient.DELETE(
+            '/api/subscriptions/{id}/accounts/{accountId}',
+            { params: { path: { id, accountId } }, body: { deprovisionExternal } }
         )
         if (error) throw error
         return data!

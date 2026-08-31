@@ -12,6 +12,7 @@ export const config = Object.freeze({
         services: '/admin/services',
         oauthProviders: '/admin/oauth-providers',
         adminSubscriptions: '/admin/subscriptions',
+        adminAccounts: '/admin/accounts',
         logs: '/admin/logs',
         scheduledTasks: '/admin/scheduled-tasks',
         sessions: '/admin/sessions'

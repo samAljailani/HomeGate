@@ -23,8 +23,6 @@ export type CreateExternalUserAccountModel = {
 }
 
 export type UpdateExternalUserAccountModel = {
-    subscriptionId: string
-
     externalAccountId?: string | null
     username?: string | null
     email?: string | null

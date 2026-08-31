@@ -107,7 +107,7 @@ model Subscription {
   service              Service              @relation("ServiceSubscriptions", fields: [serviceId], references: [id], onDelete: NoAction)
   derivedFrom          Subscription?        @relation("DerivedSubscriptions", fields: [derivedFromSubscriptionId], references: [id], onDelete: Cascade)
   derivedSubscriptions Subscription[]       @relation("DerivedSubscriptions")
-  externalAccount      ExternalUserAccount? @relation("SubscriptionExternalAccount")
+  externalAccounts     ExternalUserAccount[] @relation("SubscriptionExternalAccount")
 
   @@unique([userId, serviceId])
   @@index([derivedFromSubscriptionId])
@@ -116,7 +116,7 @@ model Subscription {
 
 model ExternalUserAccount {
   id                String   @id @default(uuid()) @db.Uuid
-  subscriptionId    String   @unique @map("subscription_id") @db.Uuid
+  subscriptionId    String   @map("subscription_id") @db.Uuid
   userId            String   @map("user_id") @db.Uuid
   serviceId         Int      @map("service_id")
   externalAccountId String?  @map("external_account_id")
@@ -130,8 +130,9 @@ model ExternalUserAccount {
   user         User         @relation("UserExternalAccounts", fields: [userId], references: [id], onDelete: Cascade)
   service      Service      @relation("ServiceExternalAccounts", fields: [serviceId], references: [id], onDelete: NoAction)
 
-  @@unique([serviceId, username])
   @@unique([serviceId, externalAccountId])
+  @@index([subscriptionId])
+  @@index([userId])
   @@map("external_user_accounts")
 }
 
@@ -285,12 +286,13 @@ enum PolicyEffect {
 }
 
 model UserServicePolicy {
-  id              String       @id @default(uuid()) @db.Uuid
-  userId          String       @map("user_id") @db.Uuid
-  serviceId       Int          @map("service_id")
-  effect          PolicyEffect
-  createdByUserId String?      @map("created_by_user_id") @db.Uuid
-  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                       String       @id @default(uuid()) @db.Uuid
+  userId                   String       @map("user_id") @db.Uuid
+  serviceId                Int          @map("service_id")
+  effect                   PolicyEffect
+  accountsPerService       Int          @map("accounts_per_service") @db.Integer @default(1)
+  createdByUserId          String?      @map("created_by_user_id") @db.Uuid
+  createdAt                DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
 
   user      User    @relation("UserServicePolicies", fields: [userId], references: [id], onDelete: Cascade)
   service   Service @relation("ServicePolicies", fields: [serviceId], references: [id], onDelete: Cascade)

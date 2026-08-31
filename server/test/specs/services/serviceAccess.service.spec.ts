@@ -39,6 +39,7 @@ function stubPolicy(overrides: Partial<UserServicePolicyModel> = {}): UserServic
         userId: 'user-1',
         serviceId: 1,
         effect: PolicyEffect.ALLOW,
+        accountsPerService: 1,
         createdByUserId: null,
         createdAt: new Date(),
         ...overrides,
