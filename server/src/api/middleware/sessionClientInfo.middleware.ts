@@ -8,7 +8,7 @@ import { Request, Response, NextFunction } from 'express'
 @Injectable()
 export class SessionClientInfoMiddleware implements NestMiddleware {
     use(req: Request, _res: Response, next: NextFunction): void {
-        if (req.session) {
+        if (req.session?.userId && req.session.username) {
             const session = req.session as Request['session'] & {
                 ipAddress?: string
                 userAgent?: string

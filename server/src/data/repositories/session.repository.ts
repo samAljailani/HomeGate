@@ -92,10 +92,17 @@ export class SessionRepository extends BaseRepository implements ISessionReposit
         }
     }
 
+    private sessionWhere({ authenticatedOnly, ...filter }: SessionFilterOptions) {
+        return {
+            ...filter,
+            ...(authenticatedOnly ? { user: { is: { username: { not: '' } } } } : {}),
+        }
+    }
+
     async findMany(filter: SessionFilterOptions, take?: number, skip?: number): Promise<SessionModel[]> {
         try {
             const sessions = await this.db.session.findMany({
-                where: { ...filter },
+                where: this.sessionWhere(filter),
                 orderBy: { createdAt: 'desc' },
                 ...(take !== undefined ? { take } : {}),
                 ...(skip !== undefined ? { skip } : {}),
@@ -111,7 +118,7 @@ export class SessionRepository extends BaseRepository implements ISessionReposit
 
     async count(filter: SessionFilterOptions = {}): Promise<number> {
         try {
-            return await this.db.session.count({ where: { ...filter } })
+            return await this.db.session.count({ where: this.sessionWhere(filter) })
         } catch (error) {
             this.logger.error('count failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
@@ -170,6 +177,22 @@ export class SessionRepository extends BaseRepository implements ISessionReposit
             await this.db.session.deleteMany({ where: { authProviderId: providerId } })
         } catch (error) {
             this.logger.error(`deleteByProviderId failed for providerId: ${providerId}`, {
+                stackTrace: error instanceof Error ? error.stack : undefined,
+            })
+            mapPrismaError(error, repositoryErrorMessages.session)
+        }
+    }
+
+    async deleteAll(): Promise<number> {
+        try {
+            return await this.db.$transaction(async (tx) => {
+                // Keep audit history while releasing the foreign keys to revoked sessions.
+                await tx.log.updateMany({ where: { sessionId: { not: null } }, data: { sessionId: null } })
+                const result = await tx.session.deleteMany({})
+                return result.count
+            })
+        } catch (error) {
+            this.logger.error('deleteAll failed', {
                 stackTrace: error instanceof Error ? error.stack : undefined,
             })
             mapPrismaError(error, repositoryErrorMessages.session)

@@ -21,6 +21,7 @@ export type CreateSessionModel = Omit<SessionModel, 'id' | 'createdAt' | 'ipAddr
 export type UpdateSessionModel = Omit<SessionModel, 'id' | 'createdAt' | 'userId'>
 
 export class SessionFilterOptions {
+    authenticatedOnly?: boolean
     userId?: string
     sid?: string
 }

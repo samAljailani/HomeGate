@@ -22,8 +22,9 @@ export class SessionService extends BaseService {
     }
 
     async list(take: number = 50, skip: number = 0): Promise<PaginatedResponseDto<AdminSessionResponseDto>> {
-        const sessions = await this.sessionRepository.findMany({}, take, skip)
-        const total = await this.sessionRepository.count()
+        const filter = { authenticatedOnly: false }
+        const sessions = await this.sessionRepository.findMany(filter, take, skip)
+        const total = await this.sessionRepository.count(filter)
 
         const userIds = [...new Set(sessions.map((s) => s.userId).filter((id): id is string => id != null))]
         const providerIds = [
@@ -58,6 +59,11 @@ export class SessionService extends BaseService {
         }))
 
         return new PaginatedResponseDto(data, total, skip)
+    }
+
+    async revokeAll(): Promise<void> {
+        const deleted = await this.sessionRepository.deleteAll()
+        this.logger.log(`Revoked all ${deleted} session(s)`)
     }
 
     async revoke(id: string): Promise<void> {

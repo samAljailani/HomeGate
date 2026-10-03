@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, NotFoundException, Param, Patch, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Inject, NotFoundException, Param, Patch, Query, Request } from '@nestjs/common'
+import type { Request as ExpressRequest } from 'express'
 import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AdminRoute } from '@/decorators'
 import { SessionService } from '@/api/services/session.service'
@@ -36,6 +37,18 @@ export class SessionController {
     @ApiOkResponse({ type: SessionConfigResponseDto })
     async updateConfig(@Body() dto: UpdateSessionConfigDto): Promise<SessionConfigResponseDto> {
         return this.sessionService.updateConfig(dto)
+    }
+
+    @Delete(routes.sessions.subPath.revokeAll)
+    @AdminRoute()
+    @HttpCode(204)
+    @ApiOperation({ summary: 'Revoke all sessions, including the current session (admin only)' })
+    async revokeAll(@Request() req: ExpressRequest): Promise<void> {
+        await this.sessionService.revokeAll()
+        // Prevent express-session from saving this request's now-revoked session again.
+        await new Promise<void>((resolve, reject) => {
+            req.session.destroy((error) => error ? reject(error) : resolve())
+        })
     }
 
     @Delete(routes.sessions.subPath.revoke)

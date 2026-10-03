@@ -31,6 +31,14 @@ class SessionService {
         if (error) throw error
     }
 
+    async revokeAllSessions(): Promise<void> {
+        // The static /all route is registered before the individual session route.
+        const { error } = await apiClient.DELETE('/api/sessions/{id}', {
+            params: { path: { id: 'all' } },
+        })
+        if (error) throw error
+    }
+
     async getConfig(): Promise<SessionConfigResponseDto> {
         const { data, error } = await apiClient.GET('/api/sessions/config')
         if (error) throw error

@@ -6,6 +6,17 @@ import { parseUserAgent } from '@/lib/userAgent'
 
 @Injectable()
 export class PrismaSessionStore extends session.Store {
+    private sessionExpiration(sessionData: session.SessionData): Date {
+        const expiresAt = sessionData.cookie?.expires
+            ? new Date(sessionData.cookie.expires)
+            : new Date(Date.now() + (sessionData.cookie.originalMaxAge ?? sessionData.cookie.maxAge ?? 0))
+
+        // Anonymous sessions are only needed temporarily for CSRF and the sign-in flow.
+        return sessionData.userId && sessionData.username
+            ? expiresAt
+            : new Date(Math.min(expiresAt.getTime(), Date.now() + 15 * 60_000))
+    }
+
     constructor(
         @Inject(ISessionRepository)
         private readonly sessionRepository: ISessionRepository,
@@ -20,7 +31,7 @@ export class PrismaSessionStore extends session.Store {
             const hashedSid = this.cryptographyProvider.HashSha256(sid).toString('hex')
             const sessionRecord = await this.sessionRepository.findById(hashedSid)
 
-            if (!sessionRecord) {
+            if (!sessionRecord || sessionRecord.expiresAt.getTime() <= Date.now()) {
                 return callback(null, null)
             }
 
@@ -40,14 +51,13 @@ export class PrismaSessionStore extends session.Store {
     async set(sid: string, sessionData: session.SessionData, callback?: (err?: unknown) => void): Promise<void> {
         try {
             const hashedSid = this.cryptographyProvider.HashSha256(sid).toString('hex')
-            const expiresAt = sessionData.cookie?.expires
-                ? new Date(sessionData.cookie.expires)
-                : new Date(Date.now() + (sessionData.cookie.maxAge || 0))
+            const expiresAt = this.sessionExpiration(sessionData)
 
             const existing = await this.sessionRepository.findById(hashedSid)
 
-            const ipAddress = (sessionData as any).ipAddress ?? null
-            const userAgent = (sessionData as any).userAgent ?? null
+            const authenticated = sessionData.userId && sessionData.username
+            const ipAddress = authenticated ? (sessionData as any).ipAddress ?? null : null
+            const userAgent = authenticated ? (sessionData as any).userAgent ?? null : null
             const { device, browser } = parseUserAgent(userAgent)
 
             if (existing) {
@@ -97,9 +107,7 @@ export class PrismaSessionStore extends session.Store {
         try {
             const hashedSid = this.cryptographyProvider.HashSha256(sid).toString('hex')
 
-            const expiresAt = sessionData.cookie?.expires
-                ? new Date(sessionData.cookie.expires)
-                : new Date(Date.now() + (sessionData.cookie.originalMaxAge ?? 0))
+            const expiresAt = this.sessionExpiration(sessionData)
 
             await this.sessionRepository.touch(hashedSid, expiresAt)
             callback?.()

@@ -92,6 +92,7 @@ export const routes = {
     }),
     sessions: defineRoutes('/api/sessions', {
         list: '',
+        revokeAll: 'all',
         revoke: ':id',
         config: 'config',
     }),

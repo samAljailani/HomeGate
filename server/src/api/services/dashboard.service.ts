@@ -28,7 +28,7 @@ export class DashboardService extends BaseService {
 
         const [userStats, sessions, totalSubs, activeSubs, recentErrors, lastRuns] = await Promise.all([
             this.userRepository.getUserCounts(),
-            this.sessionRepository.findMany({}),
+            this.sessionRepository.findMany({ authenticatedOnly: true }),
             this.subscriptionRepository.count(),
             this.subscriptionRepository.count({ statuses: [SubscriptionStatus.active] }),
             this.loggingRepository.findMany({ logLevel: LogLevel.Error }, 5, 0),
