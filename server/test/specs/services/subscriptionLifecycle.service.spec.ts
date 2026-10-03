@@ -107,7 +107,7 @@ describe('SubscriptionLifecycleService', () => {
             await expect(lifecycle.retryFailedOperation(request.userId, request.serviceId, currentUserId)).rejects.toThrow(BadRequestException)
         })
 
-        it('should mark as cancelled when cancellation failed but external account is already gone', async () => {
+        it('should hard delete when cancellation failed but external account is already gone', async () => {
             const failedAccount = createSubscriptionFixture({
                 userId: request.userId,
                 status: SubscriptionStatus.failed,
@@ -128,12 +128,11 @@ describe('SubscriptionLifecycleService', () => {
 
             expect(result).toBe(true)
             expect(client.deleteUser).not.toHaveBeenCalled()
-            expect(subscriptionRepoMock.update).toHaveBeenCalledWith(
-                expect.objectContaining({ status: SubscriptionStatus.cancelled, failedOperation: null })
-            )
+            expect(subscriptionRepoMock.delete).toHaveBeenCalledWith(request.userId, request.serviceId)
+            expect(subscriptionRepoMock.update).not.toHaveBeenCalled()
         })
 
-        it('should retry deleteUser and mark as cancelled when cancellation failed and external account still exists', async () => {
+        it('should retry deleteUser and hard delete when cancellation failed and external account still exists', async () => {
             const failedAccount = createSubscriptionFixture({
                 userId: request.userId,
                 status: SubscriptionStatus.failed,
@@ -158,9 +157,8 @@ describe('SubscriptionLifecycleService', () => {
 
             expect(result).toBe(true)
             expect(client.deleteUser).toHaveBeenCalled()
-            expect(subscriptionRepoMock.update).toHaveBeenCalledWith(
-                expect.objectContaining({ status: SubscriptionStatus.cancelled, failedOperation: null })
-            )
+            expect(subscriptionRepoMock.delete).toHaveBeenCalledWith(request.userId, request.serviceId)
+            expect(subscriptionRepoMock.update).not.toHaveBeenCalled()
         })
 
         it('should mark as expired when expiration failed but external account is already disabled', async () => {

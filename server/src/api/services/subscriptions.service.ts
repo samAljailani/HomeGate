@@ -92,6 +92,8 @@ export class SubscriptionService {
             throw new BadRequestException('Service not available')
         }
 
+        this.validateSubscriptionRequest(service, request)
+
         await this.accessService.assertCanSubscribe(userId, service)
 
         const existing = await this.subscriptionRepository.find(userId, request.serviceId)
@@ -332,7 +334,7 @@ export class SubscriptionService {
         })
     }
 
-    async delete(subscriptionId: string, currentUserId: string, deleteImmediately?: boolean): Promise<boolean> {
+    async delete(subscriptionId: string, currentUserId: string, _deleteImmediately?: boolean): Promise<boolean> {
         const subscription = await this.getRawById(subscriptionId)
 
         const [user, currentUser] = await Promise.all([
@@ -354,38 +356,15 @@ export class SubscriptionService {
             throw new BadRequestException('Service does not exist')
         }
 
+        if (service.accountType === AccountType.REFERENCED) {
+            throw new BadRequestException('Unsubscribe from the account source service to remove access to this service.')
+        }
+
         if (!this.isCurrentlyActive(subscription)) {
             throw new ConflictException('User is not subscribed to the service')
         }
 
         try {
-            if (deleteImmediately !== true) {
-                if (subscription.autoRenew) {
-                    const updated = await this.subscriptionRepository.update({
-                        userId: subscription.userId,
-                        serviceId: subscription.serviceId,
-                        autoRenew: false,
-                    })
-
-                    if (!updated) {
-                        throw new InternalServerErrorException(
-                            `Failed to cancel auto-renew for user '${user.id}' and service '${service.id}'`
-                        )
-                    }
-
-                    this.logger.log(
-                        `User '${user.id}' cancelled auto-renew for service '${service.id}'. ` +
-                            `Access remains active until ${updated.expiresAt?.toISOString()}`
-                    )
-
-                    return true
-                }
-
-                this.logger.log(`User '${user.id}' already had auto-renew disabled for service '${service.id}'`)
-
-                return true
-            }
-
             await this.subscriptionRepository.update({
                 userId: subscription.userId,
                 serviceId: subscription.serviceId,
@@ -395,20 +374,8 @@ export class SubscriptionService {
             const context = await this.buildLifecycleContext(subscription, service, user.email)
             await this.provisioners.resolve(service).deprovision(context)
 
-            const cancelled = await this.subscriptionRepository.update({
-                userId: subscription.userId,
-                serviceId: subscription.serviceId,
-                status: SubscriptionStatus.cancelled,
-                cancelledAt: new Date(),
-                lastError: null,
-            })
-
-            await this.externalAccountRepository.deleteBySubscriptionId(subscription.id)
-
-            // Cancelling a referenced subscription must never affect its account source.
-            if (cancelled) {
-                await this.cascade.onDeactivated(cancelled, SubscriptionStatus.cancelled)
-            }
+            // Foreign keys cascade deletion to linked accounts and derived subscriptions.
+            await this.subscriptionRepository.delete(subscription.userId, subscription.serviceId)
 
             this.logger.log(`User '${user.id}' immediately cancelled subscription for service '${service.id}'`)
             this.events.emit(AppEvent.SUBSCRIPTION_CHANGED, { userId: user.id })
@@ -426,7 +393,7 @@ export class SubscriptionService {
                 FailedOperation.cancellation
             )
 
-            return false
+            throw error
         }
     }
 
@@ -491,6 +458,16 @@ export class SubscriptionService {
 
         if (subscription.userId !== currentUserId) {
             throw new ForbiddenException('You can only modify your own subscription')
+        }
+
+        const service = await this.serviceRepository.findById(subscription.serviceId)
+
+        if (!service) {
+            throw new BadRequestException('Service does not exist')
+        }
+
+        if (service.accountType === AccountType.REFERENCED) {
+            throw new BadRequestException('Manage auto-renew through the account source service.')
         }
 
         const updated = await this.subscriptionRepository.update({
@@ -986,6 +963,19 @@ export class SubscriptionService {
         }
 
         return 'Unknown subscription error'
+    }
+
+    private validateSubscriptionRequest(service: ServiceModel, request: SubscriptionCreateRequestDto): void {
+        if (service.accountType === AccountType.REFERENCED) {
+            throw new BadRequestException('Subscribe to the account source service to access this service.')
+        }
+
+        if (
+            service.accountType === AccountType.MANAGED &&
+            (request.confirmServicePassword == null || request.servicePassword == null || request.serviceUsername == null)
+        ) {
+            throw new BadRequestException('Username or password not provided for a managed service.')
+        }
     }
 
     private isResubscribeAllowed(subscription: SubscriptionModel | null): boolean {

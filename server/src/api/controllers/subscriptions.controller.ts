@@ -50,7 +50,7 @@ export class SubscriptionController {
         private readonly subscriptionService: SubscriptionService
     ) {}
 
-    @Post()
+    @Post(routes.subscriptions.subPath.subscribe)
     @Throttle({ default: { ttl: 60_000, limit: 5 } })
     @ApiOperation({ summary: 'Subscribe to a service' })
     @ApiBody({ type: SubscriptionCreateRequestDto })

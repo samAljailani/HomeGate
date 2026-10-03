@@ -90,7 +90,7 @@ describe('SubscriptionService — account types', () => {
             await build(createExplodingRegistry())
         })
 
-        it('subscribes without ever consulting an integration when the account source is active', async () => {
+        it.each([false, true])('rejects direct subscription even with an active source (credentials: %s)', async (withCredentials) => {
             const referenced = createReferencedServiceFixture()
             serviceRepoMock.findById.mockResolvedValue(referenced)
             subscriptionRepoMock.find.mockImplementation(async (_userId, serviceId) =>
@@ -98,15 +98,20 @@ describe('SubscriptionService — account types', () => {
                     ? createSubscriptionFixture({ serviceId, status: SubscriptionStatus.active })
                     : null
             )
-            subscriptionRepoMock.create.mockResolvedValue(createSubscriptionFixture({ serviceId: referenced.id }))
-            subscriptionRepoMock.update.mockResolvedValue(
-                createSubscriptionFixture({ serviceId: referenced.id, status: SubscriptionStatus.active })
+            const payload = {
+                ...request(referenced.id),
+                ...(withCredentials && {
+                    serviceUsername: 'newuser',
+                    servicePassword: 'pass123',
+                    confirmServicePassword: 'pass123',
+                }),
+            }
+
+            await expect(service.subscribe(payload, userId)).rejects.toThrow(
+                'Subscribe to the account source service to access this service.'
             )
-
-            const result = await service.subscribe(request(referenced.id), userId)
-
-            expect(result.status).toBe(SubscriptionStatus.active)
-            expect(result.username).toBeNull()
+            expect(subscriptionRepoMock.create).not.toHaveBeenCalled()
+            expect(subscriptionRepoMock.update).not.toHaveBeenCalled()
             expect(externalAccountRepoMock.create).not.toHaveBeenCalled()
         })
 
@@ -131,18 +136,34 @@ describe('SubscriptionService — account types', () => {
             await expect(service.subscribe(request(referenced.id), userId)).rejects.toThrow(BadRequestException)
         })
 
-        it('cancels without consulting an integration', async () => {
+        it.each([undefined, false, true])('rejects direct cancellation (immediate: %s)', async (immediate) => {
             const referenced = createReferencedServiceFixture()
             const subscription = createSubscriptionFixture({
                 serviceId: referenced.id,
                 status: SubscriptionStatus.active,
                 expiresAt: new Date(Date.now() + 86_400_000),
-                autoRenew: false,
+                autoRenew: true,
             })
             serviceRepoMock.findById.mockResolvedValue(referenced)
             subscriptionRepoMock.findById.mockResolvedValue(subscription)
 
-            await expect(service.delete(subscription.id, userId, true)).resolves.toBe(true)
+            await expect(service.delete(subscription.id, userId, immediate)).rejects.toThrow(
+                'Unsubscribe from the account source service to remove access to this service.'
+            )
+            expect(subscriptionRepoMock.update).not.toHaveBeenCalled()
+            expect(externalAccountRepoMock.deleteBySubscriptionId).not.toHaveBeenCalled()
+        })
+
+        it.each([false, true])('rejects direct auto-renew changes (autoRenew: %s)', async (autoRenew) => {
+            const referenced = createReferencedServiceFixture()
+            const subscription = createSubscriptionFixture({ userId, serviceId: referenced.id })
+            serviceRepoMock.findById.mockResolvedValue(referenced)
+            subscriptionRepoMock.findById.mockResolvedValue(subscription)
+
+            await expect(service.setAutoRenew(subscription.id, userId, autoRenew)).rejects.toThrow(
+                'Manage auto-renew through the account source service.'
+            )
+            expect(subscriptionRepoMock.update).not.toHaveBeenCalled()
         })
 
         it('refuses a password reset because there is no account to reset', async () => {
@@ -200,7 +221,12 @@ describe('SubscriptionService — account types', () => {
             serviceRepoMock.findById.mockResolvedValue(managed)
             subscriptionRepoMock.find.mockResolvedValue(null)
 
-            await expect(service.subscribe(request(managed.id), userId)).rejects.toThrow(
+            await expect(service.subscribe({
+                ...request(managed.id),
+                serviceUsername: 'newuser',
+                servicePassword: 'pass123',
+                confirmServicePassword: 'pass123',
+            }, userId)).rejects.toThrow(
                 /Integration registry was accessed/
             )
         })

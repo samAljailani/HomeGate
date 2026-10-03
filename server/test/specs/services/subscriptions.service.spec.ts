@@ -103,14 +103,14 @@ describe('SubscriptionService', () => {
 
     describe('subscribe', () => {
         const userId = 'user-uuid-1'
-        const request: SubscriptionCreateRequestDto = {
+        const request = {
             serviceId: 1,
             serviceUsername: 'newuser',
             servicePassword: 'pass123',
             confirmServicePassword: 'pass123',
             email: 'test@example.com',
             autoRenew: true,
-        }
+        } satisfies SubscriptionCreateRequestDto
 
         function setupSuccessfulSubscribe() {
             const user = createUserFixture({ id: userId, email: 'test@example.com' })
@@ -514,12 +514,13 @@ describe('SubscriptionService', () => {
 
             userAccountRepoMock.findById.mockResolvedValue(activeAccount)
             userServiceMock.getUserById.mockResolvedValueOnce(targetUser).mockResolvedValueOnce(adminUser)
-            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            serviceRepoMock.findById.mockResolvedValue(createNoAccountServiceFixture())
             userAccountRepoMock.update.mockResolvedValue({ ...activeAccount, autoRenew: false })
 
             const result = await service.delete(subscriptionId, currentUserId)
 
             expect(result).toBe(true)
+            expect(userAccountRepoMock.delete).toHaveBeenCalledWith('target-user', activeAccount.serviceId)
         })
 
         it('should cancel subscription immediately when immediate delete is requested', async () => {
@@ -542,6 +543,7 @@ describe('SubscriptionService', () => {
 
             expect(result).toBe(true)
             expect(client.deleteUser).toHaveBeenCalled()
+            expect(userAccountRepoMock.delete).toHaveBeenCalledWith(currentUserId, activeAccount.serviceId)
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ status: SubscriptionStatus.cancelling })
             )
@@ -563,9 +565,8 @@ describe('SubscriptionService', () => {
             client.deleteUser.mockResolvedValue(false)
             userAccountRepoMock.update.mockResolvedValue(activeAccount)
 
-            const result = await service.delete(subscriptionId, currentUserId, true)
-
-            expect(result).toBe(false)
+            await expect(service.delete(subscriptionId, currentUserId, true)).rejects.toThrow(ServiceUnavailableException)
+            expect(userAccountRepoMock.delete).not.toHaveBeenCalled()
             expect(userAccountRepoMock.update).toHaveBeenCalledWith(
                 expect.objectContaining({ status: SubscriptionStatus.failed })
             )
@@ -576,33 +577,34 @@ describe('SubscriptionService', () => {
             )
         })
 
-        it('should disable auto-renew when immediate delete is not requested', async () => {
+        it.each([undefined, false])('should hard delete when immediate is %s', async (immediate) => {
             const user = createUserFixture({ id: currentUserId })
             const activeAccount = createActiveAccount({ autoRenew: true })
 
             userAccountRepoMock.findById.mockResolvedValue(activeAccount)
             userServiceMock.getUserById.mockResolvedValue(user)
-            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            serviceRepoMock.findById.mockResolvedValue(createNoAccountServiceFixture())
             userAccountRepoMock.update.mockResolvedValue({ ...activeAccount, autoRenew: false })
 
-            const result = await service.delete(subscriptionId, currentUserId)
+            const result = await service.delete(subscriptionId, currentUserId, immediate)
 
             expect(result).toBe(true)
-            expect(userAccountRepoMock.update).toHaveBeenCalledWith(expect.objectContaining({ autoRenew: false }))
+            expect(userAccountRepoMock.delete).toHaveBeenCalledWith(currentUserId, activeAccount.serviceId)
+            expect(userAccountRepoMock.update).not.toHaveBeenCalledWith(expect.objectContaining({ autoRenew: false }))
         })
 
-        it('should return true when auto-renew is already disabled', async () => {
+        it('should hard delete even when auto-renew is already disabled', async () => {
             const user = createUserFixture({ id: currentUserId })
             const activeAccount = createActiveAccount({ autoRenew: false })
 
             userAccountRepoMock.findById.mockResolvedValue(activeAccount)
             userServiceMock.getUserById.mockResolvedValue(user)
-            serviceRepoMock.findById.mockResolvedValue(createServiceFixture())
+            serviceRepoMock.findById.mockResolvedValue(createNoAccountServiceFixture())
 
             const result = await service.delete(subscriptionId, currentUserId)
 
             expect(result).toBe(true)
-            expect(userAccountRepoMock.update).not.toHaveBeenCalled()
+            expect(userAccountRepoMock.delete).toHaveBeenCalledWith(currentUserId, activeAccount.serviceId)
         })
     })
 

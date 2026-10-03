@@ -469,7 +469,7 @@ export class SubscriptionLifecycleService {
                 // deprovision() skips accounts that no longer exist upstream.
                 await provisioner.deprovision(context)
 
-                await this.clearFailure(userId, serviceId, SubscriptionStatus.cancelled, true)
+                await this.subscriptionRepository.delete(userId, serviceId)
 
                 this.logger.log(
                     `Retry cancellation succeeded for user '${user.id}' on service '${service.id}'`

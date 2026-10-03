@@ -54,9 +54,9 @@ export function ManageSubscriptionDialog({
     const cancel = async () => {
         setIsSaving(true)
         try {
-            await subscriptionService.cancelSubscription(subscription.id, { immediate: true })
+            await subscriptionService.cancelSubscription(subscription.id)
             onCancelled(subscription.id)
-            addToastMessage('success', 'Subscription cancelled')
+            addToastMessage('success', 'Subscription deleted')
             setOpen(false)
         } catch (error) {
             addToastMessage(
@@ -109,7 +109,7 @@ export function ManageSubscriptionDialog({
 
                     <div className="border-t pt-4">
                         <Button variant="destructive" disabled={isSaving} onClick={cancel}>
-                            Cancel subscription
+                            Unsubscribe
                         </Button>
                     </div>
                 </TabsContent>

@@ -133,8 +133,7 @@ export class SubscriptionCreateRequestDto {
 
     @ApiProperty({ type: String })
     @IsString()
-    @IsNotEmpty()
-    serviceUsername: string
+    serviceUsername?: string
 
     @ApiPropertyOptional({ type: String })
     @Transform(EmptyStringToUndefined)
@@ -144,14 +143,12 @@ export class SubscriptionCreateRequestDto {
 
     @ApiProperty({ type: String, writeOnly: true })
     @IsString()
-    @IsNotEmpty()
-    servicePassword: string
+    servicePassword?: string
 
     @ApiProperty({ type: String, writeOnly: true })
     @IsString()
-    @IsNotEmpty()
     @Match('servicePassword', { message: 'Passwords do not match' })
-    confirmServicePassword: string
+    confirmServicePassword?: string
 
     @ApiProperty({ type: Boolean })
     @IsBoolean()
@@ -162,7 +159,7 @@ export class SubscriptionCreateRequestDto {
 export class SubscriptionDeleteRequestDto {
     @ApiPropertyOptional({
         type: Boolean,
-        description: 'Immediately delete the external account instead of cancelling auto-renew',
+        description: 'Deprecated: unsubscribing always immediately deletes the subscription and external accounts',
     })
     @IsOptional()
     @Transform(({ value }) => value === true || value === 'true')
