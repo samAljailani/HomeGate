@@ -23,6 +23,7 @@ const navigationItems: NavItem[] = [
             { label: 'accounts', href: config.routes.adminAccounts },
             { label: 'dashboard', href: config.routes.adminDashboard },
             { label: 'invites', href: config.routes.invites },
+            { label: 'images', href: config.routes.images },
             { label: 'logs', href: config.routes.logs },
             { label: 'oauth providers', href: config.routes.oauthProviders },
             { label: 'policies', href: config.routes.policies },

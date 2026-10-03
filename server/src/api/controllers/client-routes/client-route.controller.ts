@@ -74,6 +74,12 @@ export class ClientRouteController {
     }
 
     @AdminRoute()
+    @Get(clientRoutes.adminImages)
+    adminImages(@Res() res: Response) {
+        return this.sendPage(res, clientRoutes.adminImages)
+    }
+
+    @AdminRoute()
     @Get(clientRoutes.adminOAuthProviders)
     adminOAuthProviders(@Res() res: Response) {
         return this.sendPage(res, clientRoutes.adminOAuthProviders)

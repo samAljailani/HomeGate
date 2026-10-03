@@ -29,6 +29,7 @@ function defineRoutes<T extends Record<string, string>>(basePath: string, subRou
 }
 
 export const routes = {
+    images: defineRoutes('/api/images', { list: '', upload: '', delete: ':name' }),
     auth: defineRoutes('/api/auth', {
         join: 'join',
         google: 'google',
@@ -103,6 +104,7 @@ export const routes = {
 } satisfies RoutesConfig
 
 export const clientRoutes = {
+    adminImages: '/admin/images',
     home: '/',
     signIn: '/signin',
     account: '/account',

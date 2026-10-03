@@ -13,6 +13,7 @@ services:
       PORT: ${PORT:-3003}
       HOST: https://${APP_SUBDOMAIN}.${DOMAIN}
       CLIENT_RELATIVE_STATIC_PATH: ./dist/client/
+      IMAGE_STORAGE_PATH: /app/image-library/images
       SESSION_SECRET: ${SESSION_SECRET}
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-HOMEGATE_SID}
       SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-.${DOMAIN}}
@@ -23,6 +24,8 @@ services:
       LOG_LEVEL: log
       LOG_FORMAT: console
       COLOR_LOGS: "false"
+    volumes:
+      - homegate-images:/app/image-library
     ports:
       - "${PORT:-3003}:${PORT:-3003}"
     depends_on:
@@ -79,6 +82,7 @@ services:
     networks:
       - traefik
 volumes:
+  homegate-images:
   homegate-pgdata:
 
 networks:

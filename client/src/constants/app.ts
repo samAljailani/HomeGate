@@ -15,6 +15,7 @@ export const config = Object.freeze({
         adminAccounts: '/admin/accounts',
         logs: '/admin/logs',
         scheduledTasks: '/admin/scheduled-tasks',
-        sessions: '/admin/sessions'
+        sessions: '/admin/sessions',
+        images: '/admin/images',
     },
 })

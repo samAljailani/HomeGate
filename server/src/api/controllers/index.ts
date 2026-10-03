@@ -4,6 +4,8 @@ import { ClientRouteController } from './client-routes'
 import { CsrfController } from './csrf.controller'
 import { DashboardController } from './dashboard.controller'
 import { HealthController } from './health.controller'
+import { ImageLibraryController } from './imageLibrary.controller'
+import { PublicImageController } from './publicImage.controller'
 import { InviteController } from './invite.controller'
 import { LogController } from './log.controller'
 import { OAuthProviderController } from './oauthProvider.controller'
@@ -15,6 +17,8 @@ import { UserController } from './user.controller'
 
 export const controllers = [
     HealthController,
+    ImageLibraryController,
+    PublicImageController,
     AuthController,
     ForwardAuthController,
     CsrfController,

@@ -13,7 +13,7 @@ export const apiClient = createApiClient({
 
 let cachedCsrfToken: string | null = null
 
-async function getCsrfToken(): Promise<string> {
+export async function getCsrfToken(): Promise<string> {
     if (!cachedCsrfToken) {
         const res = await fetch(
             `${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''}/api/csrf`,

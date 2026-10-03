@@ -2,6 +2,7 @@ import { AuthService } from './auth.service'
 import { ConfigService } from './config.service'
 import { DashboardService } from './dashboard.service'
 import { InviteService } from './invite.service'
+import { ImageLibraryService } from './imageLibrary.service'
 import { InviteAccountLinkingService } from './inviteAccountLinking.service'
 import { LogService } from './log.service'
 import { OAuthProviderManagementService } from './oauthProviderManagement.service'
@@ -19,6 +20,7 @@ import { SubscriptionCascadeService } from '@/core/subscriptions/subscriptionCas
 
 export const services = [
     ConfigService,
+    ImageLibraryService,
     UserService,
     AuthService,
     SubscriptionService,

@@ -7,6 +7,7 @@ import { NestExpressApplication } from '@nestjs/platform-express'
 import { SwaggerModule } from '@nestjs/swagger'
 
 import session from 'express-session'
+import { json, type Request, type Response, type NextFunction } from 'express'
 
 import { AppModule } from '@/app.module'
 import { AppEnv } from '@/types/models/EnvData'
@@ -19,6 +20,9 @@ import { PaginationRequestDto } from '@/types/dtos/paginationDto'
 import { resolve } from 'path'
 
 import { AccountIntegrationRegistry } from './core/integrations/accountIntegrationRegistry'
+import { ImageLibraryService } from '@/api/services/imageLibrary.service'
+import { IUserRepository } from '@/data/repositories'
+import { UserStatus } from '@/types/models/user'
 import { accountIntegrationProviders } from './core/integrations'
 
 async function bootstrap() {
@@ -33,7 +37,8 @@ async function bootstrap() {
 
     const clientBuildPath = resolve(process.cwd(), env.client.buildPath)
     app.useStaticAssets(resolve(clientBuildPath, '_next'), { prefix: '/_next', index: false })
-    app.useStaticAssets(resolve(clientBuildPath, 'images'), { prefix: '/images', index: false })
+    const imageLibrary = app.get(ImageLibraryService)
+    await imageLibrary.initialize()
 
     await configureAccountIntegrations(app)
 
@@ -62,6 +67,20 @@ async function bootstrap() {
 
     app.use(session(sessionOptions))
     app.use(csrfSynchronisedProtection)
+
+    // Authenticate before accepting the larger image payload. Nest's admin guard also
+    // protects the controller; CSRF remains mandatory on all mutations.
+    const users = app.get<IUserRepository>(IUserRepository)
+    app.use('/api/images', async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const user = req.session?.userId ? await users.findById(req.session.userId) : null
+            if (!user || !user.isAdmin || user.status !== UserStatus.ACTIVE) {
+                res.status(403).json({ message: 'Administrator access required.' })
+                return
+            }
+            next()
+        } catch (error) { next(error) }
+    }, json({ limit: '3mb', strict: true }))
 
     app.useGlobalPipes(
         new ValidationPipe({
