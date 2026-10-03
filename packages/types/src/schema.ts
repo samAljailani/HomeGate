@@ -656,6 +656,23 @@ export interface paths {
         patch: operations["SessionController_updateConfig"];
         trace?: never;
     };
+    "/api/sessions/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke all sessions, including the current session (admin only) */
+        delete: operations["SessionController_revokeAll"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sessions/{id}": {
         parameters: {
             query?: never;
@@ -1039,7 +1056,7 @@ export interface components {
             autoRenew?: boolean;
         };
         SubscriptionDeleteRequestDto: {
-            /** @description Immediately delete the external account instead of cancelling auto-renew */
+            /** @description Deprecated: unsubscribing always immediately deletes the subscription and external accounts */
             immediate?: boolean;
         };
         SubscriptionAddAccountRequestDto: {
@@ -2627,6 +2644,23 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SessionConfigResponseDto"];
                 };
+            };
+        };
+    };
+    SessionController_revokeAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
