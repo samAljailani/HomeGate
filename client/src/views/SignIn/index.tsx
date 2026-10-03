@@ -5,15 +5,18 @@ import { Button } from '@/components/ui/button'
 import { IconGoogle } from '@/components/ui/icons/IconGoogle'
 import { config } from '@/constants/app'
 import { authService } from '@/services/auth.service'
-import { addToastMessage } from '@/lib/utils'
 import React from 'react'
 
 export function OAuthSignInPage() {
     const [open, setOpen] = React.useState(true)
-    const [enabledProviders, setEnabledProviders] = React.useState<string[] | null>(null)
+    const [enabledProviders, setEnabledProviders] = React.useState<
+        string[] | null
+    >(null)
+    const [signInNotice, setSignInNotice] = React.useState<string | null>(null)
 
     React.useEffect(() => {
-        authService.getEnabledProviders()
+        authService
+            .getEnabledProviders()
             .then(setEnabledProviders)
             .catch(() => setEnabledProviders([]))
     }, [])
@@ -25,14 +28,15 @@ export function OAuthSignInPage() {
 
         if (!appName && !returnUrl) return
 
-        // Defer until after the Toaster (mounted in the root layout) has subscribed to the
-        // toast manager. Firing immediately in this effect would emit before the provider's
-        // subscribe effect runs, so base-ui's manager would drop the toast silently.
         const timeout = window.setTimeout(() => {
             if (appName) {
-                addToastMessage('info', `You must sign in to HomeGate before you can access ${appName}.`)
+                setSignInNotice(
+                    `You must sign in to HomeGate before you can access ${appName}.`
+                )
             } else {
-                addToastMessage('info', 'You must sign in to HomeGate before you can continue.')
+                setSignInNotice(
+                    'You must sign in to HomeGate before you can continue.'
+                )
             }
         }, 0)
 
@@ -60,10 +64,19 @@ export function OAuthSignInPage() {
                 open={open}
                 setOpen={setOpen}
                 showCloseButton={false}
+                drawerDismissible={false}
                 title="Sign In"
                 description="The front door to your digital home"
                 className="data-[state=open]:slide-in-from-bottom-1/4 data-[state=open]:duration-500"
             >
+                {signInNotice && (
+                    <p
+                        role="status"
+                        className="mb-4 rounded-lg border bg-muted p-3 text-sm text-muted-foreground"
+                    >
+                        {signInNotice}
+                    </p>
+                )}
                 {enabledProviders?.includes('google') && (
                     <Button
                         variant="outline"
@@ -79,7 +92,8 @@ export function OAuthSignInPage() {
                 )}
                 {enabledProviders?.length === 0 && (
                     <p className="text-sm text-muted-foreground">
-                        Sign-in is currently unavailable. Please contact an administrator.
+                        Sign-in is currently unavailable. Please contact an
+                        administrator.
                     </p>
                 )}
             </ResponsiveModal>

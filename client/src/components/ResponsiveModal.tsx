@@ -26,6 +26,7 @@ interface ResponsiveModalProps {
     description?: React.ReactNode
     className?: string
     showCloseButton?: boolean
+    drawerDismissible?: boolean
     children: React.ReactNode
 }
 
@@ -36,6 +37,7 @@ export function ResponsiveModal({
     description,
     className,
     showCloseButton,
+    drawerDismissible = true,
     children,
 }: ResponsiveModalProps) {
     const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -60,7 +62,7 @@ export function ResponsiveModal({
     }
 
     return (
-        <Drawer open={open} onOpenChange={setOpen}>
+        <Drawer open={open} onOpenChange={setOpen} dismissible={drawerDismissible}>
             <DrawerContent className={className}>
                 <DrawerHeader className="text-left">
                     <DrawerTitle>{title}</DrawerTitle>
