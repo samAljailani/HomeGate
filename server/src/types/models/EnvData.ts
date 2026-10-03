@@ -34,6 +34,7 @@ export interface EnvData {
     }
     client: {
         buildPath: string
+        imageStoragePath: string
     }
     database: {
         url: string

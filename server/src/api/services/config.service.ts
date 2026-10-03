@@ -4,6 +4,8 @@ import { BaseService } from './base.service'
 import { ISystemMetadataRepository } from '@/data/repositories/ISystemMetadataRepository'
 import { SystemConfigKey, SystemConfigMap } from '@/types/models/SystemConfig'
 import { systemDefaults } from '@/data/config.defaults'
+import { EnvRepository } from '@/data/repositories/env.repository'
+import { resolve } from 'node:path'
 
 @Injectable()
 export class ConfigService extends BaseService implements OnApplicationBootstrap {
@@ -11,7 +13,8 @@ export class ConfigService extends BaseService implements OnApplicationBootstrap
 
     constructor(
         @Inject(LoggingProvider) logger: LoggingProvider,
-        @Inject(ISystemMetadataRepository) private systemMetadataRepository: ISystemMetadataRepository
+        @Inject(ISystemMetadataRepository) private systemMetadataRepository: ISystemMetadataRepository,
+        @Inject(EnvRepository) private readonly env: EnvRepository
     ) {
         super(logger)
     }
@@ -23,6 +26,26 @@ export class ConfigService extends BaseService implements OnApplicationBootstrap
 
     get<K extends SystemConfigKey>(key: K): SystemConfigMap[K] {
         return (this.cache.get(key) ?? systemDefaults[key]) as SystemConfigMap[K]
+    }
+
+    getImageLibraryConfig(): { directory: string; seedDirectory: string; baseUrl: string } {
+        const env = this.env.getEnv()
+        if (!env.client.imageStoragePath?.trim()) throw new Error('Missing required config: IMAGE_STORAGE_PATH')
+        if (!env.client.buildPath?.trim()) throw new Error('Missing required config: CLIENT_RELATIVE_STATIC_PATH')
+        if (!env.host?.trim()) throw new Error('Missing required config: HOST')
+        let host: URL
+        try {
+            host = new URL(env.host)
+        } catch {
+            throw new Error('Invalid HOST: must be an absolute HTTP or HTTPS URL.')
+        }
+        if (!['http:', 'https:'].includes(host.protocol))
+            throw new Error('Invalid HOST: must be an absolute HTTP or HTTPS URL.')
+        return {
+            directory: resolve(env.client.imageStoragePath),
+            seedDirectory: resolve(env.client.buildPath, 'images'),
+            baseUrl: host.href,
+        }
     }
 
     async reload<K extends SystemConfigKey>(key: K): Promise<SystemConfigMap[K]> {

@@ -42,6 +42,7 @@ const getEnv = (): EnvData => {
         },
         client: {
             buildPath: CLIENT_RELATIVE_STATIC_PATH!,
+            imageStoragePath: process.env['IMAGE_STORAGE_PATH']!,
         },
         database: {
             url: DATABASE_URL!,
@@ -84,6 +85,7 @@ const validateEnvData = (envData: EnvData): void => {
         !envData.host && 'host',
         !envData.oAuth.providers.length && 'oAuth.providers',
         !envData.client.buildPath && 'client.BuildPath',
+        !envData.client.imageStoragePath?.trim() && 'IMAGE_STORAGE_PATH',
         !envData.database.url && 'database.url',
         !envData.session.secret && 'session.secret',
         !envData.session.cookieName && 'session.cookieName',

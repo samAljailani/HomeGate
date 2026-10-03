@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing'
+import { EnvRepository } from '@/data/repositories/env.repository'
+import { resolve } from 'node:path'
 import { ConfigService } from '@/api/services/config.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { ISystemMetadataRepository } from '@/data/repositories/ISystemMetadataRepository'
@@ -19,13 +21,21 @@ describe('ConfigService', () => {
     let loggerMock: ReturnType<typeof createLoggerMock>
     let systemMetadataRepositoryMock: ReturnType<typeof createSystemMetadataRepositoryMock>
 
+    const environment = {
+        host: 'https://homegate.example',
+        client: { buildPath: './client-build', imageStoragePath: './image-storage' },
+    }
+    const env = { getEnv: jest.fn() }
+
     beforeEach(async () => {
+        env.getEnv.mockReturnValue(environment)
         loggerMock = createLoggerMock()
         systemMetadataRepositoryMock = createSystemMetadataRepositoryMock()
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 ConfigService,
+                { provide: EnvRepository, useValue: env },
                 { provide: LoggingProvider, useValue: loggerMock },
                 { provide: ISystemMetadataRepository, useValue: systemMetadataRepositoryMock },
             ],
@@ -33,6 +43,27 @@ describe('ConfigService', () => {
 
         service = module.get<ConfigService>(ConfigService)
     })
+
+    it('resolves image library configuration explicitly', () => {
+        expect(service.getImageLibraryConfig()).toEqual({
+            directory: resolve('./image-storage'),
+            seedDirectory: resolve('./client-build/images'),
+            baseUrl: 'https://homegate.example/',
+        })
+    })
+
+    it.each(['', '   ', undefined])('rejects missing image storage configuration: %s', (imageStoragePath) => {
+        env.getEnv.mockReturnValue({ ...environment, client: { ...environment.client, imageStoragePath } })
+        expect(() => service.getImageLibraryConfig()).toThrow(/IMAGE_STORAGE_PATH/)
+    })
+
+    it.each(['', undefined, 'invalid', 'file:///images'])(
+        'rejects missing or invalid host configuration: %s',
+        (host) => {
+            env.getEnv.mockReturnValue({ ...environment, host })
+            expect(() => service.getImageLibraryConfig()).toThrow(/HOST/)
+        }
+    )
 
     it('should be defined', () => {
         expect(service).toBeDefined()
@@ -79,9 +110,7 @@ describe('ConfigService', () => {
 
             await service.onApplicationBootstrap()
 
-            expect(loggerMock.log).toHaveBeenCalledWith(
-                expect.stringContaining('Persisted default configuration')
-            )
+            expect(loggerMock.log).toHaveBeenCalledWith(expect.stringContaining('Persisted default configuration'))
         })
     })
 })

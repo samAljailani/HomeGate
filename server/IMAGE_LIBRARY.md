@@ -14,9 +14,9 @@ Admins can manage images at `/admin/images` (Admin → Images). Click an image f
 
 ## Storage
 
-Local development uses `client/public/images` when running the server workspace. Otherwise, the default is the configured client build's `images` folder. Set `IMAGE_STORAGE_PATH` to an absolute, server-owned directory to override the location.
+Set the required `IMAGE_STORAGE_PATH` to an existing, server-owned directory. Relative paths resolve from the server's working directory; `server/.env.example` explicitly selects `../client/public/images` for local development. There is no fallback location, and the application never creates the directory. Missing configuration or a missing storage directory prevents startup. The configuration service resolves the storage and seed paths and validates the required `HOST` URL, which resolves relative service image URLs.
 
-The production and QA Compose files set `IMAGE_STORAGE_PATH=/app/image-library/images` and mount a separate named volume. The volume is seeded once from the trusted images in the client build. Deleting an image will not restore it on restart. Keep this volume in backups; do not use `docker compose down -v` if you want to retain uploaded images. No database migration is required.
+The production and QA Compose files set `IMAGE_STORAGE_PATH=/app/image-library/images` and mount a separate named volume directly at that directory. The volume is seeded once from the trusted images in the client build. Deleting an image will not restore it on restart. Keep this volume in backups; do not use `docker compose down -v` if you want to retain uploaded images. No database migration is required.
 
 Do not give untrusted processes filesystem write access to this directory. Existing repository images are trusted assets; strict content validation applies to uploads through the manager. These controls reduce upload risk but do not replace ongoing dependency updates or an independent security review.
 

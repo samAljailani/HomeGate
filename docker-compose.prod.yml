@@ -25,7 +25,7 @@ services:
       LOG_FORMAT: console
       COLOR_LOGS: "false"
     volumes:
-      - homegate-images:/app/image-library
+      - homegate-images:/app/image-library/images
     ports:
       - "${PORT:-3003}:${PORT:-3003}"
     depends_on:

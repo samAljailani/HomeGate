@@ -6,18 +6,10 @@ import {
     NotFoundException,
 } from '@nestjs/common'
 import { existsSync, constants } from 'node:fs'
-import {
-    mkdir,
-    lstat,
-    readdir,
-    realpath,
-    open,
-    unlink,
-    link,
-} from 'node:fs/promises'
+import { lstat, readdir, realpath, open, unlink, link } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { resolve } from 'node:path'
-import { EnvRepository } from '@/data/repositories/env.repository'
+import { ConfigService } from './config.service'
 import { IServiceRepository } from '@/data/repositories'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import {
@@ -31,30 +23,20 @@ import { ImageResponseDto, ImageUploadDto } from '@/types/dtos/imageDto'
 export class ImageLibraryService {
     readonly directory: string
     private readonly seedDirectory: string
+    private readonly baseUrl: string
     private ready: Promise<void> | undefined
     private mutations: Promise<unknown> = Promise.resolve()
 
     constructor(
-        @Inject(EnvRepository) env: EnvRepository,
+        @Inject(ConfigService) config: ConfigService,
         @Inject(IServiceRepository)
         private readonly services: IServiceRepository,
         @Inject(LoggingProvider) private readonly logger: LoggingProvider
     ) {
-        this.seedDirectory = resolve(
-            process.cwd(),
-            env.getEnv().client.buildPath,
-            'images'
-        )
-        const sourceDirectory = resolve(
-            process.cwd(),
-            '../client/public/images'
-        )
-        this.directory = resolve(
-            process.env['IMAGE_STORAGE_PATH'] ||
-                (existsSync(sourceDirectory)
-                    ? sourceDirectory
-                    : this.seedDirectory)
-        )
+        const settings = config.getImageLibraryConfig()
+        this.seedDirectory = settings.seedDirectory
+        this.directory = settings.directory
+        this.baseUrl = settings.baseUrl
     }
 
     initialize(): Promise<void> {
@@ -63,7 +45,6 @@ export class ImageLibraryService {
     }
 
     private async prepareDirectory(): Promise<void> {
-        await mkdir(this.directory, { recursive: true, mode: 0o750 })
         const stat = await lstat(this.directory)
         const actual = await realpath(this.directory)
         const samePath =
@@ -75,10 +56,7 @@ export class ImageLibraryService {
                 'Image storage must be a real directory, not a symbolic link.'
             )
         // A persistent volume is seeded once. Deleted images must not reappear on restart.
-        if (
-            process.env['IMAGE_STORAGE_PATH'] &&
-            this.directory !== this.seedDirectory
-        ) {
+        if (this.directory !== this.seedDirectory) {
             const marker = resolve(this.directory, '.initialized')
             if (!existsSync(marker)) {
                 if (existsSync(this.seedDirectory)) {
@@ -180,14 +158,13 @@ export class ImageLibraryService {
                         return (
                             service.imageUrl != null &&
                             decodeURIComponent(
-                                new URL(
-                                    service.imageUrl,
-                                    'https://homegate.invalid'
-                                ).pathname
+                                new URL(service.imageUrl, this.baseUrl).pathname
                             ) === url
                         )
                     } catch {
-                        return false
+                        throw new Error(
+                            `Invalid image URL for service '${service.name}'.`
+                        )
                     }
                 })
                 .map((service) => service.name)

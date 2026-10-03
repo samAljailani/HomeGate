@@ -18,7 +18,7 @@ import { Reflector } from '@nestjs/core'
 import { ImageLibraryService } from '@/api/services/imageLibrary.service'
 import { ImageLibraryController } from '@/api/controllers/imageLibrary.controller'
 import { AuthGuard } from '@/api/middleware/auth.guard'
-import { EnvRepository } from '@/data/repositories/env.repository'
+import { ConfigService } from '@/api/services/config.service'
 import { IServiceRepository, IUserRepository } from '@/data/repositories'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { UserStatus } from '@/types/models/user'
@@ -184,7 +184,13 @@ describe('Image library filesystem operations', () => {
     let fixture: string
     let library: ImageLibraryService
     let services: { findMany: jest.Mock }
-    let previousPath: string | undefined
+    let config: {
+        getImageLibraryConfig: () => {
+            directory: string
+            seedDirectory: string
+            baseUrl: string
+        }
+    }
     const upload = () =>
         library.upload({
             name: 'test.svg',
@@ -193,25 +199,26 @@ describe('Image library filesystem operations', () => {
         })
 
     beforeEach(async () => {
-        previousPath = process.env['IMAGE_STORAGE_PATH']
         const cache = resolve(process.cwd(), '../node_modules/.cache')
         await mkdir(cache, { recursive: true })
         fixture = await mkdtemp(resolve(cache, 'image-tests-'))
-        process.env['IMAGE_STORAGE_PATH'] = resolve(fixture, 'images')
+        await mkdir(resolve(fixture, 'images'))
         services = { findMany: jest.fn().mockResolvedValue([]) }
-        const env = {
-            getEnv: () => ({ client: { buildPath: resolve(fixture, 'seed') } }),
+        config = {
+            getImageLibraryConfig: () => ({
+                directory: resolve(fixture, 'images'),
+                seedDirectory: resolve(fixture, 'seed/images'),
+                baseUrl: 'https://homegate.example/',
+            }),
         }
         library = new ImageLibraryService(
-            env as unknown as EnvRepository,
+            config as unknown as ConfigService,
             services as unknown as IServiceRepository,
             createLoggerMock() as unknown as LoggingProvider
         )
     })
 
     afterEach(async () => {
-        if (previousPath === undefined) delete process.env['IMAGE_STORAGE_PATH']
-        else process.env['IMAGE_STORAGE_PATH'] = previousPath
         await rm(fixture, { recursive: true, force: true })
     })
 
@@ -328,20 +335,49 @@ describe('Image library filesystem operations', () => {
         await writeFile(resolve(fixture, 'seed/images/seed.svg'), svg)
         await library.initialize()
         await library.remove('seed.svg')
-        const env = {
-            getEnv: () => ({ client: { buildPath: resolve(fixture, 'seed') } }),
+        config = {
+            getImageLibraryConfig: () => ({
+                directory: resolve(fixture, 'images'),
+                seedDirectory: resolve(fixture, 'seed/images'),
+                baseUrl: 'https://homegate.example/',
+            }),
         }
         const restarted = new ImageLibraryService(
-            env as unknown as EnvRepository,
+            config as unknown as ConfigService,
             services as unknown as IServiceRepository,
             createLoggerMock() as unknown as LoggingProvider
         )
         expect(await restarted.list()).toEqual([])
     })
 
+    it('fails when the configured storage directory does not exist and does not create it', async () => {
+        await rm(library.directory, { recursive: true })
+        await expect(library.initialize()).rejects.toMatchObject({
+            code: 'ENOENT',
+        })
+        await expect(readdir(library.directory)).rejects.toMatchObject({
+            code: 'ENOENT',
+        })
+    })
+
+    it('protects images referenced by relative URLs and rejects malformed service URLs', async () => {
+        await upload()
+        services.findMany.mockResolvedValue([
+            createServiceFixture({ imageUrl: '/images/test.svg' }),
+        ])
+        await expect(library.remove('test.svg')).rejects.toThrow(
+            ConflictException
+        )
+        services.findMany.mockResolvedValue([
+            createServiceFixture({ imageUrl: 'https://[' }),
+        ])
+        await expect(library.list()).rejects.toThrow(/Invalid image URL/)
+    })
+
     it('rejects a symlink or directory junction as the image storage root', async () => {
         const target = resolve(fixture, 'outside')
         await mkdir(target)
+        await rm(library.directory, { recursive: true })
         await symlink(
             target,
             library.directory,
