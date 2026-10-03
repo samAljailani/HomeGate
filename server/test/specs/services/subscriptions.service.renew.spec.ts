@@ -107,6 +107,7 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
         })
 
         it('extends expiry from now when already expired', async () => {
+            const beforeRenew = new Date()
             const pastExpiry = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) // 5 days ago
             const account = createSubscriptionFixture({ id: subscriptionId, userId, serviceId, expiresAt: pastExpiry })
             const updated = { ...account }
@@ -116,9 +117,11 @@ describe('SubscriptionService — renew / setAutoRenew / listAll / listByUser', 
             await service.renew(subscriptionId)
 
             const newExpiry = userAccountRepositoryMock.update.mock.calls[0]![0]!.expiresAt!
-            const thirtyDaysFromNow = Date.now() + 30 * 24 * 60 * 60 * 1000
-            expect(newExpiry.getTime()).toBeGreaterThan(Date.now())
-            expect(newExpiry.getTime()).toBeLessThanOrEqual(thirtyDaysFromNow + 1000)
+            const afterRenew = new Date()
+            beforeRenew.setDate(beforeRenew.getDate() + 30)
+            afterRenew.setDate(afterRenew.getDate() + 30)
+            expect(newExpiry.getTime()).toBeGreaterThanOrEqual(beforeRenew.getTime())
+            expect(newExpiry.getTime()).toBeLessThanOrEqual(afterRenew.getTime())
         })
 
         it('throws BadRequestException when update returns null', async () => {
