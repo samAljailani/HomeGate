@@ -317,7 +317,7 @@ describe('Image library filesystem operations', () => {
         await writeFile(resolve(fixture, 'seed/images/large.svg'), bundled)
 
         await library.initialize()
-        expect(await library.getImage('large.svg')).toEqual(bundled)
+        expect((await library.getImage('large.svg')).equals(bundled)).toBe(true)
         expect(await library.list()).toEqual([expect.objectContaining({ name: 'large.svg', size: bundled.length })])
         await expect(
             library.upload({
