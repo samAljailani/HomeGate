@@ -1074,10 +1074,10 @@ export interface components {
         };
         SubscriptionCreateRequestDto: {
             serviceId: number;
-            serviceUsername: string;
+            serviceUsername?: string;
             email?: string;
-            servicePassword: string;
-            confirmServicePassword: string;
+            servicePassword?: string;
+            confirmServicePassword?: string;
             autoRenew: boolean;
         };
         /**

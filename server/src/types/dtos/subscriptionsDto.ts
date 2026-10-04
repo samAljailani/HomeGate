@@ -32,7 +32,11 @@ export class SubscriptionResponseDto {
     @ApiProperty({ type: Number })
     serviceId: number
 
-    @ApiProperty({ type: String, nullable: true, description: 'Primary external account username; null when the service has no account' })
+    @ApiProperty({
+        type: String,
+        nullable: true,
+        description: 'Primary external account username; null when the service has no account',
+    })
     username: string | null
 
     @ApiProperty({ enum: SubscriptionStatus })
@@ -63,25 +67,39 @@ export class SubscriptionResponseDto {
     })
     accountType: AccountType
 
-    @ApiProperty({ type: String, format: 'uuid', nullable: true, description: 'Source subscription that auto-created this one (REFERENCED services)' })
+    @ApiProperty({
+        type: String,
+        format: 'uuid',
+        nullable: true,
+        description: 'Source subscription that auto-created this one (REFERENCED services)',
+    })
     derivedFromSubscriptionId: string | null
 
     @ApiProperty({ type: [SubscriptionAccountDto], description: 'External accounts linked to this subscription' })
     accounts: SubscriptionAccountDto[]
 
-    @ApiProperty({ type: Number, description: "Maximum accounts this subscription may be linked to (policy accountsPerService, default 1)" })
+    @ApiProperty({
+        type: Number,
+        description: 'Maximum accounts this subscription may be linked to (policy accountsPerService, default 1)',
+    })
     accountCap: number
 
-    @ApiPropertyOptional({ type: String, description: 'The subscribing user\'s HomeGate username (admin listings only)' })
+    @ApiPropertyOptional({
+        type: String,
+        description: "The subscribing user's HomeGate username (admin listings only)",
+    })
     userUsername?: string
 
-    @ApiPropertyOptional({ type: String, description: 'The subscribing user\'s email (admin listings only)' })
+    @ApiPropertyOptional({ type: String, description: "The subscribing user's email (admin listings only)" })
     userEmail?: string
 
-    @ApiPropertyOptional({ type: String, description: 'The subscribed-to service\'s display name (admin listings only)' })
+    @ApiPropertyOptional({
+        type: String,
+        description: "The subscribed-to service's display name (admin listings only)",
+    })
     serviceName?: string
 
-    @ApiPropertyOptional({ type: String, description: 'The subscribed-to service\'s slug (admin listings only)' })
+    @ApiPropertyOptional({ type: String, description: "The subscribed-to service's slug (admin listings only)" })
     serviceSlug?: string
 }
 
@@ -131,7 +149,8 @@ export class SubscriptionCreateRequestDto {
     @IsNotEmpty()
     serviceId: number
 
-    @ApiProperty({ type: String })
+    @ApiPropertyOptional({ type: String })
+    @IsOptional()
     @IsString()
     serviceUsername?: string
 
@@ -141,11 +160,13 @@ export class SubscriptionCreateRequestDto {
     @IsEmail()
     email?: string
 
-    @ApiProperty({ type: String, writeOnly: true })
+    @ApiPropertyOptional({ type: String, writeOnly: true })
+    @IsOptional()
     @IsString()
     servicePassword?: string
 
-    @ApiProperty({ type: String, writeOnly: true })
+    @ApiPropertyOptional({ type: String, writeOnly: true })
+    @IsOptional()
     @IsString()
     @Match('servicePassword', { message: 'Passwords do not match' })
     confirmServicePassword?: string

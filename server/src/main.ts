@@ -7,7 +7,7 @@ import { NestExpressApplication } from '@nestjs/platform-express'
 import { SwaggerModule } from '@nestjs/swagger'
 
 import session from 'express-session'
-import { json, type Request, type Response, type NextFunction } from 'express'
+import { type Request, type Response, type NextFunction } from 'express'
 
 import { AppModule } from '@/app.module'
 import { AppEnv } from '@/types/models/EnvData'
@@ -26,9 +26,10 @@ import { routes } from '@/types/dtos/routes'
 import { IUserRepository } from '@/data/repositories'
 import { UserStatus } from '@/types/models/user'
 import { accountIntegrationProviders } from './core/integrations'
+import { configureRequestBodyParsing } from '@/api/security/requestBody'
 
 async function bootstrap() {
-    const app = await NestFactory.create<NestExpressApplication>(AppModule)
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false })
 
     app.enableShutdownHooks()
 
@@ -73,16 +74,23 @@ async function bootstrap() {
     // Authenticate before accepting the larger image payload. Nest's admin guard also
     // protects the controller; CSRF remains mandatory on all mutations.
     const users = app.get<IUserRepository>(IUserRepository)
-    app.use(routes.images.basePath, async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const user = req.session?.userId ? await users.findById(req.session.userId) : null
-            if (!user || !user.isAdmin || user.status !== UserStatus.ACTIVE) {
-                res.status(403).json({ message: 'Administrator access required.' })
-                return
+    configureRequestBodyParsing(
+        app,
+        routes.images.basePath,
+        async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const user = req.session?.userId ? await users.findById(req.session.userId) : null
+                if (!user || !user.isAdmin || user.status !== UserStatus.ACTIVE) {
+                    res.status(403).json({ message: 'Administrator access required.' })
+                    return
+                }
+                next()
+            } catch (error) {
+                next(error)
             }
-            next()
-        } catch (error) { next(error) }
-    }, json({ limit: app.get(ConfigService).getImageLibraryConfig().requestBodyLimitBytes, strict: true }))
+        },
+        app.get(ConfigService).getImageLibraryConfig().requestBodyLimitBytes
+    )
 
     app.useGlobalPipes(
         new ValidationPipe({
