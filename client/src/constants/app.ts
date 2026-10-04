@@ -1,5 +1,15 @@
 export const config = Object.freeze({
-    appName: 'HomeGate',    
+    apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? '',
+    imageLibrary: {
+        apiPath: '/api/images',
+        maxImageBytes: 10 * 1024 * 1024,
+        maxSvgBytes: 256 * 1024,
+        maxPixels: 4_194_304,
+        filenamePattern:
+            /^(?!(?:[cC][oO][nN]|[pP][rR][nN]|[aA][uU][xX]|[nN][uU][lL]|[cC][oO][mM][1-9]|[lL][pP][tT][1-9])\.)[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}\.(?:png|svg)$/,
+        acceptedFileTypes: 'image/png,image/svg+xml,.png,.svg',
+    },
+    appName: 'HomeGate',
     routes: {
         home: '/',
         signIn: '/signin',

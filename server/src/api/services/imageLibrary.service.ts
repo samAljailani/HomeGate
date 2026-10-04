@@ -1,26 +1,17 @@
-import {
-    BadRequestException,
-    ConflictException,
-    Inject,
-    Injectable,
-    NotFoundException,
-} from '@nestjs/common'
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { existsSync, constants } from 'node:fs'
 import { lstat, readdir, realpath, open, unlink, link } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { resolve } from 'node:path'
-import { ConfigService } from './config.service'
+import { ConfigService, type ImageLibraryConfig } from './config.service'
 import { IServiceRepository } from '@/data/repositories'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
-import {
-    IMAGE_NAME,
-    MAX_IMAGE_BYTES,
-    validateImage,
-} from '@/lib/imageValidation'
+import { validateImage } from '@/lib/imageValidation'
 import { ImageResponseDto, ImageUploadDto } from '@/types/dtos/imageDto'
 
 @Injectable()
 export class ImageLibraryService {
+    private readonly settings: ImageLibraryConfig
     readonly directory: string
     private readonly seedDirectory: string
     private readonly baseUrl: string
@@ -34,6 +25,7 @@ export class ImageLibraryService {
         @Inject(LoggingProvider) private readonly logger: LoggingProvider
     ) {
         const settings = config.getImageLibraryConfig()
+        this.settings = settings
         this.seedDirectory = settings.seedDirectory
         this.directory = settings.directory
         this.baseUrl = settings.baseUrl
@@ -52,60 +44,44 @@ export class ImageLibraryService {
                 ? actual.toLowerCase() === this.directory.toLowerCase()
                 : actual === this.directory
         if (!stat.isDirectory() || stat.isSymbolicLink() || !samePath)
-            throw new Error(
-                'Image storage must be a real directory, not a symbolic link.'
-            )
+            throw new Error('Image storage must be a real directory, not a symbolic link.')
         // A persistent volume is seeded once. Deleted images must not reappear on restart.
         if (this.directory !== this.seedDirectory) {
-            const marker = resolve(this.directory, '.initialized')
+            const marker = resolve(this.directory, this.settings.initializationMarker)
             if (!existsSync(marker)) {
                 if (existsSync(this.seedDirectory)) {
                     for (const entry of await readdir(this.seedDirectory, {
                         withFileTypes: true,
                     })) {
-                        if (!entry.isFile() || !IMAGE_NAME.test(entry.name))
-                            continue
-                        const source = await this.readFile(
-                            this.seedDirectory,
-                            entry.name
-                        )
+                        if (!entry.isFile() || !this.settings.filenamePattern.test(entry.name)) continue
+                        const source = await this.readFile(this.seedDirectory, entry.name)
                         try {
                             await this.writeNew(entry.name, source)
                         } catch (error) {
-                            if (!(error instanceof ConflictException))
-                                throw error
+                            if (!(error instanceof ConflictException)) throw error
                         }
                     }
                 }
-                const handle = await open(marker, 'wx', 0o640)
+                const handle = await open(marker, 'wx', this.settings.fileMode)
                 await handle.close()
             }
         }
     }
 
     private filename(name: string): string {
-        if (!IMAGE_NAME.test(name))
-            throw new BadRequestException('Invalid image filename.')
+        if (!this.settings.filenamePattern.test(name)) throw new BadRequestException('Invalid image filename.')
         return resolve(this.directory, name)
     }
 
     private async readFile(directory: string, name: string): Promise<Buffer> {
         const path = resolve(directory, name)
         const stat = await lstat(path)
-        if (
-            !stat.isFile() ||
-            stat.isSymbolicLink() ||
-            stat.size > MAX_IMAGE_BYTES
-        )
-            throw new BadRequestException('Invalid image file.')
-        const handle = await open(
-            path,
-            constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)
-        )
+        // The size limit applies to new uploads. Bundled images may be larger.
+        if (!stat.isFile() || stat.isSymbolicLink()) throw new BadRequestException('Invalid image file.')
+        const handle = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0))
         try {
             const opened = await handle.stat()
-            if (!opened.isFile() || opened.size > MAX_IMAGE_BYTES)
-                throw new BadRequestException('Invalid image file.')
+            if (!opened.isFile()) throw new BadRequestException('Invalid image file.')
             return await handle.readFile()
         } finally {
             await handle.close()
@@ -116,7 +92,7 @@ export class ImageLibraryService {
         const destination = this.filename(name)
         const temporary = resolve(this.directory, `.upload-${randomUUID()}`)
         try {
-            const handle = await open(temporary, 'wx', 0o640)
+            const handle = await open(temporary, 'wx', this.settings.fileMode)
             try {
                 await handle.writeFile(content)
                 await handle.sync()
@@ -127,9 +103,7 @@ export class ImageLibraryService {
             await link(temporary, destination)
         } catch (error) {
             if ((error as NodeJS.ErrnoException).code === 'EEXIST')
-                throw new ConflictException(
-                    'An image with this name already exists. Choose a different name.'
-                )
+                throw new ConflictException('An image with this name already exists. Choose a different name.')
             throw error
         } finally {
             await unlink(temporary).catch((error: NodeJS.ErrnoException) => {
@@ -140,31 +114,24 @@ export class ImageLibraryService {
 
     async list(): Promise<ImageResponseDto[]> {
         await this.initialize()
-        const services = await this.services.findMany(
-            {},
-            Number.MAX_SAFE_INTEGER
-        )
+        const services = await this.services.findMany({}, Number.MAX_SAFE_INTEGER)
         const images: ImageResponseDto[] = []
         for (const entry of await readdir(this.directory, {
             withFileTypes: true,
         })) {
-            if (!entry.isFile() || !IMAGE_NAME.test(entry.name)) continue
+            if (!entry.isFile() || !this.settings.filenamePattern.test(entry.name)) continue
             const stat = await lstat(this.filename(entry.name))
             if (!stat.isFile() || stat.isSymbolicLink()) continue
-            const url = `/images/${entry.name}`
+            const url = `${this.settings.publicPath}/${entry.name}`
             const usedBy = services
                 .filter((service) => {
                     try {
                         return (
                             service.imageUrl != null &&
-                            decodeURIComponent(
-                                new URL(service.imageUrl, this.baseUrl).pathname
-                            ) === url
+                            decodeURIComponent(new URL(service.imageUrl, this.baseUrl).pathname) === url
                         )
                     } catch {
-                        throw new Error(
-                            `Invalid image URL for service '${service.name}'.`
-                        )
+                        throw new Error(`Invalid image URL for service '${service.name}'.`)
                     }
                 })
                 .map((service) => service.name)
@@ -174,7 +141,7 @@ export class ImageLibraryService {
                 size: stat.size,
                 updatedAt: stat.mtime.toISOString(),
                 usedBy,
-                protected: entry.name.toLowerCase() === 'logo.svg',
+                protected: this.settings.protectedNames.includes(entry.name.toLowerCase()),
             })
         }
         return images.sort((a, b) => a.name.localeCompare(b.name))
@@ -192,8 +159,7 @@ export class ImageLibraryService {
         try {
             return await this.readFile(this.directory, name)
         } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === 'ENOENT')
-                throw new NotFoundException('Image not found.')
+            if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new NotFoundException('Image not found.')
             throw error
         }
     }
@@ -202,40 +168,30 @@ export class ImageLibraryService {
         return this.exclusive(async () => {
             await this.initialize()
             this.filename(request.name)
-            if (request.content.length > Math.ceil(MAX_IMAGE_BYTES / 3) * 4)
-                throw new BadRequestException('Image exceeds the 2 MB limit.')
+            if (request.content.length > this.settings.maxBase64Length)
+                throw new BadRequestException(
+                    `Image exceeds the ${this.settings.maxImageBytes / (1024 * 1024)} MB limit.`
+                )
             const buffer = Buffer.from(request.content, 'base64')
             if (buffer.toString('base64') !== request.content)
                 throw new BadRequestException('Invalid base64 file content.')
-            const clean = await validateImage(
-                request.name,
-                request.mimeType,
-                buffer
-            )
+            const clean = await validateImage(request.name, request.mimeType, buffer, this.settings)
             const images = await this.list()
             if (
-                images.length >= 500 ||
-                images.reduce(
-                    (total, image) => total + image.size,
-                    clean.length
-                ) >
-                    100 * 1024 * 1024
+                images.length >= this.settings.maxImages ||
+                images.reduce((total, image) => total + image.size, clean.length) > this.settings.maxLibraryBytes
             ) {
-                throw new ConflictException(
-                    'Image library is full. Delete unused images before uploading more.'
-                )
+                throw new ConflictException('Image library is full. Delete unused images before uploading more.')
             }
             await this.writeNew(request.name, clean)
-            this.logger.log(
-                `Uploaded image '${request.name}' (${clean.length} bytes)`
-            )
+            this.logger.log(`Uploaded image '${request.name}' (${clean.length} bytes)`)
             return {
                 name: request.name,
-                url: `/images/${request.name}`,
+                url: `${this.settings.publicPath}/${request.name}`,
                 size: clean.length,
                 updatedAt: new Date().toISOString(),
                 usedBy: [],
-                protected: request.name.toLowerCase() === 'logo.svg',
+                protected: this.settings.protectedNames.includes(request.name.toLowerCase()),
             }
         })
     }
@@ -243,9 +199,7 @@ export class ImageLibraryService {
     remove(name: string): Promise<void> {
         return this.exclusive(async () => {
             this.filename(name)
-            const image = (await this.list()).find(
-                (entry) => entry.name === name
-            )
+            const image = (await this.list()).find((entry) => entry.name === name)
             if (!image) throw new NotFoundException('Image not found.')
             if (image.protected || image.usedBy.length)
                 throw new ConflictException(

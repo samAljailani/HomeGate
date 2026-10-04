@@ -1,32 +1,16 @@
-import {
-    BadRequestException,
-    ConflictException,
-    NotFoundException,
-} from '@nestjs/common'
-import {
-    mkdtemp,
-    mkdir,
-    readFile,
-    readdir,
-    rm,
-    writeFile,
-    symlink,
-} from 'node:fs/promises'
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common'
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile, symlink } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import sharp from 'sharp'
 import { Reflector } from '@nestjs/core'
 import { ImageLibraryService } from '@/api/services/imageLibrary.service'
 import { ImageLibraryController } from '@/api/controllers/imageLibrary.controller'
 import { AuthGuard } from '@/api/middleware/auth.guard'
-import { ConfigService } from '@/api/services/config.service'
+import { ConfigService, imageLibraryDefaults, type ImageLibraryConfig } from '@/api/services/config.service'
 import { IServiceRepository, IUserRepository } from '@/data/repositories'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { UserStatus } from '@/types/models/user'
-import {
-    validateImage,
-    validateSvg,
-    MAX_IMAGE_BYTES,
-} from '@/lib/imageValidation'
+import { validateImage, validateSvg } from '@/lib/imageValidation'
 import { createLoggerMock } from '../../mocks/logger.provider.mock'
 import { createUserFixture } from '../../fixtures/user.stub'
 import { createServiceFixture } from '../../fixtures/service.stub'
@@ -41,11 +25,15 @@ jest.mock('sharp', () => ({
 }))
 
 describe('Image file validation', () => {
+    it('enforces supplied SVG size and structure limits', () => {
+        expect(() => validateSvg(svg, { ...imageLibraryDefaults, maxSvgBytes: svg.length - 1 })).toThrow(
+            BadRequestException
+        )
+        expect(() => validateSvg(svg, { ...imageLibraryDefaults, maxSvgElements: 1 })).toThrow(BadRequestException)
+    })
     it('accepts and re-serializes a static SVG', async () => {
         const result = await validateImage('test.svg', 'image/svg+xml', svg)
-        expect(result.toString()).toContain(
-            '<svg xmlns="http://www.w3.org/2000/svg"'
-        )
+        expect(result.toString()).toContain('<svg xmlns="http://www.w3.org/2000/svg"')
         expect(result.toString()).toContain('<path')
     })
 
@@ -64,13 +52,9 @@ describe('Image file validation', () => {
         '<path xmlns="http://www.w3.org/1999/xhtml"/>',
         '<path unknown="x"/>',
     ])('rejects active, external, or unapproved SVG content: %s', (content) => {
-        expect(() =>
-            validateSvg(
-                Buffer.from(
-                    `<svg xmlns="http://www.w3.org/2000/svg">${content}</svg>`
-                )
-            )
-        ).toThrow(BadRequestException)
+        expect(() => validateSvg(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg">${content}</svg>`))).toThrow(
+            BadRequestException
+        )
     })
 
     it.each([
@@ -79,26 +63,18 @@ describe('Image file validation', () => {
         '<svg xmlns="http://www.w3.org/2000/svg"><path></svg>',
         '<html>not an image</html>',
     ])('rejects DTDs, processing instructions, and malformed XML', (source) => {
-        expect(() => validateSvg(Buffer.from(source))).toThrow(
-            BadRequestException
-        )
+        expect(() => validateSvg(Buffer.from(source))).toThrow(BadRequestException)
     })
 
     it('rejects deeply nested SVG and oversized dimensions', () => {
         expect(() =>
             validateSvg(
-                Buffer.from(
-                    `<svg xmlns="http://www.w3.org/2000/svg">${'<g>'.repeat(40)}${'</g>'.repeat(40)}</svg>`
-                )
+                Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg">${'<g>'.repeat(40)}${'</g>'.repeat(40)}</svg>`)
             )
         ).toThrow(BadRequestException)
-        expect(() =>
-            validateSvg(
-                Buffer.from(
-                    '<svg xmlns="http://www.w3.org/2000/svg" width="999999"/>'
-                )
-            )
-        ).toThrow(BadRequestException)
+        expect(() => validateSvg(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="999999"/>'))).toThrow(
+            BadRequestException
+        )
     })
 
     it('fully decodes and re-encodes a PNG without metadata', async () => {
@@ -123,15 +99,9 @@ describe('Image file validation', () => {
             .png()
             .toBuffer()
         await expect(
-            validateImage(
-                'x.png',
-                'image/png',
-                Buffer.concat([png, Buffer.from('<script/>')])
-            )
+            validateImage('x.png', 'image/png', Buffer.concat([png, Buffer.from('<script/>')]))
         ).rejects.toThrow(BadRequestException)
-        await expect(
-            validateImage('x.png', 'image/png', png.subarray(0, 30))
-        ).rejects.toThrow(BadRequestException)
+        await expect(validateImage('x.png', 'image/png', png.subarray(0, 30))).rejects.toThrow(BadRequestException)
         const large = await sharp({
             create: {
                 width: 2500,
@@ -142,9 +112,7 @@ describe('Image file validation', () => {
         })
             .png()
             .toBuffer()
-        await expect(
-            validateImage('x.png', 'image/png', large)
-        ).rejects.toThrow(BadRequestException)
+        await expect(validateImage('x.png', 'image/png', large)).rejects.toThrow(BadRequestException)
     })
 
     it.each([
@@ -158,24 +126,14 @@ describe('Image file validation', () => {
         'CON.svg',
         'nul.png',
     ])('rejects unsafe filenames: %s', async (name) => {
-        await expect(validateImage(name, 'image/svg+xml', svg)).rejects.toThrow(
-            BadRequestException
-        )
+        await expect(validateImage(name, 'image/svg+xml', svg)).rejects.toThrow(BadRequestException)
     })
 
     it('rejects MIME mismatches, forged PNGs and oversized input', async () => {
-        await expect(validateImage('x.svg', 'image/png', svg)).rejects.toThrow(
-            BadRequestException
-        )
-        await expect(validateImage('x.png', 'image/png', svg)).rejects.toThrow(
-            BadRequestException
-        )
+        await expect(validateImage('x.svg', 'image/png', svg)).rejects.toThrow(BadRequestException)
+        await expect(validateImage('x.png', 'image/png', svg)).rejects.toThrow(BadRequestException)
         await expect(
-            validateImage(
-                'x.png',
-                'image/png',
-                Buffer.alloc(MAX_IMAGE_BYTES + 1)
-            )
+            validateImage('x.png', 'image/png', Buffer.alloc(imageLibraryDefaults.maxImageBytes + 1))
         ).rejects.toThrow(BadRequestException)
     })
 })
@@ -185,11 +143,7 @@ describe('Image library filesystem operations', () => {
     let library: ImageLibraryService
     let services: { findMany: jest.Mock }
     let config: {
-        getImageLibraryConfig: () => {
-            directory: string
-            seedDirectory: string
-            baseUrl: string
-        }
+        getImageLibraryConfig: () => ImageLibraryConfig
     }
     const upload = () =>
         library.upload({
@@ -206,6 +160,10 @@ describe('Image library filesystem operations', () => {
         services = { findMany: jest.fn().mockResolvedValue([]) }
         config = {
             getImageLibraryConfig: () => ({
+                ...imageLibraryDefaults,
+                maxBase64Length: Math.ceil(imageLibraryDefaults.maxImageBytes / 3) * 4,
+                requestBodyLimitBytes:
+                    Math.ceil(imageLibraryDefaults.maxImageBytes / 3) * 4 + imageLibraryDefaults.requestMetadataBytes,
                 directory: resolve(fixture, 'images'),
                 seedDirectory: resolve(fixture, 'seed/images'),
                 baseUrl: 'https://homegate.example/',
@@ -222,6 +180,29 @@ describe('Image library filesystem operations', () => {
         await rm(fixture, { recursive: true, force: true })
     })
 
+    it('uses configured library quotas and protected filenames', async () => {
+        const settings = config.getImageLibraryConfig()
+        config.getImageLibraryConfig = () => ({
+            ...settings,
+            maxImages: 1,
+            protectedNames: ['test.svg'],
+        })
+        library = new ImageLibraryService(
+            config as unknown as ConfigService,
+            services as unknown as IServiceRepository,
+            createLoggerMock() as unknown as LoggingProvider
+        )
+        expect((await upload()).protected).toBe(true)
+        await expect(library.remove('test.svg')).rejects.toThrow(ConflictException)
+        await expect(
+            library.upload({
+                name: 'second.svg',
+                mimeType: 'image/svg+xml',
+                content: svg.toString('base64'),
+            })
+        ).rejects.toThrow(ConflictException)
+    })
+
     it('lists uploaded images, prevents overwrites, and hard deletes unused images', async () => {
         await upload()
         expect(await library.list()).toEqual([
@@ -231,14 +212,10 @@ describe('Image library filesystem operations', () => {
             }),
         ])
         await expect(upload()).rejects.toThrow(ConflictException)
-        expect(await readFile(resolve(library.directory, 'test.svg'))).toEqual(
-            validateSvg(svg)
-        )
+        expect(await readFile(resolve(library.directory, 'test.svg'))).toEqual(validateSvg(svg))
         await library.remove('test.svg')
         expect(await library.list()).toEqual([])
-        await expect(library.getImage('test.svg')).rejects.toThrow(
-            NotFoundException
-        )
+        await expect(library.getImage('test.svg')).rejects.toThrow(NotFoundException)
     })
 
     it('does not write rejected content and cannot read or delete outside the directory', async () => {
@@ -249,17 +226,9 @@ describe('Image library filesystem operations', () => {
                 content: Buffer.from('<script/>').toString('base64'),
             })
         ).rejects.toThrow(BadRequestException)
-        expect(
-            (await readdir(library.directory)).filter(
-                (name) => !name.startsWith('.')
-            )
-        ).toEqual([])
-        await expect(library.getImage('../secret.svg')).rejects.toThrow(
-            BadRequestException
-        )
-        await expect(library.remove('../secret.svg')).rejects.toThrow(
-            BadRequestException
-        )
+        expect((await readdir(library.directory)).filter((name) => !name.startsWith('.'))).toEqual([])
+        await expect(library.getImage('../secret.svg')).rejects.toThrow(BadRequestException)
+        await expect(library.remove('../secret.svg')).rejects.toThrow(BadRequestException)
     })
 
     it('protects the logo and images referenced by service URLs', async () => {
@@ -269,32 +238,20 @@ describe('Image library filesystem operations', () => {
                 imageUrl: 'https://homegate.example/images/test.svg?v=1',
             }),
         ])
-        await expect(library.remove('test.svg')).rejects.toThrow(
-            ConflictException
-        )
+        await expect(library.remove('test.svg')).rejects.toThrow(ConflictException)
         await library.upload({
             name: 'logo.svg',
             mimeType: 'image/svg+xml',
             content: svg.toString('base64'),
         })
-        await expect(library.remove('logo.svg')).rejects.toThrow(
-            ConflictException
-        )
+        await expect(library.remove('logo.svg')).rejects.toThrow(ConflictException)
     })
 
     it('serializes concurrent writes and leaves no partial upload files', async () => {
         const results = await Promise.allSettled([upload(), upload()])
-        expect(
-            results.filter((result) => result.status === 'fulfilled')
-        ).toHaveLength(1)
-        expect(
-            results.filter((result) => result.status === 'rejected')
-        ).toHaveLength(1)
-        expect(
-            (await readdir(library.directory)).some((name) =>
-                name.startsWith('.upload-')
-            )
-        ).toBe(false)
+        expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
+        expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1)
+        expect((await readdir(library.directory)).some((name) => name.startsWith('.upload-'))).toBe(false)
         expect(await library.getImage('test.svg')).toEqual(validateSvg(svg))
     })
 
@@ -337,6 +294,10 @@ describe('Image library filesystem operations', () => {
         await library.remove('seed.svg')
         config = {
             getImageLibraryConfig: () => ({
+                ...imageLibraryDefaults,
+                maxBase64Length: Math.ceil(imageLibraryDefaults.maxImageBytes / 3) * 4,
+                requestBodyLimitBytes:
+                    Math.ceil(imageLibraryDefaults.maxImageBytes / 3) * 4 + imageLibraryDefaults.requestMetadataBytes,
                 directory: resolve(fixture, 'images'),
                 seedDirectory: resolve(fixture, 'seed/images'),
                 baseUrl: 'https://homegate.example/',
@@ -348,6 +309,26 @@ describe('Image library filesystem operations', () => {
             createLoggerMock() as unknown as LoggingProvider
         )
         expect(await restarted.list()).toEqual([])
+    })
+
+    it('seeds, serves, and removes bundled images larger than the upload limit', async () => {
+        const bundled = Buffer.concat([svg, Buffer.alloc(imageLibraryDefaults.maxImageBytes, ' ')])
+        await mkdir(resolve(fixture, 'seed/images'), { recursive: true })
+        await writeFile(resolve(fixture, 'seed/images/large.svg'), bundled)
+
+        await library.initialize()
+        expect(await library.getImage('large.svg')).toEqual(bundled)
+        expect(await library.list()).toEqual([expect.objectContaining({ name: 'large.svg', size: bundled.length })])
+        await expect(
+            library.upload({
+                name: 'upload.svg',
+                mimeType: 'image/svg+xml',
+                content: bundled.toString('base64'),
+            })
+        ).rejects.toThrow(BadRequestException)
+
+        await library.remove('large.svg')
+        expect(await library.list()).toEqual([])
     })
 
     it('fails when the configured storage directory does not exist and does not create it', async () => {
@@ -362,15 +343,9 @@ describe('Image library filesystem operations', () => {
 
     it('protects images referenced by relative URLs and rejects malformed service URLs', async () => {
         await upload()
-        services.findMany.mockResolvedValue([
-            createServiceFixture({ imageUrl: '/images/test.svg' }),
-        ])
-        await expect(library.remove('test.svg')).rejects.toThrow(
-            ConflictException
-        )
-        services.findMany.mockResolvedValue([
-            createServiceFixture({ imageUrl: 'https://[' }),
-        ])
+        services.findMany.mockResolvedValue([createServiceFixture({ imageUrl: '/images/test.svg' })])
+        await expect(library.remove('test.svg')).rejects.toThrow(ConflictException)
+        services.findMany.mockResolvedValue([createServiceFixture({ imageUrl: 'https://[' })])
         await expect(library.list()).rejects.toThrow(/Invalid image URL/)
     })
 
@@ -378,47 +353,33 @@ describe('Image library filesystem operations', () => {
         const target = resolve(fixture, 'outside')
         await mkdir(target)
         await rm(library.directory, { recursive: true })
-        await symlink(
-            target,
-            library.directory,
-            process.platform === 'win32' ? 'junction' : 'dir'
-        )
+        await symlink(target, library.directory, process.platform === 'win32' ? 'junction' : 'dir')
         await expect(library.initialize()).rejects.toThrow(/symbolic link/)
     })
 })
 
 describe('Image management authorization', () => {
-    it.each(['list', 'upload', 'remove'] as const)(
-        'requires an active admin for %s',
-        async (method) => {
-            const users = { findById: jest.fn() }
-            const guard = new AuthGuard(
-                new Reflector(),
-                users as unknown as IUserRepository
-            )
-            const request = { session: { userId: 'user', destroy: jest.fn() } }
-            const context = {
-                getHandler: () => ImageLibraryController.prototype[method],
-                getClass: () => ImageLibraryController,
-                switchToHttp: () => ({ getRequest: () => request }),
-            } as unknown as Parameters<typeof guard.canActivate>[0]
-            users.findById.mockResolvedValue(
-                createUserFixture({ isAdmin: false })
-            )
-            expect(await guard.canActivate(context)).toBe(false)
-            users.findById.mockResolvedValue(
-                createUserFixture({
-                    isAdmin: true,
-                    status: UserStatus.DISABLED,
-                })
-            )
-            expect(await guard.canActivate(context)).toBe(false)
-            users.findById.mockResolvedValue(
-                createUserFixture({ isAdmin: true })
-            )
-            expect(await guard.canActivate(context)).toBe(true)
-            users.findById.mockResolvedValue(null)
-            expect(await guard.canActivate(context)).toBe(false)
-        }
-    )
+    it.each(['list', 'upload', 'remove'] as const)('requires an active admin for %s', async (method) => {
+        const users = { findById: jest.fn() }
+        const guard = new AuthGuard(new Reflector(), users as unknown as IUserRepository)
+        const request = { session: { userId: 'user', destroy: jest.fn() } }
+        const context = {
+            getHandler: () => ImageLibraryController.prototype[method],
+            getClass: () => ImageLibraryController,
+            switchToHttp: () => ({ getRequest: () => request }),
+        } as unknown as Parameters<typeof guard.canActivate>[0]
+        users.findById.mockResolvedValue(createUserFixture({ isAdmin: false }))
+        expect(await guard.canActivate(context)).toBe(false)
+        users.findById.mockResolvedValue(
+            createUserFixture({
+                isAdmin: true,
+                status: UserStatus.DISABLED,
+            })
+        )
+        expect(await guard.canActivate(context)).toBe(false)
+        users.findById.mockResolvedValue(createUserFixture({ isAdmin: true }))
+        expect(await guard.canActivate(context)).toBe(true)
+        users.findById.mockResolvedValue(null)
+        expect(await guard.canActivate(context)).toBe(false)
+    })
 })

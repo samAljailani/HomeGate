@@ -1,3 +1,4 @@
+import { config } from '@/constants/app'
 import { getCsrfToken } from './api-client'
 
 export interface PublicImage {
@@ -18,7 +19,7 @@ async function request<T>(
     if (method !== 'GET') headers['X-CSRF-Token'] = await getCsrfToken()
     if (body) headers['Content-Type'] = 'application/json'
     const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''}/api/images${path}`,
+        `${config.apiBaseUrl}${config.imageLibrary.apiPath}${path}`,
         {
             method,
             credentials: 'include',
@@ -40,12 +41,14 @@ async function request<T>(
 export const imageService = {
     list: () => request<PublicImage[]>(''),
     async upload(file: File): Promise<PublicImage> {
-        if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}\.(png|svg)$/.test(file.name))
+        if (!config.imageLibrary.filenamePattern.test(file.name))
             throw new Error(
                 'Use a .png or .svg filename with letters, numbers, hyphens or underscores.'
             )
-        if (!file.size || file.size > 2 * 1024 * 1024)
-            throw new Error('Images must be nonempty and 2 MB or smaller.')
+        if (!file.size || file.size > config.imageLibrary.maxImageBytes)
+            throw new Error(
+                `Images must be nonempty and ${config.imageLibrary.maxImageBytes / (1024 * 1024)} MB or smaller.`
+            )
         const content = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader()
             reader.onload = () =>

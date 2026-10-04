@@ -21,6 +21,8 @@ import { resolve } from 'path'
 
 import { AccountIntegrationRegistry } from './core/integrations/accountIntegrationRegistry'
 import { ImageLibraryService } from '@/api/services/imageLibrary.service'
+import { ConfigService } from '@/api/services/config.service'
+import { routes } from '@/types/dtos/routes'
 import { IUserRepository } from '@/data/repositories'
 import { UserStatus } from '@/types/models/user'
 import { accountIntegrationProviders } from './core/integrations'
@@ -71,7 +73,7 @@ async function bootstrap() {
     // Authenticate before accepting the larger image payload. Nest's admin guard also
     // protects the controller; CSRF remains mandatory on all mutations.
     const users = app.get<IUserRepository>(IUserRepository)
-    app.use('/api/images', async (req: Request, res: Response, next: NextFunction) => {
+    app.use(routes.images.basePath, async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user = req.session?.userId ? await users.findById(req.session.userId) : null
             if (!user || !user.isAdmin || user.status !== UserStatus.ACTIVE) {
@@ -80,7 +82,7 @@ async function bootstrap() {
             }
             next()
         } catch (error) { next(error) }
-    }, json({ limit: '3mb', strict: true }))
+    }, json({ limit: app.get(ConfigService).getImageLibraryConfig().requestBodyLimitBytes, strict: true }))
 
     app.useGlobalPipes(
         new ValidationPipe({

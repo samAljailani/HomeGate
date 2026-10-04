@@ -2,30 +2,17 @@ import { BadRequestException } from '@nestjs/common'
 import sharp from 'sharp'
 import { SaxesParser } from 'saxes'
 
-export const MAX_IMAGE_BYTES = 2 * 1024 * 1024
-export const IMAGE_NAME =
-    /^(?!(?:[cC][oO][nN]|[pP][rR][nN]|[aA][uU][xX]|[nN][uU][lL]|[cC][oO][mM][1-9]|[lL][pP][tT][1-9])\.)[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}\.(?:png|svg)$/
-const SVG_NS = 'http://www.w3.org/2000/svg'
-const elements = new Set(
-    'svg g defs path rect circle ellipse line polygon polyline linearGradient radialGradient stop clipPath mask use title desc text tspan'.split(
-        ' '
-    )
-)
-const attributes = new Set(
-    'id viewBox width height x y x1 y1 x2 y2 cx cy r rx ry d points transform fill fill-opacity fill-rule stroke stroke-width stroke-opacity stroke-linecap stroke-linejoin stroke-miterlimit stroke-dasharray stroke-dashoffset opacity clip-path clip-rule mask gradientUnits gradientTransform spreadMethod offset stop-color stop-opacity href preserveAspectRatio font-size font-family font-weight text-anchor dominant-baseline dx dy'.split(
-        ' '
-    )
-)
-const escapeXml = (value: string) =>
-    value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
+import { imageLibraryDefaults, type ImageValidationConfig } from '@/api/services/config.service'
 
-export function validateSvg(buffer: Buffer): Buffer {
-    if (buffer.length > 256 * 1024)
-        throw new BadRequestException('SVG files must be 256 KB or smaller.')
+const SVG_NS = 'http://www.w3.org/2000/svg'
+const escapeXml = (value: string) =>
+    value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+export function validateSvg(buffer: Buffer, settings: ImageValidationConfig = imageLibraryDefaults): Buffer {
+    const elements = new Set(settings.svgElements)
+    const attributes = new Set(settings.svgAttributes)
+    if (buffer.length > settings.maxSvgBytes)
+        throw new BadRequestException(`SVG files must be ${settings.maxSvgBytes / 1024} KB or smaller.`)
     let source: string
     try {
         source = new TextDecoder('utf-8', { fatal: true }).decode(buffer)
@@ -48,8 +35,8 @@ export function validateSvg(buffer: Buffer): Buffer {
     // Re-serialize only approved elements and attributes; never store the original XML.
     parser.on('opentag', (tag) => {
         if (
-            ++nodes > 2000 ||
-            ++depth > 32 ||
+            ++nodes > settings.maxSvgElements ||
+            ++depth > settings.maxSvgDepth ||
             tag.uri !== SVG_NS ||
             tag.prefix ||
             !elements.has(tag.local)
@@ -69,7 +56,7 @@ export function validateSvg(buffer: Buffer): Buffer {
                 attr.prefix ||
                 attr.uri ||
                 !attributes.has(attr.name) ||
-                attr.value.length > 10_000
+                attr.value.length > settings.maxSvgAttributeLength
             )
                 reject()
             const value = attr.value
@@ -82,7 +69,7 @@ export function validateSvg(buffer: Buffer): Buffer {
                 if (
                     !/^\d+(?:\.\d+)?(?:px)?$/.test(value) ||
                     parseFloat(value) <= 0 ||
-                    parseFloat(value) > 4096
+                    parseFloat(value) > settings.maxDimension
                 )
                     reject()
             }
@@ -93,9 +80,7 @@ export function validateSvg(buffer: Buffer): Buffer {
                     .map(Number)
                 if (
                     numbers.length !== 4 ||
-                    numbers.some(
-                        (n) => !Number.isFinite(n) || Math.abs(n) > 1_000_000
-                    ) ||
+                    numbers.some((n) => !Number.isFinite(n) || Math.abs(n) > settings.maxSvgViewBoxCoordinate) ||
                     numbers[2]! <= 0 ||
                     numbers[3]! <= 0
                 )
@@ -103,9 +88,7 @@ export function validateSvg(buffer: Buffer): Buffer {
             }
             attrs.push(`${attr.name}="${escapeXml(value)}"`)
         }
-        output.push(
-            `<${tag.local}${attrs.length ? ' ' + attrs.join(' ') : ''}>`
-        )
+        output.push(`<${tag.local}${attrs.length ? ' ' + attrs.join(' ') : ''}>`)
     })
     parser.on('closetag', (tag) => {
         output.push(`</${tag.local}>`)
@@ -127,29 +110,22 @@ export function validateSvg(buffer: Buffer): Buffer {
 export async function validateImage(
     name: string,
     mime: string,
-    buffer: Buffer
+    buffer: Buffer,
+    settings: ImageValidationConfig = imageLibraryDefaults
 ): Promise<Buffer> {
-    if (!IMAGE_NAME.test(name))
+    if (!settings.filenamePattern.test(name))
         throw new BadRequestException(
             'Use a filename containing letters, numbers, hyphens or underscores, ending in .png or .svg.'
         )
-    if (!buffer.length || buffer.length > MAX_IMAGE_BYTES)
+    if (!buffer.length || buffer.length > settings.maxImageBytes)
         throw new BadRequestException(
-            'Images must be nonempty and 2 MB or smaller.'
+            `Images must be nonempty and ${settings.maxImageBytes / (1024 * 1024)} MB or smaller.`
         )
     if (name.endsWith('.svg')) {
-        if (mime !== 'image/svg+xml')
-            throw new BadRequestException(
-                'The file type must match its extension.'
-            )
-        return validateSvg(buffer)
+        if (mime !== 'image/svg+xml') throw new BadRequestException('The file type must match its extension.')
+        return validateSvg(buffer, settings)
     }
-    if (
-        mime !== 'image/png' ||
-        !buffer
-            .subarray(0, 8)
-            .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
-    ) {
+    if (mime !== 'image/png' || !buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
         throw new BadRequestException('The file is not a PNG image.')
     }
     let offset = 8
@@ -157,12 +133,7 @@ export async function validateImage(
     while (offset + 12 <= buffer.length) {
         const length = buffer.readUInt32BE(offset)
         const type = buffer.toString('ascii', offset + 4, offset + 8)
-        if (
-            length > buffer.length - offset - 12 ||
-            type === 'acTL' ||
-            type === 'fcTL' ||
-            type === 'fdAT'
-        ) {
+        if (length > buffer.length - offset - 12 || type === 'acTL' || type === 'fcTL' || type === 'fdAT') {
             throw new BadRequestException('Invalid or animated PNG.')
         }
         offset += length + 12
@@ -171,33 +142,29 @@ export async function validateImage(
             break
         }
     }
-    if (!ended)
-        throw new BadRequestException(
-            'Invalid PNG structure or trailing content.'
-        )
+    if (!ended) throw new BadRequestException('Invalid PNG structure or trailing content.')
     try {
         const image = sharp(buffer, {
             failOn: 'warning',
-            limitInputPixels: 4_194_304,
-        }).timeout({ seconds: 5 })
+            limitInputPixels: settings.maxPixels,
+        }).timeout({ seconds: settings.decodeTimeoutSeconds })
         const metadata = await image.metadata()
         if (
             metadata.format !== 'png' ||
             !metadata.width ||
             !metadata.height ||
-            metadata.width > 4096 ||
-            metadata.height > 4096 ||
+            metadata.width > settings.maxDimension ||
+            metadata.height > settings.maxDimension ||
             (metadata.pages ?? 1) !== 1
         )
             throw new Error('Invalid dimensions or animation')
         // Decoding and re-encoding removes trailing payloads and embedded metadata.
         const clean = await image.png().toBuffer()
-        if (clean.length > MAX_IMAGE_BYTES)
-            throw new Error('Encoded image is too large')
+        if (clean.length > settings.maxImageBytes) throw new Error('Encoded image is too large')
         return clean
     } catch {
         throw new BadRequestException(
-            'Invalid PNG. Use a static image up to 4096 pixels per side and 4 megapixels.'
+            `Invalid PNG. Use a static image up to ${settings.maxDimension} pixels per side and ${settings.maxPixels / (1024 * 1024)} megapixels.`
         )
     }
 }

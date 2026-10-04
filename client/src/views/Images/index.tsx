@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { config } from '@/constants/app'
 import { useAuthContext } from '@/context/auth-context'
 import { imageService, type PublicImage } from '@/services/image.service'
 import { Button } from '@/components/ui/button'
@@ -137,7 +138,7 @@ export function AdminImages() {
             <input
                 ref={picker}
                 type="file"
-                accept="image/png,image/svg+xml,.png,.svg"
+                accept={config.imageLibrary.acceptedFileTypes}
                 className="sr-only"
                 aria-label="Upload PNG or SVG image"
                 disabled={busy}
@@ -147,8 +148,10 @@ export function AdminImages() {
                 }}
             />
             <p className="text-sm text-muted-foreground">
-                PNG: up to 2 MB and 4 megapixels. SVG: up to 256 KB, static
-                shapes only. Existing files are never overwritten.
+                PNG: up to {config.imageLibrary.maxImageBytes / (1024 * 1024)}{' '}
+                MB and {config.imageLibrary.maxPixels / (1024 * 1024)}{' '}
+                megapixels. SVG: up to {config.imageLibrary.maxSvgBytes / 1024}{' '}
+                KB, static shapes only. Existing files are never overwritten.
             </p>
             {error && (
                 <p
@@ -192,7 +195,7 @@ export function AdminImages() {
                                 }}
                             >
                                 <img
-                                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''}${image.url}?v=${encodeURIComponent(image.updatedAt)}`}
+                                    src={`${config.apiBaseUrl}${image.url}?v=${encodeURIComponent(image.updatedAt)}`}
                                     alt={image.name}
                                     loading="lazy"
                                     className="max-h-full max-w-full object-contain"
@@ -269,7 +272,7 @@ export function AdminImages() {
             >
                 {selected && (
                     <img
-                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''}${selected.url}?v=${encodeURIComponent(selected.updatedAt)}`}
+                        src={`${config.apiBaseUrl}${selected.url}?v=${encodeURIComponent(selected.updatedAt)}`}
                         alt={selected.name}
                         className="mx-auto max-h-[60vh] max-w-full object-contain"
                     />

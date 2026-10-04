@@ -1,15 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { IsIn, IsString, Matches, MaxLength } from 'class-validator'
-import { IMAGE_NAME, MAX_IMAGE_BYTES } from '@/lib/imageValidation'
+import { imageLibraryDefaults } from '@/api/services/config.service'
 
 export class ImageUploadDto {
     @ApiProperty({ type: String })
     @IsString()
-    @Matches(IMAGE_NAME)
+    @Matches(imageLibraryDefaults.filenamePattern)
     name: string
 
-    @ApiProperty({ type: String, enum: ['image/png', 'image/svg+xml'] })
-    @IsIn(['image/png', 'image/svg+xml'])
+    @ApiProperty({ type: String, enum: imageLibraryDefaults.mimeTypes })
+    @IsIn(imageLibraryDefaults.mimeTypes)
     mimeType: string
 
     @ApiProperty({
@@ -17,7 +17,7 @@ export class ImageUploadDto {
         description: 'Canonical base64 file content, without a data URL prefix',
     })
     @IsString()
-    @MaxLength(Math.ceil(MAX_IMAGE_BYTES / 3) * 4)
+    @MaxLength(Math.ceil(imageLibraryDefaults.maxImageBytes / 3) * 4)
     content: string
 }
 

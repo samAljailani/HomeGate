@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { EnvRepository } from '@/data/repositories/env.repository'
 import { resolve } from 'node:path'
-import { ConfigService } from '@/api/services/config.service'
+import { ConfigService, imageLibraryDefaults } from '@/api/services/config.service'
 import { LoggingProvider } from '@/infrastructure/logger.provider'
 import { ISystemMetadataRepository } from '@/data/repositories/ISystemMetadataRepository'
 import { SystemConfigKey } from '@/types/models/SystemConfig'
@@ -46,6 +46,10 @@ describe('ConfigService', () => {
 
     it('resolves image library configuration explicitly', () => {
         expect(service.getImageLibraryConfig()).toEqual({
+            ...imageLibraryDefaults,
+            maxBase64Length: Math.ceil(imageLibraryDefaults.maxImageBytes / 3) * 4,
+            requestBodyLimitBytes:
+                Math.ceil(imageLibraryDefaults.maxImageBytes / 3) * 4 + imageLibraryDefaults.requestMetadataBytes,
             directory: resolve('./image-storage'),
             seedDirectory: resolve('./client-build/images'),
             baseUrl: 'https://homegate.example/',

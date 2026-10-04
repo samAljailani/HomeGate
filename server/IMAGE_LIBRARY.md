@@ -4,9 +4,11 @@ Admins can manage images at `/admin/images` (Admin → Images). Click an image f
 
 ## Validation and limits
 
+Backend image settings are centralized in `src/api/services/config.service.ts` (`imageLibraryDefaults` and `getImageLibraryConfig()`). Frontend upload settings are in `client/src/constants/app.ts` (`config.imageLibrary`). Keep frontend limits aligned with backend limits when changing them; the backend enforces the policy. The JSON request body allowance is derived from the upload size to accommodate base64 encoding and request metadata.
+
 - Uploads require the session's CSRF token. Administrator status is checked against the database before the larger JSON body is parsed, and again by the controller's guard.
 - Only filenames containing letters, numbers, underscores and hyphens with lowercase `.png` or `.svg` extensions are accepted. Paths, double extensions, reserved Windows device names and hidden files are rejected.
-- PNG uploads are limited to 2 MiB, 4 megapixels and 4096 pixels per side. The signature and chunk boundaries are checked; animated, malformed and trailing-content files are rejected. Sharp fully decodes and re-encodes the pixels, stripping metadata. Decoding has a five-second processing limit.
+- PNG uploads are limited to 10 MiB, 4 megapixels and 4096 pixels per side. The signature and chunk boundaries are checked; animated, malformed and trailing-content files are rejected. Sharp fully decodes and re-encodes the pixels, stripping metadata. Decoding has a five-second processing limit.
 - SVG uploads are limited to 256 KiB, 2000 elements and 32 levels of nesting. Saxes parses XML strictly; only approved static shapes, gradients, text and attributes are re-serialized. Scripts, event handlers, style blocks/attributes, embedded HTML, external resources, DTDs, processing instructions and unknown elements are rejected. Export complex artwork as PNG if it does not fit this subset.
 - The library accepts at most 500 images and 100 MiB of image content. Upload/delete operations are serialized within the server process. Uploads are published atomically and never overwrite an existing filename.
 - Files are read through regular-file checks and `O_NOFOLLOW` where supported. A symlinked storage root is rejected. Public responses use an explicit image MIME type, `nosniff` and a sandboxed Content Security Policy.

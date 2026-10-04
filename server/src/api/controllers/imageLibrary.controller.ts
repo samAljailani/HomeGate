@@ -1,21 +1,7 @@
-import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    Inject,
-    Param,
-    Post,
-} from '@nestjs/common'
-import {
-    ApiBody,
-    ApiCreatedResponse,
-    ApiOkResponse,
-    ApiOperation,
-    ApiTags,
-} from '@nestjs/swagger'
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post } from '@nestjs/common'
+import { ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
+import { imageLibraryDefaults } from '@/api/services/config.service'
 import { AdminRoute } from '@/decorators'
 import { ImageLibraryService } from '@/api/services/imageLibrary.service'
 import { ImageResponseDto, ImageUploadDto } from '@/types/dtos/imageDto'
@@ -38,7 +24,7 @@ export class ImageLibraryController {
     }
 
     @Post()
-    @Throttle({ default: { ttl: 60_000, limit: 10 } })
+    @Throttle({ default: imageLibraryDefaults.mutationThrottle })
     @ApiOperation({
         summary: 'Upload a validated static PNG or SVG (admin only)',
     })
@@ -50,7 +36,7 @@ export class ImageLibraryController {
 
     @Delete(':name')
     @HttpCode(204)
-    @Throttle({ default: { ttl: 60_000, limit: 10 } })
+    @Throttle({ default: imageLibraryDefaults.mutationThrottle })
     @ApiOperation({ summary: 'Delete an unused public image (admin only)' })
     remove(@Param('name') name: string): Promise<void> {
         return this.images.remove(name)
