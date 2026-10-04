@@ -192,13 +192,14 @@ function signUpFormValidator(
         return emailRegex.test(email) || 'Email is invalid'
     }
 
-    function validatePassword(password: string) {
+    function validatePassword(password: string | undefined) {
+        if (!password) return true
         if (!/[a-z]/i.test(password)) return 'Password must contain a letter'
         if (!/\d/.test(password)) return 'Password must contain a number'
         return true
     }
 
-    function validateConfirmedPassword(confirmedPassword: string) {
+    function validateConfirmedPassword(confirmedPassword: string | undefined) {
         return (
             confirmedPassword === watch('servicePassword') ||
             'Passwords do not match'
